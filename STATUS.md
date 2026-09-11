@@ -54,7 +54,7 @@ The PS lists four things the solution "should include". Scored individually:
 - Criticality = P(fail within H) × Urgency(Cox expectation) × Consequence
 - LightGBM classifier with documented censoring handling; Cox PH concordance ~0.77
 - Ranking validated against simulator ground truth: Spearman ρ ≈ 0.61
-- Quantile duration model: P50 reported, P90 reserved (demanded figure holds 12%, P90 92%)
+- Quantile duration model: P50 reported, P90 reserved (demanded figure holds 16%, P90 92%)
 - Goods path-demand forecast → hourly traffic cost surface
 - Cancellation-risk classifier
 - SHAP attribution on every task, surfaced in the UI
@@ -75,10 +75,10 @@ The PS lists four things the solution "should include". Scored individually:
 - Plant positioning, staff caps, night-work rules, corridor policy, statutory deadlines
 - FCFS baseline reproducing current practice under identical physical constraints
 - Pinned placements — re-solve holding a planner's moves fixed
-- Measured: risk retired per block-hour **+47%**, blocks **−24%**, corridor **22%→53%**
+- Measured: risk retired per block-hour **+84%** (15.49→28.52), blocks **−27%**, corridor **20%→52%**
 
 **Not done**
-- Solver stops at a **~17% optimality gap** in 45s; not tuned, no ALNS fallback
+- Solver stops at a **~57% optimality gap**; not tuned, no ALNS fallback
 - Rolling nightly re-solve against realised outcomes — the feedback loop is described
   in the paper and does not exist
 - No sensitivity analysis across weight settings
@@ -149,22 +149,22 @@ user accounts. The system currently advises one anonymous operator.
 
 ### Tier 2 — makes it a system rather than a study
 
-4. **Ingestion adapters** with the three-mode degradation, against a mock TMS/SMMS/TDMS.
+3. **Ingestion adapters** with the three-mode degradation, against a mock TMS/SMMS/TDMS.
    Even one real adapter against a CSV drop converts "we designed for integration" into
    "we integrated". *~1–2 days.*
-5. **Persistence.** PostgreSQL + PostGIS; stop regenerating the estate every run. Also
+4. **Persistence.** PostgreSQL + PostGIS; stop regenerating the estate every run. Also
    removes the fixed `seed=42` limitation — the service currently always plans the same
    world. *~1–2 days.*
-6. **Approval workflow + audit trail.** Plan → departmental concurrence → sanction, with
+5. **Approval workflow + audit trail.** Plan → departmental concurrence → sanction, with
    an immutable record of what was recommended, what was changed and by whom. This is
    what makes the human-in-the-loop claim real rather than rhetorical. *~2 days.*
 
 ### Tier 3 — scope for the pitch, not the prototype
 
-7. Rolling nightly re-solve against realised outcomes, closing the learning loop
-8. Solver tuning: shrink the 17% gap; ALNS fallback for division-scale instances
-9. RBAC against IR LDAP; multi-division; resource pooling across divisions
-10. BDMS write-back; condition-monitoring telemetry; live COA feed
+6. Rolling nightly re-solve against realised outcomes, closing the learning loop
+7. Solver tuning: shrink the 17% gap; ALNS fallback for division-scale instances
+8. RBAC against IR LDAP; multi-division; resource pooling across divisions
+9. BDMS write-back; condition-monitoring telemetry; live COA feed
 
 ---
 
@@ -175,8 +175,8 @@ first reads as rigour; being caught on them does not.
 
 - **No live railway data.** Everything is synthetic, modelled on published intervals.
 - **In-sample diagnostics only.**
-- **~17% optimality gap** — reported figures are a floor.
-- **Overdue task-days get 6–7% worse**, because criticality outranks age. A tunable
+- **~57% optimality gap** — reported figures are a floor.
+- **Overdue task-days get ~4% worse**, because criticality outranks age. A tunable
   trade-off, not a defect.
 - **Consequence weighting barely discriminates** (0.87–0.98) on a single trunk corridor.
 - **The what-if deferral risk uses an exponential-hazard approximation** of the Cox
