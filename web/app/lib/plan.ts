@@ -77,6 +77,10 @@ export interface PlanData {
     seed: number;
     weights: Record<string, number>;
     solver: Record<string, number | string>;
+    /** Present on re-solve responses: placements the planner fixed. */
+    pinned?: { block_id: string; start_min: number }[];
+    /** Pins the solver refused, each with the reason. */
+    rejectedPins?: string[];
   };
   model_checks: Record<string, Record<string, number>>;
   metrics: { baseline: Metrics; optimised: Metrics };

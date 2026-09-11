@@ -32,6 +32,7 @@ from samanvay.network import (  # noqa: E402
     generate_timetable,
 )
 from samanvay.optimizer.baseline import schedule_fcfs  # noqa: E402
+from samanvay.serialize import plan_payload  # noqa: E402
 from samanvay.optimizer.cpsat import (  # noqa: E402
     BlockOptimiser,
     OptimiserWeights,
@@ -173,83 +174,25 @@ def main() -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # The chart needs topology, traffic and BOTH plans -- the comparison view is the
-    # same time-distance chart with the other plan's blocks in it.
-    sec_index = {s.id: i for i, s in enumerate(SECTIONS)}
-    class_index = {"PREMIER": 0, "MAIL_EXP": 1, "PASSENGER": 2, "GOODS": 3}
-
-    def dump_blocks(pl):
-        return [
-            {
-                "id": b.id, "sec": sec_index[b.section_id], "line": b.line.value,
-                "day": b.day, "s": b.start_min, "e": b.end_min,
-                "tasks": b.task_ids,
-                "depts": [d.value for d in b.departments],
-                "types": [t.value for t in b.block_types],
-                "corridor": b.inside_corridor,
-                "traffic": round(b.traffic_cost, 1),
-                "crit": b.criticality_retired,
-                "why": b.reasons,
-            }
-            for b in pl.blocks
-        ]
-
-    payload = {
-        "meta": {
-            "horizon_days": args.days,
-            "tasks": args.tasks,
-            "seed": args.seed,
-            "weights": weights.__dict__,
-            "solver": r.__dict__,
-        },
-        "model_checks": {
+    payload = plan_payload(
+        plan=plan,
+        baseline=base_plan,
+        tasks=ds.pending,
+        breakdowns=bd_by_task,
+        paths=paths,
+        corridors=corridors,
+        metrics={"baseline": bm, "optimised": om},
+        weights=weights,
+        report=r,
+        model_checks={
             "criticality": {**cm.training_report, **crit_check},
             "duration": {**dm.training_report, **dur_check},
             "cancellation": cx.training_report,
         },
-        "metrics": {"baseline": bm.__dict__, "optimised": om.__dict__},
-        "stations": [{"code": st.code, "name": st.name, "km": st.km}
-                     for st in STATIONS],
-        "sections": [{"id": sc.id, "a": sc.from_station, "b": sc.to_station,
-                      "km0": sc.km_start, "km1": sc.km_end} for sc in SECTIONS],
-        "corridors": [[sec_index[c.section_id], c.day, c.start_min, c.end_min]
-                      for c in corridors],
-        "trainClasses": ["PREMIER", "MAIL_EXP", "PASSENGER", "GOODS"],
-        # Client-side re-pricing must use exactly these, or the what-if numbers
-        # diverge from the ones the solver optimised against.
-        "detentionWeights": [4.0, 2.5, 1.5, 1.0],
-        "regulationOverheadMin": 10,
-        "maxBlocksPerDeptPerDay": weights.max_blocks_per_dept_per_day,
-        "machinePositioningMin": 90,
-        # Compact: [section, line(0=UP,1=DN), class, enter, exit, prob]
-        "paths": [
-            [sec_index[pp.section_id], 0 if pp.line is Line.UP else 1,
-             class_index[pp.train_class.value], pp.enter_min, pp.exit_min,
-             round(pp.probability, 2)]
-            for pp in paths
-        ],
-        "baselineBlocks": dump_blocks(base_plan),
-        "blocks": dump_blocks(plan),
-        "tasks": [
-            {
-                "id": t.id, "dept": t.department.value, "type": t.task_type,
-                "section": t.section_id, "line": t.line.value, "km": t.chainage_km,
-                "severity": t.defect_severity, "due_day": t.due_day,
-                "criticality": t.criticality,
-                "p50": t.p50_duration_min, "p90": t.p90_duration_min,
-                "demanded": t.demanded_duration_min,
-                "cancellation_risk": t.cancellation_risk,
-                "attribution": t.attribution,
-                "machine": t.machine.value,
-                "night_work_allowed": t.night_work_allowed,
-                "e_days": round(bd_by_task[t.id].expected_days_to_failure, 2)
-                if t.id in bd_by_task else None,
-                "p_fail": round(bd_by_task[t.id].p_failure, 4)
-                if t.id in bd_by_task else None,
-            }
-            for t in ds.pending
-        ],
-    }
+        horizon_days=args.days,
+        seed=args.seed,
+    )
+
     out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     rule()

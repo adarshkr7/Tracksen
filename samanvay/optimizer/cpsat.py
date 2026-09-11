@@ -207,6 +207,7 @@ class BlockOptimiser:
         traffic: TrafficModel,
         horizon_days: int,
         warm_start: Plan | None = None,
+        forced: dict[str, int] | None = None,
     ) -> Plan:
         m = cp_model.CpModel()
         w = self.w
@@ -366,16 +367,31 @@ class BlockOptimiser:
 
         m.Maximize(sum(terms))
 
+        # ---- pinned placements ------------------------------------------ #
+        # A planner has dragged these and asked for everything else to be redone
+        # around them. They are facts, not preferences.
+        if forced:
+            for tid, cid in forced.items():
+                key = (tid, cid)
+                if key in assign:
+                    m.Add(assign[key] == 1)
+
         # ---- plan stability --------------------------------------------- #
         # Warm-starting from the sanctioned plan keeps the schedule recognisable
         # night to night. A scheduler that reshuffles the whole week every run is
         # technically optimal and operationally useless.
         if warm_start is not None:
+            hinted: set[tuple[str, int]] = set()
             for blk in warm_start.blocks:
+                try:
+                    cid = int(blk.id)
+                except (TypeError, ValueError):
+                    continue          # baseline blocks carry composite ids
                 for tid in blk.task_ids:
-                    key = (tid, int(blk.id)) if blk.id.isdigit() else None
-                    if key and key in assign:
+                    key = (tid, cid)
+                    if key in assign and key not in hinted:
                         m.AddHint(assign[key], 1)
+                        hinted.add(key)
 
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = self.time_limit_s

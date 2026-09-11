@@ -19,6 +19,9 @@ import {
 } from "./lib/plan";
 import { buildPathIndex, findConflicts, planTotals } from "./lib/whatif";
 
+/** The re-solve service. The page works without it; the button just does not appear. */
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+
 type Which = "optimised" | "baseline";
 
 export default function Page() {
@@ -29,6 +32,9 @@ export default function Page() {
   const [which, setWhich] = useState<Which>("optimised");
   const [selected, setSelected] = useState<Block | null>(null);
   const [moves, setMoves] = useState<Map<string, number>>(new Map());
+  const [apiUp, setApiUp] = useState(false);
+  const [solving, setSolving] = useState(false);
+  const [resolveNote, setResolveNote] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/plan.json")
@@ -38,6 +44,11 @@ export default function Page() {
       })
       .then(setData)
       .catch((e) => setError(String(e)));
+
+    // The re-solve button is offered only if the solver is actually reachable.
+    fetch(`${API}/api/health`, { signal: AbortSignal.timeout(2500) })
+      .then((r) => r.ok && setApiUp(true))
+      .catch(() => setApiUp(false));
   }, []);
 
   const blocks = useMemo(
@@ -86,6 +97,56 @@ export default function Page() {
       return next;
     });
   }, []);
+
+  /**
+   * Hand the planner's moves to the solver as fixed placements and let it redo the
+   * rest. Pinning constrains the search, so the headline usually gets *worse* -- the
+   * note below says so plainly rather than hiding it.
+   */
+  const reSolve = useCallback(async () => {
+    if (!data || moves.size === 0) return;
+    setSolving(true);
+    setResolveNote(null);
+    const beforeRisk = data.metrics.optimised.risk_retired_per_block_hour;
+
+    const pins = [...moves.entries()].map(([blockId, startMin]) => {
+      const b = data.blocks.find((x) => x.id === blockId);
+      return { block_id: blockId, start_min: startMin, task_ids: b?.tasks ?? [] };
+    });
+
+    try {
+      const r = await fetch(`${API}/api/resolve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pins, time_limit_s: 20 }),
+      });
+      if (!r.ok) {
+        const detail = await r.json().catch(() => null);
+        throw new Error(detail?.detail?.message ?? `solver returned ${r.status}`);
+      }
+      const next: PlanData = await r.json();
+      const afterRisk = next.metrics.optimised.risk_retired_per_block_hour;
+      const delta = afterRisk - beforeRisk;
+      const rejected: string[] = next.meta.rejectedPins ?? [];
+
+      setData(next);
+      setMoves(new Map());
+      setSelected(null);
+      setResolveNote(
+        [
+          `Re-solved around ${pins.length - rejected.length} pinned block` +
+            `${pins.length - rejected.length === 1 ? "" : "s"}.`,
+          `Risk per block-hour ${beforeRisk.toFixed(1)} → ${afterRisk.toFixed(1)}` +
+            ` (${delta >= 0 ? "+" : ""}${delta.toFixed(1)})`,
+          rejected.length ? `Refused: ${rejected.join("; ")}` : "",
+        ].filter(Boolean).join("  "),
+      );
+    } catch (e) {
+      setResolveNote(`Re-solve failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSolving(false);
+    }
+  }, [data, moves]);
 
   const onResetBlock = useCallback((blockId: string) => {
     setMoves((prev) => {
@@ -191,10 +252,38 @@ npm run sync
             </span>
           )}
 
-          <button onClick={() => setMoves(new Map())}
-            className="ml-auto text-[11.5px] rounded-md px-2 py-1 border"
-            style={{ borderColor: "var(--line-2)", color: "var(--ink-2)" }}>
-            Reset all
+          <div className="ml-auto flex items-center gap-2">
+            <button onClick={() => setMoves(new Map())} disabled={solving}
+              className="text-[11.5px] rounded-md px-2 py-1 border disabled:opacity-50"
+              style={{ borderColor: "var(--line-2)", color: "var(--ink-2)" }}>
+              Reset all
+            </button>
+            {apiUp && (
+              <button
+                onClick={reSolve}
+                disabled={solving || conflictedIds.size > 0}
+                title={conflictedIds.size > 0
+                  ? "Resolve the conflicts first — the solver cannot honour an illegal pin"
+                  : "Hold these placements and re-optimise everything else"}
+                className="text-[11.5px] rounded-md px-2.5 py-1 font-medium
+                           disabled:opacity-40 transition-colors"
+                style={{ background: "var(--accent)", color: "#fff" }}>
+                {solving ? "Re-solving…" : "Re-solve holding these"}
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {resolveNote && (
+        <section className="mb-4 rounded-xl border px-4 py-2.5 text-[12px] fade-in
+                            flex items-start gap-3"
+          style={{ borderColor: "var(--line-2)", background: "var(--surface)",
+                   color: "var(--ink-2)" }}>
+          <span className="tnum">{resolveNote}</span>
+          <button onClick={() => setResolveNote(null)}
+            className="ml-auto text-[11.5px] shrink-0" style={{ color: "var(--ink-3)" }}>
+            dismiss
           </button>
         </section>
       )}

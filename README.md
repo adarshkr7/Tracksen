@@ -86,9 +86,11 @@ samanvay/
     duration.py      Quantile GBM — P50 reported, P90 reserved against
     cancellation.py  Will this block, if sanctioned, actually run?
   optimizer/
-    cpsat.py         OR-Tools CP-SAT: the scheduling model
+    cpsat.py         OR-Tools CP-SAT: the scheduling model, with pinned placements
     baseline.py      First-come-first-served — current practice, reproduced
   evaluate.py        KPIs, computed identically for both plans
+  session.py         Estate + models built once, solved repeatedly (with pins)
+  serialize.py       The one payload builder, shared by plan.json and the API
 ```
 
 **The chainage key is the load-bearing idea.** Once an S&T fault at km 412 and an OHE
@@ -182,6 +184,35 @@ because nothing off the shelf draws a train graph.
 
 The page reads `out/plan.json`; re-run the pipeline and `npm run sync` to refresh.
 
+### Re-solving from a what-if state
+
+```bash
+python scripts/serve.py        # http://127.0.0.1:8000
+```
+
+Move blocks, then press **Re-solve holding these**. The solver takes those placements as
+hard facts and re-optimises everything else around them — a different question from the
+one the original solve answered, and the one a planner actually asks.
+
+The button appears only when `/api/health` answers. Without the service the page still
+loads `plan.json` and the what-if simulator still prices moves client-side; you just
+cannot commit them back. That matters when demonstrating on a laptop that is not yours.
+
+**Pinning costs something, and the UI says so.** Constraining the search almost always
+lowers the headline — a typical single pin moves risk-per-block-hour by a point or two.
+The result banner reports the before-and-after rather than quietly showing the new
+number. A pin the solver cannot honour is refused **by name** with its reason
+(`641: falls outside the horizon`), never silently dropped.
+
+Endpoints: `GET /api/health`, `GET /api/plan`, `POST /api/resolve`
+(`{pins: [{block_id, start_min, task_ids}], weights?, time_limit_s}`). Session state —
+estate, fitted models, candidates — is built once (~4 s) and reused, so a re-solve is
+just the solve (~10–20 s).
+
+`samanvay/serialize.py` is the single payload builder for both `plan.json` and every API
+response. The web client parses both, and two builders would drift the moment either
+side gained a field.
+
 ### How what-if stays honest
 
 Client-side re-pricing uses the **same detention weights and regulation overhead** the
@@ -201,6 +232,5 @@ nightly re-solve.
 
 ## Not built yet
 
-Re-solving from a what-if state (the moves are explored, not committed back to the
-solver). Rolling-horizon re-solve with warm start (the hook exists in `BlockOptimiser.solve`,
+Rolling-horizon re-solve with warm start (the hook exists in `BlockOptimiser.solve`,
 untested). Monthly corridor-slot horizon. FastAPI service. Held-out model validation.
