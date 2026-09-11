@@ -86,7 +86,7 @@ def main() -> int:
     corridors = generate_corridors(args.days)
     candidates = build_candidates([s.id for s in SECTIONS], args.days, traffic, corridors)
     opt = BlockOptimiser(time_limit_s=args.time_limit)
-    plan = opt.solve(tasks, candidates, traffic, args.days)
+    plan = opt.solve(tasks, candidates, traffic, args.days, cancellation=cx)
     m = evaluate(plan, tasks)
 
     print(f"  status {opt.report.status}  gap {opt.report.gap_pct:.1f}%  "

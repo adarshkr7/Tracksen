@@ -1,3 +1,7 @@
+> Historical concept/pitch document. Implementation status and current limitations
+> are in [STATUS.md](STATUS.md). Any old benchmark numbers or claims of complete
+> safety/approval enforcement here are superseded by the code-review fixes.
+
 # SLIDES.md — deck spec against the official SIH 2026 template
 **PS 26027 · AI-Powered Automatic Block Planning · Ministry of Railways**
 Template: `SIH2026-IDEA-Presentation-Format.pptx` (13.33″ × 7.5″, 16:9)

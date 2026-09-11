@@ -1,3 +1,7 @@
+> Historical concept/pitch document. Implementation status and current limitations
+> are in [STATUS.md](STATUS.md). Any old benchmark numbers or claims of complete
+> safety/approval enforcement here are superseded by the code-review fixes.
+
 # SAMANVAY — Implementation Deep-Dive Speech
 
 **Length:** ~1,150 words ≈ **6½–7 minutes** at a deliberate technical pace.

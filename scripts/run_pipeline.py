@@ -130,7 +130,7 @@ def main() -> int:
         corridor=args.corridor,
     )
     opt = BlockOptimiser(weights=weights, time_limit_s=args.time_limit)
-    plan = opt.solve(ds.pending, candidates, traffic, args.days)
+    plan = opt.solve(ds.pending, candidates, traffic, args.days, cancellation=cx)
     r = opt.report
     print(f"  status {r.status}  objective {r.objective:,.0f}  "
           f"bound {r.best_bound:,.0f}  gap {r.gap_pct:.1f}%  wall {r.wall_time_s}s")
@@ -147,6 +147,7 @@ def main() -> int:
 
     # ---- 7. compare ------------------------------------------------------- #
     rule("7  COMPARISON")
+    cx.score_plan(base_plan, ds.pending)
     bm = evaluate(base_plan, ds.pending)
     om = evaluate(plan, ds.pending)
 

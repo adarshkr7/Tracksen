@@ -15,7 +15,7 @@ import json
 
 import pytest
 
-from samanvay.domain import Department
+from samanvay.domain import Department, Plan, ScheduledBlock, Line, BlockType
 from samanvay.governance import (
     Action,
     Actor,
@@ -38,10 +38,15 @@ DRM = Actor("V. Kulkarni", Role.DRM)
 VIEWER = Actor("Visitor", Role.VIEWER)
 
 
+def _proposal():
+    return Plan([ScheduledBlock("1", "TEST", Line.UP, 0, 600, 660,
+        ["A", "B", "C"], list(ALL_DEPTS), list(BlockType), True, 0, 30)], [], 7)
+
+
 @pytest.fixture
 def wf():
     flow = ApprovalWorkflow(AuditLog())
-    flow.create("P1", ALL_DEPTS, JE, note="weekly plan")
+    flow.create("P1", _proposal(), JE, note="weekly plan")
     return flow
 
 
@@ -166,7 +171,7 @@ def test_modifying_a_draft_invalidates_prior_concurrences(wf):
 
 def test_supersession_is_how_a_sanctioned_plan_changes(wf):
     _full_route(wf)
-    wf.create("P2", ALL_DEPTS, JE, note="revision")
+    wf.create("P2", _proposal(), JE, note="revision")
     wf.supersede("P1", "P2", DRM, remarks="superseded by P2")
     assert wf.plans["P1"].state is PlanState.SUPERSEDED
     assert wf.plans["P1"].superseded_by == "P2"
@@ -244,7 +249,7 @@ def test_reordering_entries_breaks_the_chain(wf):
 def test_a_persisted_log_survives_reload_and_verifies(wf, tmp_path):
     path = tmp_path / "audit.jsonl"
     flow = ApprovalWorkflow(AuditLog(path))
-    flow.create("P9", ALL_DEPTS, JE)
+    flow.create("P9", _proposal(), JE)
     _full_route(flow, "P9")
 
     reloaded = AuditLog(path)
@@ -256,7 +261,7 @@ def test_a_persisted_log_survives_reload_and_verifies(wf, tmp_path):
 def test_tampering_with_the_file_is_detected(wf, tmp_path):
     path = tmp_path / "audit.jsonl"
     flow = ApprovalWorkflow(AuditLog(path))
-    flow.create("P9", ALL_DEPTS, JE)
+    flow.create("P9", _proposal(), JE)
     _full_route(flow, "P9")
 
     lines = path.read_text(encoding="utf-8").strip().split("\n")

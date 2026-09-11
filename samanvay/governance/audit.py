@@ -17,6 +17,10 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import os
+import portalocker
+from threading import RLock
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -29,6 +33,7 @@ class Action(str, Enum):
     """Everything that can happen to a plan."""
 
     CREATE = "CREATE"              # a plan was generated
+    SUBMIT = "SUBMIT"
     MODIFY = "MODIFY"              # a human moved or pinned something
     RESOLVE = "RESOLVE"            # re-solved around pinned placements
     CONCUR = "CONCUR"              # departmental head agrees
@@ -92,6 +97,7 @@ class AuditLog:
     """Append-only. There is deliberately no update or delete."""
 
     def __init__(self, path: str | Path | None = None):
+        self.lock = RLock()
         self.path = Path(path) if path else None
         self._entries: list[AuditEntry] = []
         if self.path and self.path.exists():
@@ -110,8 +116,16 @@ class AuditLog:
         if not self.path:
             return
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.path.open("a", encoding="utf-8") as fh:
+        with self.path.open("a+", encoding="utf-8") as fh:
+            portalocker.lock(fh, portalocker.LOCK_EX)
+            fh.seek(0)
+            disk = [AuditEntry(**json.loads(line)) for line in fh if line.strip()]
+            if disk != self._entries:
+                raise RuntimeError("audit file changed; refusing a stale or corrupt append")
+            fh.seek(0, 2)
             fh.write(json.dumps(entry.to_dict(), default=str) + "\n")
+            fh.flush()
+            os.fsync(fh.fileno())
 
     # ------------------------------------------------------------------ #
 
@@ -128,39 +142,68 @@ class AuditLog:
     def append(self, *, actor: str, role: str, action: Action | str, plan_id: str,
                detail: dict[str, Any] | None = None,
                timestamp: dt.datetime | None = None) -> AuditEntry:
-        ts = (timestamp or dt.datetime.now(dt.timezone.utc)).isoformat()
-        draft = AuditEntry(
-            seq=len(self._entries),
-            timestamp=ts,
-            actor=actor,
-            role=role if isinstance(role, str) else role.value,
-            action=action.value if isinstance(action, Action) else action,
-            plan_id=plan_id,
-            detail=detail or {},
-            prev_hash=self.head_hash,
-        )
-        entry = AuditEntry(**{**draft.to_dict(), "entry_hash": draft.compute_hash()})
-        self._entries.append(entry)
-        self._persist(entry)
-        return entry
+        with self.lock:
+            status = self.verify()
+            if not status.intact:
+                raise RuntimeError(f"refusing append: {status}")
+            ts = (timestamp or dt.datetime.now(dt.timezone.utc)).isoformat()
+            draft = AuditEntry(
+                seq=len(self._entries),
+                timestamp=ts,
+                actor=actor,
+                role=role if isinstance(role, str) else role.value,
+                action=action.value if isinstance(action, Action) else action,
+                plan_id=plan_id,
+                detail=deepcopy(detail or {}),
+                prev_hash=self.head_hash,
+            )
+            entry = AuditEntry(**{**draft.to_dict(), "entry_hash": draft.compute_hash()})
+            self._persist(entry)
+            self._entries.append(entry)
+            return entry
 
     # ------------------------------------------------------------------ #
 
-    def verify(self) -> ChainStatus:
-        """Walk the chain. Any retroactive edit shows up here."""
+    @staticmethod
+    def _verify_entries(entries: list[AuditEntry]) -> ChainStatus:
         prev = GENESIS
-        for i, e in enumerate(self._entries):
+        for i, e in enumerate(entries):
             if e.seq != i:
-                return ChainStatus(False, len(self._entries), i,
-                                   f"sequence is {e.seq}, expected {i}")
+                return ChainStatus(False, len(entries), i, "invalid sequence")
             if e.prev_hash != prev:
-                return ChainStatus(False, len(self._entries), i,
-                                   "prev_hash does not match the entry before it")
+                return ChainStatus(False, len(entries), i, "prev_hash mismatch")
             if e.compute_hash() != e.entry_hash:
-                return ChainStatus(False, len(self._entries), i,
-                                   "contents do not match the recorded hash")
+                return ChainStatus(False, len(entries), i, "contents do not match recorded hash")
             prev = e.entry_hash
-        return ChainStatus(True, len(self._entries))
+        return ChainStatus(True, len(entries))
+
+    def verify(self) -> ChainStatus:
+        """Verify cached state AND a locked snapshot of the persisted bytes.
+
+        The running head detects truncation/replacement during this process's lifetime.
+        Independent external anchoring is still needed against whole-file rewriting
+        while the service is stopped. The file lock prevents interleaved appends.
+        """
+        with self.lock:
+            cached = self._verify_entries(self._entries)
+            if not cached.intact or self.path is None:
+                return cached
+            if not self.path.exists():
+                return (ChainStatus(False, len(self._entries), 0, "audit file missing")
+                        if self._entries else cached)
+            try:
+                with self.path.open(encoding="utf-8") as fh:
+                    portalocker.lock(fh, portalocker.LOCK_SH)
+                    disk = [AuditEntry(**json.loads(line)) for line in fh if line.strip()]
+            except (OSError, ValueError, TypeError) as exc:
+                return ChainStatus(False, len(self._entries), 0, f"unreadable audit file: {exc}")
+            result = self._verify_entries(disk)
+            if not result.intact:
+                return result
+            if disk != self._entries:
+                return ChainStatus(False, len(disk), min(len(disk), len(self._entries)),
+                                   "persisted history differs from the running audit head")
+            return result
 
     def for_plan(self, plan_id: str) -> list[AuditEntry]:
         return [e for e in self._entries if e.plan_id == plan_id]

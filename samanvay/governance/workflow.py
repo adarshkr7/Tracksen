@@ -26,10 +26,14 @@ Every transition is written to the hash-chained audit log before it takes effect
 from __future__ import annotations
 
 import datetime as dt
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
+from copy import deepcopy
+import hashlib
+import json
+from threading import RLock
 from enum import Enum
 
-from ..domain import Department
+from ..domain import Department, Plan, ScheduledBlock, Line, BlockType
 from .audit import Action, AuditLog
 
 
@@ -107,6 +111,25 @@ class PlanApproval:
     sanctioned_at: str | None = None
     superseded_by: str | None = None
     revision: int = 1
+    snapshot_json: str = ""
+
+    @property
+    def content_hash(self) -> str:
+        return hashlib.sha256(self.snapshot_json.encode()).hexdigest()
+
+    def plan(self) -> Plan:
+        data = json.loads(self.snapshot_json)["plan"]
+        blocks = []
+        for row in data.pop("blocks"):
+            row["line"] = Line(row["line"])
+            row["departments"] = [Department(d) for d in row["departments"]]
+            row["block_types"] = [BlockType(b) for b in row["block_types"]]
+            blocks.append(ScheduledBlock(**row))
+        return Plan(blocks=blocks, **data)
+
+    @property
+    def context(self) -> dict:
+        return json.loads(self.snapshot_json)["context"]
 
     # ------------------------------------------------------------------ #
     # Gate conditions
@@ -126,7 +149,8 @@ class PlanApproval:
 
     @property
     def ready_for_sanction(self) -> bool:
-        return self.fully_concurred and self.operations_cleared_by is not None
+        return (self.state is PlanState.OPERATIONS_REVIEW and bool(self.snapshot_json)
+                and self.fully_concurred and self.operations_cleared_by is not None)
 
     def blockers(self) -> list[str]:
         """Why this plan cannot be sanctioned right now, in plain language."""
@@ -135,6 +159,8 @@ class PlanApproval:
             out.append("already sanctioned")
         if self.state.is_terminal:
             out.append(f"plan is {self.state.value.lower()}")
+        if self.state is PlanState.RETURNED:
+            out.append("plan was returned and must be revised")
         for d in sorted(self.pending_departments, key=lambda x: x.value):
             out.append(f"{DEPARTMENT_HEAD[d].value} has not concurred for {d.value}")
         for c in self.withheld:
@@ -148,176 +174,194 @@ class PlanApproval:
 
 
 class ApprovalWorkflow:
-    """Drives plans through the route, writing every step to the audit log first."""
+    """Single-writer workflow; durable audit events are also its replayable state store.
+
+    A transition is computed on a copy and published only after the audit append has
+    completed. Serve one process; the lock also guards revision checks and re-solves.
+    """
 
     def __init__(self, log: AuditLog):
         self.log = log
+        self.lock = RLock()
         self.plans: dict[str, PlanApproval] = {}
-
-    # ------------------------------------------------------------------ #
+        if not log.verify().intact:
+            raise WorkflowError("audit log is corrupt; refusing to restore approvals")
+        for entry in log:
+            row = entry.detail.get("approval")
+            if row is None:  # Legacy metadata-only events cannot restore approval authority.
+                continue
+            row = deepcopy(row)
+            row["departments"] = {Department(d) for d in row["departments"]}
+            row["state"] = PlanState(row["state"])
+            row["concurrences"] = {
+                Department(d): Concurrence(**{**c, "department": Department(c["department"])})
+                for d, c in row["concurrences"].items()
+            }
+            approval = PlanApproval(**row)
+            self.plans[approval.plan_id] = approval
 
     def _require(self, plan_id: str) -> PlanApproval:
         if plan_id not in self.plans:
             raise WorkflowError(f"unknown plan {plan_id}")
-        return self.plans[plan_id]
+        return deepcopy(self.plans[plan_id])
 
-    def _record(self, actor: Actor, action: Action, plan_id: str, **detail) -> None:
-        self.log.append(actor=actor.name, role=actor.role.value, action=action,
-                        plan_id=plan_id, detail=detail)
-
-    def _deny(self, actor: Actor, attempted: Action, plan_id: str, reason: str,
-              error: type[Exception] = AuthorityError):
-        """Record the refusal, then raise.
-
-        A refused attempt is exactly the event an audit trail exists to capture. Someone
-        reaching above their authority -- or trying to sanction a plan two departments
-        have not seen -- should leave a mark, not vanish because the code said no.
-        """
+    def _deny(self, actor, attempted, plan_id, reason, error=AuthorityError):
         self.log.append(actor=actor.name, role=actor.role.value, action=Action.DENIED,
-                        plan_id=plan_id,
-                        detail={"attempted": attempted.value, "reason": reason})
+                        plan_id=plan_id, detail={"attempted": attempted.value, "reason": reason})
         raise error(reason)
 
-    # ------------------------------------------------------------------ #
+    def _commit(self, a, actor, action, **detail):
+        row = asdict(a)
+        row["departments"] = sorted(d.value for d in a.departments)
+        row["concurrences"] = {d.value: asdict(c) for d, c in a.concurrences.items()}
+        self.log.append(actor=actor.name, role=actor.role.value, action=action,
+                        plan_id=a.plan_id, detail={**detail, "revision": a.revision,
+                        "content_hash": a.content_hash, "approval": row})
+        self.plans[a.plan_id] = a
+        return deepcopy(a)
 
-    def create(self, plan_id: str, departments: set[Department], actor: Actor,
-               **detail) -> PlanApproval:
-        if plan_id in self.plans:
-            raise WorkflowError(f"plan {plan_id} already exists")
-        approval = PlanApproval(plan_id=plan_id, departments=set(departments))
-        self.plans[plan_id] = approval
-        self._record(actor, Action.CREATE, plan_id,
-                     departments=sorted(d.value for d in departments), **detail)
-        return approval
+    @staticmethod
+    def _snapshot(plan: Plan, context: dict | None = None) -> str:
+        if not plan.blocks or not all(b.task_ids and b.departments for b in plan.blocks):
+            raise WorkflowError("cannot approve an empty or unbound schedule")
+        return json.dumps({"plan": asdict(plan), "context": context or {}},
+                          sort_keys=True, separators=(",", ":"), allow_nan=False)
 
-    def modify(self, plan_id: str, actor: Actor, *, note: str = "", **detail) -> PlanApproval:
-        """A human changed the plan. Illegal once sanctioned -- supersede instead."""
+    def create(self, plan_id: str, plan: Plan, actor: Actor, *, context=None, **detail):
+        with self.lock:
+            if actor.role is not Role.JE:
+                self._deny(actor, Action.CREATE, plan_id, "only JE may raise a proposal")
+            if plan_id in self.plans:
+                raise WorkflowError(f"plan {plan_id} already exists")
+            snapshot = self._snapshot(plan, context)
+            a = PlanApproval(plan_id, {d for b in plan.blocks for d in b.departments},
+                             snapshot_json=snapshot)
+            return self._commit(a, actor, Action.CREATE, **detail)
+
+    def check_revision(self, plan_id: str, revision: int, content_hash: str):
         a = self._require(plan_id)
+        if a.revision != revision or a.content_hash != content_hash:
+            raise WorkflowError("stale plan revision; reload the proposal before acting")
+        return a
+
+    def check_editable(self, plan_id, actor):
+        a = self._require(plan_id)
+        if actor.role is not Role.JE:
+            self._deny(actor, Action.MODIFY, plan_id, "only JE may revise a proposal")
         if a.state is PlanState.SANCTIONED:
             self._deny(actor, Action.MODIFY, plan_id,
-                       "a sanctioned plan cannot be modified -- supersede it with a "
-                       "new plan", WorkflowError)
+                       "a sanctioned plan cannot be modified -- supersede it with a new plan",
+                       WorkflowError)
         if a.state.is_terminal:
-            raise WorkflowError(f"plan is {a.state.value.lower()}")
-
-        # Any change invalidates concurrences already given: they were given to a
-        # different plan, and treating them as still valid would launder the change
-        # through approvals nobody granted for it.
-        invalidated = sorted(d.value for d in a.concurrences)
-        a.concurrences.clear()
-        a.operations_cleared_by = None
-        a.state = PlanState.DRAFT
-        a.revision += 1
-
-        self._record(actor, Action.MODIFY, plan_id, note=note,
-                     revision=a.revision, invalidated_concurrences=invalidated, **detail)
+            self._deny(actor, Action.MODIFY, plan_id, f"plan is {a.state.value.lower()}", WorkflowError)
         return a
 
-    def concur(self, plan_id: str, actor: Actor, department: Department,
-               granted: bool = True, remarks: str = "") -> PlanApproval:
-        a = self._require(plan_id)
-        if not actor.may_concur_for(department):
-            self._deny(actor, Action.CONCUR, plan_id,
-                       f"{actor.role.value} cannot concur for {department.value} -- "
-                       f"that is {DEPARTMENT_HEAD[department].value}'s accountability")
-        if department not in a.departments:
-            raise WorkflowError(f"plan {plan_id} contains no {department.value} work")
-        if a.state is PlanState.SANCTIONED or a.state.is_terminal:
-            raise WorkflowError(f"plan is {a.state.value.lower()}")
+    def modify(self, plan_id, actor, *, plan=None, context=None, note="", **detail):
+        with self.lock:
+            a = self.check_editable(plan_id, actor)
+            invalidated = sorted(d.value for d in a.concurrences)
+            if plan is not None:
+                a.snapshot_json = self._snapshot(plan, context if context is not None else a.context)
+                a.departments = {d for b in plan.blocks for d in b.departments}
+            a.concurrences.clear()
+            a.operations_cleared_by = None
+            a.state = PlanState.DRAFT
+            a.revision += 1
+            return self._commit(a, actor, Action.MODIFY, note=note,
+                                invalidated_concurrences=invalidated, **detail)
 
-        a.concurrences[department] = Concurrence(
-            department=department, granted=granted, actor=actor.name,
-            role=actor.role.value,
-            timestamp=dt.datetime.now(dt.timezone.utc).isoformat(), remarks=remarks,
-        )
-        a.state = (
-            PlanState.OPERATIONS_REVIEW if a.fully_concurred
-            else PlanState.UNDER_CONCURRENCE
-        )
-        self._record(actor, Action.CONCUR if granted else Action.WITHHOLD, plan_id,
-                     department=department.value, remarks=remarks)
-        return a
+    def _review_state(self, a, actor, action):
+        if a.state not in (PlanState.DRAFT, PlanState.UNDER_CONCURRENCE,
+                           PlanState.OPERATIONS_REVIEW):
+            self._deny(actor, action, a.plan_id, f"plan is {a.state.value.lower()}", WorkflowError)
 
-    def clear_operations(self, plan_id: str, actor: Actor, remarks: str = "") -> PlanApproval:
-        a = self._require(plan_id)
-        if actor.role is not Role.SR_DOM:
-            self._deny(actor, Action.CLEAR, plan_id,
-                       f"{actor.role.value} cannot clear traffic impact -- that is Sr.DOM's")
-        if not a.fully_concurred:
-            raise WorkflowError(
-                "operations clearance comes after departmental concurrence: "
-                + "; ".join(a.blockers())
-            )
-        a.operations_cleared_by = actor.name
-        a.state = PlanState.OPERATIONS_REVIEW
-        self._record(actor, Action.CLEAR, plan_id, remarks=remarks)
-        return a
+    def concur(self, plan_id, actor, department, granted=True, remarks=""):
+        with self.lock:
+            a = self._require(plan_id)
+            if not actor.may_concur_for(department):
+                self._deny(actor, Action.CONCUR, plan_id,
+                           f"{actor.role.value} cannot concur for {department.value} -- "
+                           f"that is {DEPARTMENT_HEAD[department].value}'s accountability")
+            self._review_state(a, actor, Action.CONCUR)
+            if department not in a.departments:
+                raise WorkflowError(f"plan {plan_id} contains no {department.value} work")
+            a.operations_cleared_by = None
+            a.concurrences[department] = Concurrence(department, granted, actor.name,
+                actor.role.value, dt.datetime.now(dt.timezone.utc).isoformat(), remarks)
+            a.state = PlanState.OPERATIONS_REVIEW if a.fully_concurred else PlanState.UNDER_CONCURRENCE
+            return self._commit(a, actor, Action.CONCUR if granted else Action.WITHHOLD,
+                                department=department.value, remarks=remarks)
 
-    def sanction(self, plan_id: str, actor: Actor, remarks: str = "") -> PlanApproval:
-        """The only place a plan becomes operative. DRM only, gate fully satisfied."""
-        a = self._require(plan_id)
-        if actor.role is not Role.DRM:
-            self._deny(actor, Action.SANCTION, plan_id,
-                       f"{actor.role.value} cannot sanction a block plan -- only the DRM can")
-        if not a.ready_for_sanction:
-            self._deny(actor, Action.SANCTION, plan_id,
-                       "cannot sanction: " + "; ".join(a.blockers()), WorkflowError)
+    def clear_operations(self, plan_id, actor, remarks=""):
+        with self.lock:
+            a = self._require(plan_id)
+            if actor.role is not Role.SR_DOM:
+                self._deny(actor, Action.CLEAR, plan_id, "only Sr.DOM may clear traffic impact")
+            self._review_state(a, actor, Action.CLEAR)
+            if not a.fully_concurred:
+                raise WorkflowError("operations clearance comes after departmental concurrence: "
+                                    + "; ".join(a.blockers()))
+            a.operations_cleared_by = actor.name
+            a.state = PlanState.OPERATIONS_REVIEW
+            return self._commit(a, actor, Action.CLEAR, remarks=remarks)
 
-        a.state = PlanState.SANCTIONED
-        a.sanctioned_by = actor.name
-        a.sanctioned_at = dt.datetime.now(dt.timezone.utc).isoformat()
-        self._record(actor, Action.SANCTION, plan_id, remarks=remarks,
-                     revision=a.revision)
-        return a
+    def sanction(self, plan_id, actor, remarks=""):
+        with self.lock:
+            a = self._require(plan_id)
+            if actor.role is not Role.DRM:
+                self._deny(actor, Action.SANCTION, plan_id, "only the DRM can sanction a block plan")
+            if not a.ready_for_sanction:
+                self._deny(actor, Action.SANCTION, plan_id,
+                           "cannot sanction: " + "; ".join(a.blockers()), WorkflowError)
+            a.state = PlanState.SANCTIONED
+            a.sanctioned_by = actor.name
+            a.sanctioned_at = dt.datetime.now(dt.timezone.utc).isoformat()
+            return self._commit(a, actor, Action.SANCTION, remarks=remarks)
 
-    def return_for_revision(self, plan_id: str, actor: Actor, remarks: str) -> PlanApproval:
-        a = self._require(plan_id)
-        if actor.role in (Role.VIEWER, Role.JE):
-            self._deny(actor, Action.RETURN, plan_id,
-                       f"{actor.role.value} cannot return a plan for revision")
-        if a.state is PlanState.SANCTIONED:
-            raise WorkflowError("a sanctioned plan is returned by cancelling it")
-        a.state = PlanState.RETURNED
-        self._record(actor, Action.RETURN, plan_id, remarks=remarks)
-        return a
+    def return_for_revision(self, plan_id, actor, remarks):
+        with self.lock:
+            a = self._require(plan_id)
+            if actor.role in (Role.VIEWER, Role.JE):
+                self._deny(actor, Action.RETURN, plan_id, "role cannot return a plan for revision")
+            self._review_state(a, actor, Action.RETURN)
+            a.state = PlanState.RETURNED
+            a.concurrences.clear()
+            a.operations_cleared_by = None
+            return self._commit(a, actor, Action.RETURN, remarks=remarks)
 
-    def supersede(self, plan_id: str, successor_id: str, actor: Actor,
-                  remarks: str = "") -> PlanApproval:
-        a = self._require(plan_id)
-        a.state = PlanState.SUPERSEDED
-        a.superseded_by = successor_id
-        self._record(actor, Action.SUPERSEDE, plan_id,
-                     superseded_by=successor_id, remarks=remarks)
-        return a
+    def supersede(self, plan_id, successor_id, actor, remarks=""):
+        with self.lock:
+            a = self._require(plan_id)
+            if actor.role is not Role.DRM:
+                self._deny(actor, Action.SUPERSEDE, plan_id, "only DRM may supersede a plan")
+            if a.state is not PlanState.SANCTIONED:
+                raise WorkflowError("only a sanctioned plan can be superseded")
+            successor = self._require(successor_id)
+            if successor_id == plan_id or successor.state.is_terminal:
+                raise WorkflowError("invalid successor proposal")
+            a.state = PlanState.SUPERSEDED
+            a.superseded_by = successor_id
+            return self._commit(a, actor, Action.SUPERSEDE, superseded_by=successor_id, remarks=remarks)
 
-    def cancel(self, plan_id: str, actor: Actor, remarks: str) -> PlanApproval:
-        a = self._require(plan_id)
-        if actor.role not in (Role.DRM, Role.SR_DOM):
-            self._deny(actor, Action.CANCEL, plan_id,
-                       f"{actor.role.value} cannot cancel a sanctioned plan")
-        a.state = PlanState.CANCELLED
-        self._record(actor, Action.CANCEL, plan_id, remarks=remarks)
-        return a
+    def cancel(self, plan_id, actor, remarks):
+        with self.lock:
+            a = self._require(plan_id)
+            if actor.role not in (Role.DRM, Role.SR_DOM):
+                self._deny(actor, Action.CANCEL, plan_id, "role cannot cancel a sanctioned plan")
+            if a.state is not PlanState.SANCTIONED:
+                raise WorkflowError("only a sanctioned plan can be cancelled")
+            a.state = PlanState.CANCELLED
+            return self._commit(a, actor, Action.CANCEL, remarks=remarks)
 
-    # ------------------------------------------------------------------ #
-
-    def status(self, plan_id: str) -> dict:
-        a = self._require(plan_id)
-        return {
-            "plan_id": a.plan_id,
-            "state": a.state.value,
-            "revision": a.revision,
-            "departments": sorted(d.value for d in a.departments),
-            "concurrences": {
-                d.value: {
-                    "granted": c.granted, "by": c.actor, "role": c.role,
-                    "at": c.timestamp, "remarks": c.remarks,
-                }
-                for d, c in a.concurrences.items()
-            },
-            "operations_cleared_by": a.operations_cleared_by,
-            "sanctioned_by": a.sanctioned_by,
-            "sanctioned_at": a.sanctioned_at,
-            "ready_for_sanction": a.ready_for_sanction,
-            "blockers": a.blockers(),
-        }
+    def status(self, plan_id):
+        with self.lock:
+            a = self._require(plan_id)
+            return {"plan_id": a.plan_id, "state": a.state.value, "revision": a.revision,
+                    "content_hash": a.content_hash,
+                    "departments": sorted(d.value for d in a.departments),
+                    "concurrences": {d.value: {"granted": c.granted, "by": c.actor,
+                        "role": c.role, "at": c.timestamp, "remarks": c.remarks}
+                        for d, c in a.concurrences.items()},
+                    "operations_cleared_by": a.operations_cleared_by,
+                    "sanctioned_by": a.sanctioned_by, "sanctioned_at": a.sanctioned_at,
+                    "ready_for_sanction": a.ready_for_sanction, "blockers": a.blockers()}

@@ -20,6 +20,7 @@ export interface Block {
   traffic: number;
   crit: number;
   why: string[];
+  cancellation_risk?: number | null;
 }
 
 export interface Task {
@@ -100,6 +101,10 @@ export interface MonthlyPlan {
 
 export interface PlanData {
   meta: {
+    plan_id?: string;
+    revision?: number;
+    content_hash?: string;
+    state?: string;
     horizon_days: number;
     tasks: number;
     seed: number;

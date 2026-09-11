@@ -1,3 +1,7 @@
+> Historical concept/pitch document. Implementation status and current limitations
+> are in [STATUS.md](STATUS.md). Any old benchmark numbers or claims of complete
+> safety/approval enforcement here are superseded by the code-review fixes.
+
 # SIH 2026 — PS 26027 | AI-Powered Automatic Block Planning
 **Ministry of Railways · Software · Transportation & Logistics**
 

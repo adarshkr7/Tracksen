@@ -48,18 +48,38 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    fetch("/plan.json")
-      .then((r) => {
-        if (!r.ok) throw new Error(`plan.json ${r.status}`);
-        return r.json();
-      })
-      .then(setData)
-      .catch((e) => setError(String(e)));
-
-    // The re-solve button is offered only if the solver is actually reachable.
-    fetch(`${API}/api/health`, { signal: AbortSignal.timeout(2500) })
-      .then((r) => r.ok && setApiUp(true))
-      .catch(() => setApiUp(false));
+    let cancelled = false;
+    async function load() {
+      let reachable = false;
+      try {
+        const health = await fetch(`${API}/api/health`, { signal: AbortSignal.timeout(2500) });
+        reachable = health.ok;
+      } catch { /* Static exploration remains available without the service. */ }
+      try {
+        const id = new URLSearchParams(window.location.search).get("plan");
+        const url = reachable
+          ? `${API}/api/plan${id ? `?plan_id=${encodeURIComponent(id)}` : ""}`
+          : "/plan.json";
+        const response = await fetch(url, { signal: AbortSignal.timeout(120000) });
+        if (!response.ok) {
+          const body = await response.json().catch(() => null);
+          throw new Error(body?.detail?.message ?? body?.detail ?? `Plan returned ${response.status}`);
+        }
+        const next: PlanData = await response.json();
+        if (cancelled) return;
+        setData(next);
+        setApiUp(reachable && !!next.meta.plan_id);
+        if (next.meta.plan_id) {
+          const address = new URL(window.location.href);
+          address.searchParams.set("plan", next.meta.plan_id);
+          window.history.replaceState(null, "", address);
+        }
+      } catch (e) {
+        if (!cancelled) setError(String(e));
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
   }, []);
 
   const blocks = useMemo(
@@ -115,7 +135,7 @@ export default function Page() {
    * note below says so plainly rather than hiding it.
    */
   const reSolve = useCallback(async () => {
-    if (!data || moves.size === 0) return;
+    if (!data || moves.size === 0 || !data.meta.plan_id) return;
     setSolving(true);
     setResolveNote(null);
     const beforeRisk = data.metrics.optimised.risk_retired_per_block_hour;
@@ -129,11 +149,15 @@ export default function Page() {
       const r = await fetch(`${API}/api/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pins, time_limit_s: 20 }),
+        body: JSON.stringify({ pins, time_limit_s: 20,
+          plan_id: data.meta.plan_id, revision: data.meta.revision,
+          content_hash: data.meta.content_hash, actor: "Demo planner", role: "JE" }),
       });
       if (!r.ok) {
         const detail = await r.json().catch(() => null);
-        throw new Error(detail?.detail?.message ?? `solver returned ${r.status}`);
+        const message = detail?.detail?.message ?? detail?.detail ?? `solver returned ${r.status}`;
+        const rejected = detail?.detail?.rejected;
+        throw new Error(`${message}${rejected?.length ? `: ${rejected.join("; ")}` : ""}`);
       }
       const next: PlanData = await r.json();
       const afterRisk = next.metrics.optimised.risk_retired_per_block_hour;
@@ -194,7 +218,7 @@ npm run sync
   }
 
   const m = data.metrics;
-  const editable = which === "optimised";
+  const editable = which === "optimised" && !["SANCTIONED", "CANCELLED", "SUPERSEDED"].includes(data.meta.state ?? "");
   const dayBlocks = blocks.filter((b) => {
     const s = moves.get(b.id) ?? b.s;
     return Math.floor(s / MIN_PER_DAY) === day && (line === "BOTH" || b.line === line);
@@ -218,7 +242,7 @@ npm run sync
           </span>
         </div>
         <p className="mt-2 text-[12.5px] max-w-2xl" style={{ color: "var(--ink-2)" }}>
-          A recommended plan across Engineering, S&amp;T and Traction. The competent
+          A recommended plan across Engineering, S&amp;T and Traction. {apiUp && "Demo planner role: JE. "}The competent
           authority sanctions — this system does not grant blocks.
         </p>
       </header>

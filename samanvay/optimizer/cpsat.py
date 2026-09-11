@@ -68,6 +68,8 @@ class OptimiserWeights:
     traffic: float = 0.05        # per weighted detention minute
     overdue: float = 1.5         # per task-day late against the statutory date
     corridor: float = 40.0       # per block placed inside the mandated corridor
+    stability: float = 10.0     # per previously placed task moved or dropped
+    cancellation: float = 10.0  # per expected cancelled task
 
     max_tasks_per_block: int = 3
     max_blocks_per_dept_per_day: int = 6
@@ -270,6 +272,7 @@ class BlockOptimiser:
         horizon_days: int,
         warm_start: Plan | None = None,
         forced: dict[str, int] | None = None,
+        cancellation=None,
     ) -> Plan:
         m = cp_model.CpModel()
         w = self.w
@@ -374,6 +377,9 @@ class BlockOptimiser:
                 ]
                 if not members:
                     continue
+                # One unit of each machine type is available in this prototype.
+                # Departments run in parallel, including inside one clubbed block.
+                m.AddAtMostOne(members)
                 v = m.NewBoolVar(f"mach_{c.id}_{mach.value}")
                 machine_here[(c.id, mach)] = v
                 m.Add(v <= sum(members))
@@ -409,13 +415,23 @@ class BlockOptimiser:
         # ---- objective --------------------------------------------------- #
         S = 100  # integer scaling; CP-SAT objectives must be integral
         terms = []
+        previous = {tid: (b.section_id, b.line, b.start_min)
+                    for b in (warm_start.blocks if warm_start else []) for tid in b.task_ids}
+        risks = cancellation.candidate_risks(tasks, candidates) if cancellation else {}
 
         for t in tasks:
             crit = t.criticality if t.criticality is not None else 0.0
             for cid in cands_for_task[t.id]:
                 c = cand_by_id[cid]
                 lateness = max(0, c.day - t.due_day)
-                value = w.criticality * crit - w.overdue * lateness
+                # Relative to leaving the task overdue through horizon end. The omitted
+                # baseline is constant, so this is equivalent to penalising all work.
+                avoided_lateness = max(0, horizon_days - t.due_day) - lateness
+                value = w.criticality * crit + w.overdue * avoided_lateness
+                value -= w.cancellation * risks.get((t.id, cid), 0.0)
+                # Reward retaining a placement; dropping and moving both forfeit it.
+                if previous.get(t.id) == (c.section_id, c.line, c.start_min):
+                    value += w.stability
                 terms.append(int(round(value * S)) * assign[(t.id, cid)])
 
         for cid, e in extra_depts.items():
@@ -433,10 +449,15 @@ class BlockOptimiser:
         # A planner has dragged these and asked for everything else to be redone
         # around them. They are facts, not preferences.
         if forced:
+            forced_candidates = set(forced.values())
+            for (tid, cid), variable in assign.items():
+                if cid in forced_candidates and forced.get(tid) != cid:
+                    m.Add(variable == 0)
             for tid, cid in forced.items():
                 key = (tid, cid)
-                if key in assign:
-                    m.Add(assign[key] == 1)
+                if key not in assign:
+                    raise ValueError(f"cannot force {tid} onto ineligible candidate {cid}")
+                m.Add(assign[key] == 1)
 
         # ---- plan stability --------------------------------------------- #
         # Warm-starting from the sanctioned plan keeps the schedule recognisable
@@ -445,15 +466,15 @@ class BlockOptimiser:
         if warm_start is not None:
             hinted: set[tuple[str, int]] = set()
             for blk in warm_start.blocks:
-                try:
-                    cid = int(blk.id)
-                except (TypeError, ValueError):
-                    continue          # baseline blocks carry composite ids
                 for tid in blk.task_ids:
-                    key = (tid, cid)
-                    if key in assign and key not in hinted:
-                        m.AddHint(assign[key], 1)
-                        hinted.add(key)
+                    for c in candidates:
+                        key = (tid, c.id)
+                        if (c.section_id, c.line, c.start_min) != (blk.section_id, blk.line, blk.start_min):
+                            continue
+                        if key in assign and key not in hinted:
+                            m.AddHint(assign[key], 1)
+                            hinted.add(key)
+                            break
 
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = self.time_limit_s
@@ -464,6 +485,9 @@ class BlockOptimiser:
             solver, status, tasks, candidates, cand_by_id, assign,
             cands_for_task, use, traffic, horizon_days
         )
+
+        if cancellation:
+            cancellation.score_plan(plan, tasks)
 
         self.report = SolveReport(
             status=solver.StatusName(status),
@@ -491,7 +515,7 @@ class BlockOptimiser:
     def _extract(self, solver, status, tasks, candidates, cand_by_id, assign,
                  cands_for_task, use, traffic, horizon_days) -> Plan:
         if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-            return Plan([], [t.id for t in tasks], horizon_days, label="optimised (infeasible)")
+            return Plan([], [t.id for t in tasks], horizon_days, label=f"optimised ({solver.StatusName(status).lower()})")
 
         task_by_id = {t.id: t for t in tasks}
         members: dict[int, list[str]] = {}

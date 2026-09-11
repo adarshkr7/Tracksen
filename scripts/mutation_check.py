@@ -14,8 +14,9 @@ straight through. It now asserts an independent floor.
 The source file is always restored, including on failure.
 """
 import io, os, subprocess, sys
+from pathlib import Path
 
-os.chdir(r"D:\CODE\SIH")
+os.chdir(Path(__file__).resolve().parents[1])
 
 MUTANTS = [
     (
@@ -108,7 +109,7 @@ for name, path, original, replacement, test in MUTANTS:
         p = subprocess.run([sys.executable, "-m", "pytest", test, "-q", "--no-header",
                             "-p", "no:cacheprovider"],
                            capture_output=True, text=True, timeout=600)
-        caught = p.returncode != 0
+        caught = p.returncode == 1
         results.append((name, "CAUGHT" if caught else "*** ESCAPED ***", test.split("::")[-1]))
     finally:
         io.open(path, "w", encoding="utf-8").write(src)
@@ -117,6 +118,6 @@ print(f"{'mutation':<46}{'result':<18}test")
 print("-" * 96)
 for name, status, test in results:
     print(f"{name:<46}{status:<18}{test}")
-escaped = [r for r in results if "ESCAPED" in r[1]]
+escaped = [r for r in results if r[1] != "CAUGHT"]
 print(f"\n{len(results) - len(escaped)}/{len(results)} mutations caught")
 sys.exit(1 if escaped else 0)

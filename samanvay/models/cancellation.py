@@ -104,12 +104,12 @@ class CancellationModel:
         }
 
     def predict(self, tasks: list[MaintenanceTask], inside_corridor: bool = True) -> None:
-        """Write cancellation risk onto each task for a given placement assumption."""
+        """Write a daytime/day-zero prior. Solved blocks carry actual placement scores."""
         if self.model is None:
             raise RuntimeError("CancellationModel.fit must be called before predict")
 
         X = pd.DataFrame([
-            _row(t.night_work_allowed, _is_monsoon(max(0, t.raised_day)),
+            _row(False, _is_monsoon(0),
                  inside_corridor, t.machine.value, t.demanded_duration_min, t.gang_size)
             for t in tasks
         ])[FEATURES]
@@ -133,3 +133,42 @@ class CancellationModel:
         # Leave the tasks carrying the in-corridor figure, which is the default plan.
         self.predict(tasks, inside_corridor=True)
         return float(np.mean(outside - inside))
+
+    def probabilities(self, tasks: list[MaintenanceTask], start_min: int,
+                      end_min: int, inside_corridor: bool) -> list[float]:
+        """Score the actual window, not the task's permission to work at night."""
+        if self.model is None:
+            raise RuntimeError("CancellationModel.fit must be called first")
+        if not tasks:
+            return []
+        day = start_min // 1440
+        night = (start_min % 1440 < 360 or end_min > day * 1440 + 1080)
+        X = pd.DataFrame([
+            _row(night, _is_monsoon(day), inside_corridor, t.machine.value,
+                 t.demanded_duration_min, t.gang_size) for t in tasks
+        ])[FEATURES]
+        return self.model.predict_proba(X)[:, 1].tolist()
+
+    def candidate_risks(self, tasks, candidates) -> dict[tuple[str, int], float]:
+        """Batch inference across eligible task/window pairs for the objective."""
+        from ..optimizer.cpsat import _eligible
+        pairs, rows = [], []
+        for c in candidates:
+            night = c.start_min % 1440 < 360 or c.end_min > c.day * 1440 + 1080
+            for t in tasks:
+                if _eligible(t, c):
+                    pairs.append((t.id, c.id))
+                    rows.append(_row(night, _is_monsoon(c.day), c.inside_corridor,
+                                     t.machine.value, t.demanded_duration_min, t.gang_size))
+        if not rows:
+            return {}
+        values = self.model.predict_proba(pd.DataFrame(rows)[FEATURES])[:, 1]
+        return dict(zip(pairs, map(float, values)))
+
+    def score_plan(self, plan, tasks) -> None:
+        """Keep scores with the plan so baseline and optimized results cannot overwrite each other."""
+        by_id = {t.id: t for t in tasks}
+        for b in plan.blocks:
+            values = self.probabilities([by_id[tid] for tid in b.task_ids],
+                                        b.start_min, b.end_min, b.inside_corridor)
+            b.cancellation_risk = max(values, default=0.0)

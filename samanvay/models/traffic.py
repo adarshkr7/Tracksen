@@ -32,7 +32,9 @@ class TrafficModel:
         self.horizon_days = horizon_days
         self._by_key: dict[tuple[str, Line, int], list[TrainPath]] = defaultdict(list)
         for p in paths:
-            self._by_key[(p.section_id, p.line, p.day)].append(p)
+            for day in range(p.enter_min // MINUTES_PER_DAY,
+                             (p.exit_min - 1) // MINUTES_PER_DAY + 1):
+                self._by_key[(p.section_id, p.line, day)].append(p)
         for v in self._by_key.values():
             v.sort(key=lambda p: p.enter_min)
 
@@ -47,12 +49,14 @@ class TrafficModel:
                         end_min: int) -> list[TrainPath]:
         """Every path whose occupation of this section overlaps the window."""
         hits: list[TrainPath] = []
+        seen: set[TrainPath] = set()
         first_day = start_min // MINUTES_PER_DAY
         last_day = (end_min - 1) // MINUTES_PER_DAY
         for day in range(first_day, last_day + 1):
             for p in self._by_key.get((section_id, line, day), ()):
-                if p.enter_min < end_min and start_min < p.exit_min:
+                if p not in seen and p.enter_min < end_min and start_min < p.exit_min:
                     hits.append(p)
+                    seen.add(p)
         return hits
 
     def cost_of_block(self, section_id: str, line: Line, start_min: int,
@@ -106,6 +110,8 @@ class TrafficModel:
         total = 0.0
         for day in range(self.horizon_days):
             for p in self._by_key.get((section_id, line, day), ()):
+                if p.enter_min // MINUTES_PER_DAY != day:
+                    continue
                 total += p.probability * p.train_class.detention_weight
         value = total / max(1, self.horizon_days)
         self._consequence_cache[key] = value
@@ -127,6 +133,8 @@ class TrafficModel:
         premier = 0.0
         for day in range(self.horizon_days):
             for p in self._by_key.get((section_id, line, day), ()):
+                if p.enter_min // MINUTES_PER_DAY != day:
+                    continue
                 w = p.probability * p.train_class.detention_weight
                 total += w
                 if p.train_class.value == "PREMIER":

@@ -129,6 +129,7 @@ class PlanningSession:
             self._baseline = schedule_fcfs(
                 self.tasks, self.base_candidates, self.traffic, self.horizon_days, weights
             )
+        self.cancellation.score_plan(self._baseline, self.tasks)
         return self._baseline
 
     def _pin_candidates(
@@ -146,7 +147,16 @@ class PlanningSession:
         pin_cid: dict[str, int] = {}
         rejected: list[str] = []
 
+        from collections import Counter
+        block_counts = Counter(p.block_id for p in pins)
+        task_counts = Counter(tid for p in pins for tid in p.task_ids)
         for i, pin in enumerate(pins):
+            unknown = sorted(set(pin.task_ids) - self.task_by_id.keys())
+            repeated = sorted({tid for tid in pin.task_ids if task_counts[tid] > 1})
+            if block_counts[pin.block_id] > 1 or repeated or unknown:
+                rejected.append(f"{pin.block_id}: duplicate block/task references or unknown tasks "
+                                f"(repeated={repeated}, unknown={unknown})")
+                continue
             tasks = [self.task_by_id[t] for t in pin.task_ids if t in self.task_by_id]
             if not tasks:
                 rejected.append(f"{pin.block_id}: no known tasks")
@@ -245,8 +255,11 @@ class PlanningSession:
         fits = [t for t in self.tasks if not needs_extended_block(t, corridor_min)]
 
         opt = BlockOptimiser(weights=weights, time_limit_s=time_limit_s)
-        plan = opt.solve(fits, candidates, traffic, self.monthly_days)
+        plan = opt.solve(fits, candidates, traffic, self.monthly_days,
+                         cancellation=self.cancellation)
+        plan.unscheduled_task_ids.extend(t.id for t in extended)
         plan.label = "SAMANVAY monthly (corridor-slot)"
+        opt.report.unscheduled = len(plan.unscheduled_task_ids)
 
         metrics = evaluate(plan, self.tasks)
 
@@ -284,6 +297,16 @@ class PlanningSession:
 
         extra, pin_cid, rejected = self._pin_candidates(pins)
         candidates = self.base_candidates + extra
+        if warm_start:
+            prior_pins = [Pin(b.id, b.start_min, b.task_ids) for b in warm_start.blocks]
+            retained, _, _ = self._pin_candidates(prior_pins)
+            positions = {(c.section_id, c.line, c.start_min, c.capacity_min) for c in candidates}
+            for i, c in enumerate(retained):
+                key = (c.section_id, c.line, c.start_min, c.capacity_min)
+                if key not in positions:
+                    c.id = PIN_ID_BASE * 2 + i
+                    candidates.append(c)
+                    positions.add(key)
 
         forced: dict[str, int] = {}
         for pin in pins:
@@ -297,9 +320,12 @@ class PlanningSession:
         opt = BlockOptimiser(weights=weights, time_limit_s=time_limit_s)
         plan = opt.solve(
             self.tasks, candidates, self.traffic, self.horizon_days,
-            warm_start=warm_start, forced=forced,
+            warm_start=warm_start, forced=forced, cancellation=self.cancellation,
         )
 
+        if opt.report.status == "INFEASIBLE" and pins:
+            rejected.extend(f"{p.block_id}: pinned placements cannot be satisfied together"
+                            for p in pins if p.block_id in pin_cid)
         base = self.baseline(weights)
         metrics = {
             "baseline": evaluate(base, self.tasks),
@@ -326,3 +352,64 @@ class PlanningSession:
         return SolveResult(
             plan=plan, baseline=base, metrics=metrics, payload=payload, rejected=rejected
         )
+
+    def standby(self, original: Plan, released_block_id: str, ready_task_ids: list[str],
+                weights: OptimiserWeights | None = None, time_limit_s: float = 20.0) -> SolveResult:
+        """Recommend replacements in one released slot, keeping all other work fixed.
+
+        Readiness must be supplied by the planner. This creates a proposal only; it
+        neither releases a sanctioned block nor carries approvals into the new plan.
+        """
+        weights = weights or OptimiserWeights()
+        released = next((b for b in original.blocks if b.id == released_block_id), None)
+        if released is None:
+            raise ValueError(f"unknown released block {released_block_id}")
+        if len(ready_task_ids) != len(set(ready_task_ids)):
+            raise ValueError("duplicate ready task ids")
+        if set(ready_task_ids) - set(original.unscheduled_task_ids):
+            raise ValueError("standby readiness must name unscheduled tasks in the proposal")
+        if set(ready_task_ids) - self.task_by_id.keys():
+            raise ValueError("unknown ready tasks")
+        remaining = [b for b in original.blocks if b.id != released_block_id]
+        pins = [Pin(b.id, b.start_min, b.task_ids) for b in remaining]
+        candidates, mapping, rejected = self._pin_candidates(pins)
+        if rejected:
+            raise ValueError("existing placements are invalid: " + "; ".join(rejected))
+        forced = {tid: mapping[p.block_id] for p in pins for tid in p.task_ids}
+        slot = Candidate(PIN_ID_BASE * 3, released.section_id, released.line, released.day,
+            released.start_min, released.duration_min, released.traffic_cost,
+            released.inside_corridor, self.traffic.trains_affected(released.section_id,
+            released.line, released.start_min, released.end_min))
+        candidates.append(slot)
+        tids = set(forced) | set(ready_task_ids)
+        tasks = [t for t in self.tasks if t.id in tids]
+        opt = BlockOptimiser(weights, time_limit_s=time_limit_s)
+        plan = opt.solve(tasks, candidates, self.traffic, self.horizon_days,
+                         forced=forced, cancellation=self.cancellation)
+        scheduled = {tid for b in plan.blocks for tid in b.task_ids}
+        plan.unscheduled_task_ids = [t.id for t in self.tasks if t.id not in scheduled]
+        opt.report.unscheduled = len(plan.unscheduled_task_ids)
+        base = self.baseline(weights)
+        metrics = {"baseline": evaluate(base, self.tasks), "optimised": evaluate(plan, self.tasks)}
+        payload = plan_payload(plan=plan, baseline=base, tasks=self.tasks, breakdowns=self.breakdowns,
+            paths=self.paths, corridors=self.corridors, metrics=metrics, weights=weights,
+            report=opt.report, model_checks=self.model_checks, horizon_days=self.horizon_days, seed=self.seed)
+        payload["standbyQueue"] = sorted(
+            [t.id for t in tasks if t.id in ready_task_ids and _eligible(t, slot)],
+            key=lambda tid: -(self.task_by_id[tid].criticality or 0))
+        payload["releasedBlock"] = released_block_id
+        payload["meta"]["rejectedPins"] = []
+        return SolveResult(plan, base, metrics, payload)
+
+    def monthly_cached(self, weights: OptimiserWeights) -> MonthlyResult:
+        """Monthly allocations are independent of weekly moves; cache by all weights."""
+        key = tuple(sorted(weights.__dict__.items()))
+        cache = getattr(self, "_monthly_results", None)
+        if cache is None:
+            self._monthly_results = cache = {}
+        if key not in cache:
+            result = self.solve_monthly(weights, time_limit_s=10)
+            if result.report.status in ("OPTIMAL", "FEASIBLE"):
+                cache[key] = result
+            return result
+        return cache[key]

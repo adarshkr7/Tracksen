@@ -42,6 +42,7 @@ def dump_blocks(plan: Plan) -> list[dict[str, Any]]:
             "traffic": round(b.traffic_cost, 1),
             "crit": b.criticality_retired,
             "why": b.reasons,
+            "cancellation_risk": b.cancellation_risk,
         }
         for b in plan.blocks
     ]

@@ -102,9 +102,8 @@ def evaluate(plan: Plan, tasks: list[MaintenanceTask]) -> PlanMetrics:
             # span is the longest member, not the sum.
             worked_minutes += min(b.duration_min,
                                   max(t.true_duration_min for t in members))
-            cancel_expectation += max(
-                (t.cancellation_risk or 0.0) for t in members
-            )
+            cancel_expectation += (b.cancellation_risk if b.cancellation_risk is not None
+                                   else max((t.cancellation_risk or 0.0) for t in members))
 
     m.block_hours = round(total_minutes / 60.0, 2)
     m.clubbed_blocks = len(plan.clubbed_blocks)

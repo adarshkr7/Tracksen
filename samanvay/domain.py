@@ -38,8 +38,8 @@ class BlockType(str, Enum):
     """What is actually withdrawn from service.
 
     These are not interchangeable. A disconnection takes signalling out of service
-    but leaves the line; a power block de-energises the OHE. The nesting rules in
-    the optimiser depend on telling them apart.
+    but leaves the line; a power block de-energises the OHE. These labels preserve the distinction; operational containment/permission
+    rules are not yet modeled by this prototype.
     """
 
     TRAFFIC = "TRAFFIC"            # line handed over to Engineering
@@ -280,6 +280,7 @@ class ScheduledBlock:
     traffic_cost: float
     criticality_retired: float
     reasons: list[str] = field(default_factory=list)
+    cancellation_risk: float | None = None
 
     @property
     def duration_min(self) -> int:
