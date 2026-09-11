@@ -12,8 +12,8 @@ SAMANVAY is a decision-support layer over those existing systems. It does not re
 any of them and it **never grants a block** — it produces a recommended plan, and the
 competent authority sanctions.
 
-**Build status:** see [STATUS.md](STATUS.md) — ~65% against the problem statement's four
-stated requirements, ~85% as a prototype, ~20% as something pilotable.
+**Build status:** see [STATUS.md](STATUS.md) — ~80% against the problem statement's four
+stated requirements, ~95% as a prototype, ~30% as something pilotable.
 
 ---
 
@@ -181,6 +181,29 @@ neglect.
 One number was never in-sample and is worth saying so: the Spearman check of criticality
 against true time-to-failure runs on the *pending* tasks, a different population from the
 historical defects the model trains on.
+
+## Tests
+
+```bash
+python -m pytest              # 70 tests, ~80 s
+python scripts/mutation_check.py
+```
+
+Solver invariants (line exclusivity, one gang per department per block, plant positioning,
+staff caps, night-work rules, horizon bounds), pinning behaviour, payload shape from both
+producers, model behaviour including a **ground-truth leakage guard**, and generator
+calibration. Physical constraints are asserted against the baseline too — if the baseline
+were allowed to break rules the optimiser obeys, the comparison above would be rigged.
+
+`mutation_check.py` re-applies five defects this project actually shipped — the INFEASIBLE
+clubbing constraint, the disabled conformal offset, ground truth in a feature set, the 10×
+duration calibration error, the removed positioning buffer — and confirms a test goes red
+for each. **5/5 caught.** A suite that passes proves nothing on its own; it may simply be
+unable to fail.
+
+Writing that check found a sixth problem: the plant-positioning test read the same constant
+it was validating, so zeroing the constant relaxed the assertion too and the mutation walked
+straight through. It now asserts an independent floor.
 
 ## Honest notes
 
