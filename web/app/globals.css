@@ -21,6 +21,8 @@
   --snt:  #4f6d7a;
   --trd:  #8a7343;
   --club: #2f2e2b;
+  --danger: #b3402a;
+  --danger-bg: #f7e6e1;
 
   color-scheme: light;
 }
@@ -43,6 +45,8 @@
     --snt:  #7fa3b3;
     --trd:  #bfa366;
     --club: #cfcdc4;
+    --danger: #e08b6e;
+    --danger-bg: #46302a;
 
     color-scheme: dark;
   }

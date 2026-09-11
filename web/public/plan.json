@@ -14,16 +14,16 @@
     },
     "solver": {
       "status": "FEASIBLE",
-      "objective": 6063.32,
-      "wall_time_s": 40.24,
+      "objective": 6155.36,
+      "wall_time_s": 30.19,
       "candidates": 1270,
       "assign_vars": 5233,
       "scheduled": 99,
       "unscheduled": 101,
       "conflicts": 0,
-      "branches": 2174,
-      "best_bound": 8315.21,
-      "gap_pct": 37.14,
+      "branches": 2092,
+      "best_bound": 8335.4,
+      "gap_pct": 35.42,
       "notes": []
     }
   },
@@ -77,23 +77,23 @@
     },
     "optimised": {
       "label": "SAMANVAY (CP-SAT)",
-      "risk_retired_per_block_hour": 29.41,
+      "risk_retired_per_block_hour": 31.8,
       "tasks_scheduled": 99,
       "tasks_unscheduled": 101,
-      "blocks_used": 77,
-      "block_hours": 194.5,
-      "criticality_retired": 5719.579999999997,
-      "clubbing_ratio": 1.286,
-      "clubbed_blocks": 20,
-      "line_closures_saved": 22,
-      "traffic_cost": 12036.9,
-      "traffic_cost_per_task": 121.6,
-      "corridor_adherence": 0.5325,
-      "block_utilisation": 0.8291,
-      "overdue_task_days": 1240,
-      "expected_cancellations": 16.54,
-      "unplanned_failures": 35,
-      "critical_unplanned_failures": 21,
+      "blocks_used": 72,
+      "block_hours": 179.5,
+      "criticality_retired": 5707.88,
+      "clubbing_ratio": 1.375,
+      "clubbed_blocks": 24,
+      "line_closures_saved": 27,
+      "traffic_cost": 11701.1,
+      "traffic_cost_per_task": 118.2,
+      "corridor_adherence": 0.5694,
+      "block_utilisation": 0.8281,
+      "overdue_task_days": 1231,
+      "expected_cancellations": 15.39,
+      "unplanned_failures": 36,
+      "critical_unplanned_failures": 20,
       "notes": []
     }
   },
@@ -492,6 +492,15 @@
     "PASSENGER",
     "GOODS"
   ],
+  "detentionWeights": [
+    4.0,
+    2.5,
+    1.5,
+    1.0
+  ],
+  "regulationOverheadMin": 10,
+  "maxBlocksPerDeptPerDay": 6,
+  "machinePositioningMin": 90,
   "paths": [
     [
       0,
@@ -43140,36 +43149,60 @@
       "s": 0,
       "e": 195,
       "tasks": [
-        "T0044",
-        "T0144"
+        "T0044"
       ],
       "depts": [
-        "S&T",
         "TRD"
       ],
       "types": [
-        "DISCONN",
         "POWER"
       ],
       "corridor": false,
       "traffic": 99.8,
-      "crit": 169.83,
+      "crit": 86.11,
       "why": [
-        "clubbed: S&T, TRD share one closure",
         "outside corridor -- 100 wtd detention min",
         "driven by T0044 (criticality 86)"
       ]
     },
     {
-      "id": "1187",
+      "id": "1091",
+      "sec": 6,
+      "line": "UP",
+      "day": 0,
+      "s": 600,
+      "e": 735,
+      "tasks": [
+        "T0070",
+        "T0103"
+      ],
+      "depts": [
+        "ENGG",
+        "TRD"
+      ],
+      "types": [
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 88.0,
+      "crit": 142.06,
+      "why": [
+        "clubbed: ENGG, TRD share one closure",
+        "inside mandated corridor",
+        "driven by T0070 (criticality 75)"
+      ]
+    },
+    {
+      "id": "1182",
       "sec": 6,
       "line": "DN",
       "day": 0,
-      "s": 480,
+      "s": 600,
       "e": 780,
       "tasks": [
-        "T0106",
-        "T0125"
+        "T0111",
+        "T0145"
       ],
       "depts": [
         "ENGG",
@@ -43179,41 +43212,17 @@
         "DISCONN",
         "TRAFFIC"
       ],
-      "corridor": false,
-      "traffic": 320.5,
-      "crit": 119.85,
+      "corridor": true,
+      "traffic": 206.0,
+      "crit": 128.39,
       "why": [
         "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 321 wtd detention min",
-        "driven by T0106 (criticality 62)"
-      ]
-    },
-    {
-      "id": "1090",
-      "sec": 6,
-      "line": "UP",
-      "day": 0,
-      "s": 600,
-      "e": 690,
-      "tasks": [
-        "T0076"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 88.0,
-      "crit": 64.4,
-      "why": [
         "inside mandated corridor",
-        "driven by T0076 (criticality 64)"
+        "driven by T0111 (criticality 72)"
       ]
     },
     {
-      "id": "545",
+      "id": "544",
       "sec": 3,
       "line": "UP",
       "day": 0,
@@ -43237,31 +43246,51 @@
       ]
     },
     {
-      "id": "636",
+      "id": "635",
       "sec": 3,
       "line": "DN",
       "day": 0,
       "s": 600,
-      "e": 765,
+      "e": 690,
       "tasks": [
-        "T0036",
-        "T0071"
+        "T0188"
       ],
       "depts": [
-        "ENGG",
-        "TRD"
+        "S&T"
       ],
       "types": [
-        "POWER",
-        "TRAFFIC"
+        "DISCONN"
       ],
       "corridor": true,
       "traffic": 176.5,
-      "crit": 154.15,
+      "crit": 40.12,
       "why": [
-        "clubbed: ENGG, TRD share one closure",
         "inside mandated corridor",
-        "driven by T0036 (criticality 79)"
+        "driven by T0188 (criticality 40)"
+      ]
+    },
+    {
+      "id": "184",
+      "sec": 1,
+      "line": "UP",
+      "day": 0,
+      "s": 660,
+      "e": 750,
+      "tasks": [
+        "T0067"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 0.0,
+      "crit": 74.28,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0067 (criticality 74)"
       ]
     },
     {
@@ -43289,6 +43318,30 @@
       ]
     },
     {
+      "id": "817",
+      "sec": 4,
+      "line": "DN",
+      "day": 0,
+      "s": 660,
+      "e": 780,
+      "tasks": [
+        "T0016"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 75.0,
+      "crit": 83.14,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0016 (criticality 83)"
+      ]
+    },
+    {
       "id": "999",
       "sec": 5,
       "line": "DN",
@@ -43296,7 +43349,7 @@
       "s": 720,
       "e": 810,
       "tasks": [
-        "T0190"
+        "T0134"
       ],
       "depts": [
         "ENGG"
@@ -43306,34 +43359,10 @@
       ],
       "corridor": true,
       "traffic": 116.0,
-      "crit": 13.65,
+      "crit": 27.5,
       "why": [
         "inside mandated corridor",
-        "driven by T0190 (criticality 14)"
-      ]
-    },
-    {
-      "id": "366",
-      "sec": 2,
-      "line": "UP",
-      "day": 0,
-      "s": 720,
-      "e": 840,
-      "tasks": [
-        "T0086"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 64.2,
-      "crit": 73.66,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0086 (criticality 74)"
+        "driven by T0134 (criticality 28)"
       ]
     },
     {
@@ -43392,84 +43421,36 @@
       "s": 1080,
       "e": 1320,
       "tasks": [
+        "T0026",
         "T0113"
       ],
       "depts": [
+        "ENGG",
         "TRD"
       ],
       "types": [
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 413.6,
-      "crit": 70.41,
-      "why": [
-        "outside corridor -- 414 wtd detention min",
-        "driven by T0113 (criticality 70)"
-      ]
-    },
-    {
-      "id": "841",
-      "sec": 4,
-      "line": "DN",
-      "day": 1,
-      "s": 1440,
-      "e": 1635,
-      "tasks": [
-        "T0132",
-        "T0200"
-      ],
-      "depts": [
-        "S&T",
-        "TRD"
-      ],
-      "types": [
-        "DISCONN",
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 311.2,
-      "crit": 83.74,
-      "why": [
-        "clubbed: S&T, TRD share one closure",
-        "outside corridor -- 311 wtd detention min",
-        "driven by T0200 (criticality 53)"
-      ]
-    },
-    {
-      "id": "1017",
-      "sec": 5,
-      "line": "DN",
-      "day": 1,
-      "s": 1920,
-      "e": 2145,
-      "tasks": [
-        "T0192"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
+        "POWER",
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 167.2,
-      "crit": 28.93,
+      "traffic": 413.6,
+      "crit": 144.57,
       "why": [
-        "outside corridor -- 167 wtd detention min",
-        "driven by T0192 (criticality 29)"
+        "clubbed: ENGG, TRD share one closure",
+        "outside corridor -- 414 wtd detention min",
+        "driven by T0026 (criticality 74)"
       ]
     },
     {
-      "id": "1200",
+      "id": "1109",
       "sec": 6,
-      "line": "DN",
+      "line": "UP",
       "day": 1,
-      "s": 1920,
-      "e": 2190,
+      "s": 1620,
+      "e": 1905,
       "tasks": [
-        "T0002",
-        "T0064"
+        "T0061",
+        "T0104"
       ],
       "depts": [
         "ENGG",
@@ -43480,23 +43461,23 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 269.5,
-      "crit": 101.89,
+      "traffic": 429.4,
+      "crit": 113.61,
       "why": [
         "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 270 wtd detention min",
-        "driven by T0002 (criticality 55)"
+        "outside corridor -- 429 wtd detention min",
+        "driven by T0104 (criticality 88)"
       ]
     },
     {
-      "id": "651",
+      "id": "565",
       "sec": 3,
-      "line": "DN",
+      "line": "UP",
       "day": 1,
-      "s": 1920,
-      "e": 2010,
+      "s": 1680,
+      "e": 1800,
       "tasks": [
-        "T0171"
+        "T0087"
       ],
       "depts": [
         "TRD"
@@ -43505,22 +43486,22 @@
         "POWER"
       ],
       "corridor": false,
-      "traffic": 0.0,
-      "crit": 50.21,
+      "traffic": 149.3,
+      "crit": 37.57,
       "why": [
-        "outside corridor -- 0 wtd detention min",
-        "driven by T0171 (criticality 50)"
+        "outside corridor -- 149 wtd detention min",
+        "driven by T0087 (criticality 38)"
       ]
     },
     {
-      "id": "1103",
+      "id": "1197",
       "sec": 6,
-      "line": "UP",
+      "line": "DN",
       "day": 1,
-      "s": 2040,
-      "e": 2130,
+      "s": 1920,
+      "e": 2040,
       "tasks": [
-        "T0059"
+        "T0008"
       ],
       "depts": [
         "ENGG"
@@ -43528,12 +43509,40 @@
       "types": [
         "TRAFFIC"
       ],
-      "corridor": true,
-      "traffic": 88.0,
-      "crit": 85.56,
+      "corridor": false,
+      "traffic": 102.5,
+      "crit": 32.54,
       "why": [
+        "outside corridor -- 102 wtd detention min",
+        "driven by T0008 (criticality 33)"
+      ]
+    },
+    {
+      "id": "1104",
+      "sec": 6,
+      "line": "UP",
+      "day": 1,
+      "s": 2040,
+      "e": 2220,
+      "tasks": [
+        "T0040",
+        "T0100"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 174.1,
+      "crit": 100.02,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0059 (criticality 86)"
+        "driven by T0040 (criticality 54)"
       ]
     },
     {
@@ -43544,31 +43553,31 @@
       "s": 2040,
       "e": 2145,
       "tasks": [
-        "T0127"
+        "T0196"
       ],
       "depts": [
-        "ENGG"
+        "TRD"
       ],
       "types": [
-        "TRAFFIC"
+        "POWER"
       ],
       "corridor": true,
       "traffic": 170.7,
-      "crit": 83.18,
+      "crit": 43.19,
       "why": [
         "inside mandated corridor",
-        "driven by T0127 (criticality 83)"
+        "driven by T0196 (criticality 43)"
       ]
     },
     {
-      "id": "288",
-      "sec": 1,
-      "line": "DN",
+      "id": "389",
+      "sec": 2,
+      "line": "UP",
       "day": 1,
       "s": 2100,
       "e": 2220,
       "tasks": [
-        "T0001"
+        "T0086"
       ],
       "depts": [
         "ENGG"
@@ -43576,36 +43585,12 @@
       "types": [
         "TRAFFIC"
       ],
-      "corridor": true,
-      "traffic": 80.1,
-      "crit": 48.06,
+      "corridor": false,
+      "traffic": 31.7,
+      "crit": 73.66,
       "why": [
-        "inside mandated corridor",
-        "driven by T0001 (criticality 48)"
-      ]
-    },
-    {
-      "id": "831",
-      "sec": 4,
-      "line": "DN",
-      "day": 1,
-      "s": 2100,
-      "e": 2190,
-      "tasks": [
-        "T0052"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 64.9,
-      "crit": 69.06,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0052 (criticality 69)"
+        "outside corridor -- 32 wtd detention min",
+        "driven by T0086 (criticality 74)"
       ]
     },
     {
@@ -43640,59 +43625,7 @@
       "s": 2160,
       "e": 2340,
       "tasks": [
-        "T0149",
         "T0185"
-      ],
-      "depts": [
-        "S&T",
-        "TRD"
-      ],
-      "types": [
-        "DISCONN",
-        "POWER"
-      ],
-      "corridor": true,
-      "traffic": 323.8,
-      "crit": 145.36,
-      "why": [
-        "clubbed: S&T, TRD share one closure",
-        "inside mandated corridor",
-        "driven by T0185 (criticality 87)"
-      ]
-    },
-    {
-      "id": "671",
-      "sec": 3,
-      "line": "DN",
-      "day": 2,
-      "s": 2880,
-      "e": 3090,
-      "tasks": [
-        "T0131"
-      ],
-      "depts": [
-        "TRD"
-      ],
-      "types": [
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 187.8,
-      "crit": 45.31,
-      "why": [
-        "outside corridor -- 188 wtd detention min",
-        "driven by T0131 (criticality 45)"
-      ]
-    },
-    {
-      "id": "1212",
-      "sec": 6,
-      "line": "DN",
-      "day": 2,
-      "s": 3360,
-      "e": 3555,
-      "tasks": [
-        "T0177"
       ],
       "depts": [
         "S&T"
@@ -43700,51 +43633,54 @@
       "types": [
         "DISCONN"
       ],
-      "corridor": false,
-      "traffic": 232.9,
-      "crit": 27.72,
+      "corridor": true,
+      "traffic": 323.8,
+      "crit": 86.64,
       "why": [
-        "outside corridor -- 233 wtd detention min",
-        "driven by T0177 (criticality 28)"
+        "inside mandated corridor",
+        "driven by T0185 (criticality 87)"
       ]
     },
     {
-      "id": "847",
-      "sec": 4,
+      "id": "1204",
+      "sec": 6,
       "line": "DN",
-      "day": 2,
-      "s": 3360,
-      "e": 3510,
+      "day": 1,
+      "s": 2280,
+      "e": 2505,
       "tasks": [
-        "T0077",
-        "T0101"
+        "T0073",
+        "T0082",
+        "T0191"
       ],
       "depts": [
+        "ENGG",
         "S&T",
         "TRD"
       ],
       "types": [
         "DISCONN",
-        "POWER"
+        "POWER",
+        "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 105.0,
-      "crit": 149.84,
+      "traffic": 392.1,
+      "crit": 252.25,
       "why": [
-        "clubbed: S&T, TRD share one closure",
-        "outside corridor -- 105 wtd detention min",
-        "driven by T0077 (criticality 78)"
+        "clubbed: ENGG, S&T, TRD share one closure",
+        "outside corridor -- 392 wtd detention min",
+        "driven by T0191 (criticality 92)"
       ]
     },
     {
-      "id": "485",
+      "id": "474",
       "sec": 2,
       "line": "DN",
-      "day": 2,
-      "s": 3420,
-      "e": 3675,
+      "day": 1,
+      "s": 2340,
+      "e": 2430,
       "tasks": [
-        "T0045",
+        "T0135",
         "T0175"
       ],
       "depts": [
@@ -43756,23 +43692,99 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 260.9,
-      "crit": 98.68,
+      "traffic": 164.8,
+      "crit": 108.89,
       "why": [
         "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 261 wtd detention min",
+        "outside corridor -- 165 wtd detention min",
         "driven by T0175 (criticality 65)"
       ]
     },
     {
-      "id": "1116",
+      "id": "671",
+      "sec": 3,
+      "line": "DN",
+      "day": 2,
+      "s": 2880,
+      "e": 3120,
+      "tasks": [
+        "T0012",
+        "T0144"
+      ],
+      "depts": [
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER"
+      ],
+      "corridor": false,
+      "traffic": 202.8,
+      "crit": 163.1,
+      "why": [
+        "clubbed: S&T, TRD share one closure",
+        "outside corridor -- 203 wtd detention min",
+        "driven by T0144 (criticality 84)"
+      ]
+    },
+    {
+      "id": "664",
+      "sec": 3,
+      "line": "DN",
+      "day": 2,
+      "s": 3360,
+      "e": 3480,
+      "tasks": [
+        "T0107"
+      ],
+      "depts": [
+        "TRD"
+      ],
+      "types": [
+        "POWER"
+      ],
+      "corridor": false,
+      "traffic": 17.5,
+      "crit": 45.14,
+      "why": [
+        "outside corridor -- 18 wtd detention min",
+        "driven by T0107 (criticality 45)"
+      ]
+    },
+    {
+      "id": "120",
+      "sec": 0,
+      "line": "DN",
+      "day": 2,
+      "s": 3480,
+      "e": 3585,
+      "tasks": [
+        "T0057"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 97.5,
+      "crit": 78.93,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0057 (criticality 79)"
+      ]
+    },
+    {
+      "id": "1117",
       "sec": 6,
       "line": "UP",
       "day": 2,
       "s": 3480,
       "e": 3600,
       "tasks": [
-        "T0070"
+        "T0173"
       ],
       "depts": [
         "ENGG"
@@ -43782,10 +43794,38 @@
       ],
       "corridor": true,
       "traffic": 114.7,
-      "crit": 75.3,
+      "crit": 63.83,
       "why": [
         "inside mandated corridor",
-        "driven by T0070 (criticality 75)"
+        "driven by T0173 (criticality 64)"
+      ]
+    },
+    {
+      "id": "1208",
+      "sec": 6,
+      "line": "DN",
+      "day": 2,
+      "s": 3480,
+      "e": 3630,
+      "tasks": [
+        "T0032",
+        "T0034"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 251.1,
+      "crit": 126.04,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0034 (criticality 64)"
       ]
     },
     {
@@ -43796,7 +43836,7 @@
       "s": 3480,
       "e": 3585,
       "tasks": [
-        "T0126"
+        "T0127"
       ],
       "depts": [
         "ENGG"
@@ -43806,10 +43846,10 @@
       ],
       "corridor": true,
       "traffic": 144.6,
-      "crit": 67.57,
+      "crit": 83.18,
       "why": [
         "inside mandated corridor",
-        "driven by T0126 (criticality 68)"
+        "driven by T0127 (criticality 83)"
       ]
     },
     {
@@ -43837,14 +43877,14 @@
       ]
     },
     {
-      "id": "1026",
-      "sec": 5,
+      "id": "301",
+      "sec": 1,
       "line": "DN",
       "day": 2,
-      "s": 3600,
-      "e": 3690,
+      "s": 3540,
+      "e": 3660,
       "tasks": [
-        "T0155"
+        "T0001"
       ],
       "depts": [
         "ENGG"
@@ -43853,22 +43893,46 @@
         "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 167.9,
-      "crit": 38.5,
+      "traffic": 70.0,
+      "crit": 48.06,
       "why": [
         "inside mandated corridor",
-        "driven by T0155 (criticality 38)"
+        "driven by T0001 (criticality 48)"
       ]
     },
     {
-      "id": "393",
+      "id": "752",
+      "sec": 4,
+      "line": "UP",
+      "day": 2,
+      "s": 3540,
+      "e": 3660,
+      "tasks": [
+        "T0011"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 28.8,
+      "crit": 43.95,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0011 (criticality 44)"
+      ]
+    },
+    {
+      "id": "392",
       "sec": 2,
       "line": "UP",
       "day": 2,
       "s": 3600,
-      "e": 3735,
+      "e": 3720,
       "tasks": [
-        "T0141"
+        "T0130"
       ],
       "depts": [
         "S&T"
@@ -43878,23 +43942,75 @@
       ],
       "corridor": true,
       "traffic": 69.7,
-      "crit": 78.33,
+      "crit": 55.32,
       "why": [
         "inside mandated corridor",
-        "driven by T0141 (criticality 78)"
+        "driven by T0130 (criticality 55)"
       ]
     },
     {
-      "id": "1122",
-      "sec": 6,
-      "line": "UP",
+      "id": "480",
+      "sec": 2,
+      "line": "DN",
       "day": 2,
-      "s": 3660,
-      "e": 3945,
+      "s": 3600,
+      "e": 3780,
       "tasks": [
-        "T0040",
-        "T0103",
-        "T0104"
+        "T0041",
+        "T0149"
+      ],
+      "depts": [
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER"
+      ],
+      "corridor": true,
+      "traffic": 346.4,
+      "crit": 61.78,
+      "why": [
+        "clubbed: S&T, TRD share one closure",
+        "inside mandated corridor",
+        "driven by T0149 (criticality 59)"
+      ]
+    },
+    {
+      "id": "487",
+      "sec": 2,
+      "line": "DN",
+      "day": 2,
+      "s": 3960,
+      "e": 4050,
+      "tasks": [
+        "T0183"
+      ],
+      "depts": [
+        "TRD"
+      ],
+      "types": [
+        "POWER"
+      ],
+      "corridor": false,
+      "traffic": 156.5,
+      "crit": 56.62,
+      "why": [
+        "outside corridor -- 157 wtd detention min",
+        "driven by T0183 (criticality 57)"
+      ]
+    },
+    {
+      "id": "861",
+      "sec": 4,
+      "line": "DN",
+      "day": 3,
+      "s": 4320,
+      "e": 4515,
+      "tasks": [
+        "T0052",
+        "T0132",
+        "T0200"
       ],
       "depts": [
         "ENGG",
@@ -43907,21 +44023,528 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 458.9,
-      "crit": 208.98,
+      "traffic": 205.3,
+      "crit": 152.8,
       "why": [
         "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 459 wtd detention min",
-        "driven by T0104 (criticality 88)"
+        "outside corridor -- 205 wtd detention min",
+        "driven by T0052 (criticality 69)"
       ]
     },
     {
-      "id": "762",
+      "id": "1230",
+      "sec": 6,
+      "line": "DN",
+      "day": 3,
+      "s": 4800,
+      "e": 4995,
+      "tasks": [
+        "T0047",
+        "T0177"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 248.9,
+      "crit": 59.13,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "outside corridor -- 249 wtd detention min",
+        "driven by T0047 (criticality 31)"
+      ]
+    },
+    {
+      "id": "680",
+      "sec": 3,
+      "line": "DN",
+      "day": 3,
+      "s": 4800,
+      "e": 5055,
+      "tasks": [
+        "T0096",
+        "T0123"
+      ],
+      "depts": [
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER"
+      ],
+      "corridor": false,
+      "traffic": 169.3,
+      "crit": 178.92,
+      "why": [
+        "clubbed: S&T, TRD share one closure",
+        "outside corridor -- 169 wtd detention min",
+        "driven by T0123 (criticality 91)"
+      ]
+    },
+    {
+      "id": "866",
+      "sec": 4,
+      "line": "DN",
+      "day": 3,
+      "s": 4800,
+      "e": 5040,
+      "tasks": [
+        "T0084",
+        "T0128"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 245.4,
+      "crit": 128.57,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "outside corridor -- 245 wtd detention min",
+        "driven by T0084 (criticality 67)"
+      ]
+    },
+    {
+      "id": "1129",
+      "sec": 6,
+      "line": "UP",
+      "day": 3,
+      "s": 4920,
+      "e": 5010,
+      "tasks": [
+        "T0059"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 98.9,
+      "crit": 85.56,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0059 (criticality 86)"
+      ]
+    },
+    {
+      "id": "1038",
+      "sec": 5,
+      "line": "DN",
+      "day": 3,
+      "s": 5040,
+      "e": 5130,
+      "tasks": [
+        "T0190"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 173.9,
+      "crit": 13.65,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0190 (criticality 14)"
+      ]
+    },
+    {
+      "id": "493",
+      "sec": 2,
+      "line": "DN",
+      "day": 3,
+      "s": 5040,
+      "e": 5175,
+      "tasks": [
+        "T0136"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 252.0,
+      "crit": 34.0,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0136 (criticality 34)"
+      ]
+    },
+    {
+      "id": "1226",
+      "sec": 6,
+      "line": "DN",
+      "day": 3,
+      "s": 5160,
+      "e": 5460,
+      "tasks": [
+        "T0106"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": false,
+      "traffic": 467.3,
+      "crit": 62.44,
+      "why": [
+        "outside corridor -- 467 wtd detention min",
+        "driven by T0106 (criticality 62)"
+      ]
+    },
+    {
+      "id": "683",
+      "sec": 3,
+      "line": "DN",
+      "day": 3,
+      "s": 5220,
+      "e": 5385,
+      "tasks": [
+        "T0036",
+        "T0071"
+      ],
+      "depts": [
+        "ENGG",
+        "TRD"
+      ],
+      "types": [
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 260.7,
+      "crit": 154.15,
+      "why": [
+        "clubbed: ENGG, TRD share one closure",
+        "outside corridor -- 261 wtd detention min",
+        "driven by T0036 (criticality 79)"
+      ]
+    },
+    {
+      "id": "513",
+      "sec": 2,
+      "line": "DN",
+      "day": 4,
+      "s": 5760,
+      "e": 5880,
+      "tasks": [
+        "T0072"
+      ],
+      "depts": [
+        "TRD"
+      ],
+      "types": [
+        "POWER"
+      ],
+      "corridor": false,
+      "traffic": 132.2,
+      "crit": 50.74,
+      "why": [
+        "outside corridor -- 132 wtd detention min",
+        "driven by T0072 (criticality 51)"
+      ]
+    },
+    {
+      "id": "693",
+      "sec": 3,
+      "line": "DN",
+      "day": 4,
+      "s": 6240,
+      "e": 6495,
+      "tasks": [
+        "T0027"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": false,
+      "traffic": 196.0,
+      "crit": 77.75,
+      "why": [
+        "outside corridor -- 196 wtd detention min",
+        "driven by T0027 (criticality 78)"
+      ]
+    },
+    {
+      "id": "510",
+      "sec": 2,
+      "line": "DN",
+      "day": 4,
+      "s": 6300,
+      "e": 6495,
+      "tasks": [
+        "T0195"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": false,
+      "traffic": 284.9,
+      "crit": 56.81,
+      "why": [
+        "outside corridor -- 285 wtd detention min",
+        "driven by T0195 (criticality 57)"
+      ]
+    },
+    {
+      "id": "146",
+      "sec": 0,
+      "line": "DN",
+      "day": 4,
+      "s": 6360,
+      "e": 6525,
+      "tasks": [
+        "T0088"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 97.5,
+      "crit": 38.03,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0088 (criticality 38)"
+      ]
+    },
+    {
+      "id": "1142",
+      "sec": 6,
+      "line": "UP",
+      "day": 4,
+      "s": 6360,
+      "e": 6450,
+      "tasks": [
+        "T0076"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 88.0,
+      "crit": 64.4,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0076 (criticality 64)"
+      ]
+    },
+    {
+      "id": "1234",
+      "sec": 6,
+      "line": "DN",
+      "day": 4,
+      "s": 6360,
+      "e": 6480,
+      "tasks": [
+        "T0039",
+        "T0064"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 159.5,
+      "crit": 93.04,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0064 (criticality 47)"
+      ]
+    },
+    {
+      "id": "236",
+      "sec": 1,
+      "line": "UP",
+      "day": 4,
+      "s": 6420,
+      "e": 6510,
+      "tasks": [
+        "T0004"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 10.2,
+      "crit": 44.23,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0004 (criticality 44)"
+      ]
+    },
+    {
+      "id": "870",
+      "sec": 4,
+      "line": "DN",
+      "day": 4,
+      "s": 6420,
+      "e": 6570,
+      "tasks": [
+        "T0077",
+        "T0101",
+        "T0169"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 160.5,
+      "crit": 173.9,
+      "why": [
+        "clubbed: ENGG, S&T, TRD share one closure",
+        "inside mandated corridor",
+        "driven by T0077 (criticality 78)"
+      ]
+    },
+    {
+      "id": "1051",
+      "sec": 5,
+      "line": "DN",
+      "day": 4,
+      "s": 6480,
+      "e": 6570,
+      "tasks": [
+        "T0155"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 138.5,
+      "crit": 38.5,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0155 (criticality 38)"
+      ]
+    },
+    {
+      "id": "419",
+      "sec": 2,
+      "line": "UP",
+      "day": 4,
+      "s": 6480,
+      "e": 6615,
+      "tasks": [
+        "T0141"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 81.9,
+      "crit": 78.33,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0141 (criticality 78)"
+      ]
+    },
+    {
+      "id": "1147",
+      "sec": 6,
+      "line": "UP",
+      "day": 4,
+      "s": 6540,
+      "e": 6750,
+      "tasks": [
+        "T0033"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": false,
+      "traffic": 180.6,
+      "crit": 19.55,
+      "why": [
+        "outside corridor -- 181 wtd detention min",
+        "driven by T0033 (criticality 20)"
+      ]
+    },
+    {
+      "id": "1158",
+      "sec": 6,
+      "line": "UP",
+      "day": 5,
+      "s": 7200,
+      "e": 7305,
+      "tasks": [
+        "T0157"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 65.0,
+      "crit": 49.28,
+      "why": [
+        "outside corridor -- 65 wtd detention min",
+        "driven by T0157 (criticality 49)"
+      ]
+    },
+    {
+      "id": "796",
       "sec": 4,
       "line": "UP",
-      "day": 2,
-      "s": 4140,
-      "e": 4365,
+      "day": 5,
+      "s": 7200,
+      "e": 7425,
       "tasks": [
         "T0060",
         "T0147"
@@ -43935,120 +44558,24 @@
         "POWER"
       ],
       "corridor": false,
-      "traffic": 270.4,
+      "traffic": 196.1,
       "crit": 62.96,
       "why": [
         "clubbed: S&T, TRD share one closure",
-        "outside corridor -- 270 wtd detention min",
+        "outside corridor -- 196 wtd detention min",
         "driven by T0147 (criticality 59)"
       ]
     },
     {
-      "id": "680",
-      "sec": 3,
-      "line": "DN",
-      "day": 3,
-      "s": 4800,
-      "e": 5055,
-      "tasks": [
-        "T0123"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": false,
-      "traffic": 169.3,
-      "crit": 90.92,
-      "why": [
-        "outside corridor -- 169 wtd detention min",
-        "driven by T0123 (criticality 91)"
-      ]
-    },
-    {
-      "id": "865",
-      "sec": 4,
-      "line": "DN",
-      "day": 3,
-      "s": 4800,
-      "e": 4890,
-      "tasks": [
-        "T0084"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 37.3,
-      "crit": 67.37,
-      "why": [
-        "outside corridor -- 37 wtd detention min",
-        "driven by T0084 (criticality 67)"
-      ]
-    },
-    {
-      "id": "133",
-      "sec": 0,
-      "line": "DN",
-      "day": 3,
-      "s": 4920,
-      "e": 5055,
-      "tasks": [
-        "T0150"
-      ],
-      "depts": [
-        "TRD"
-      ],
-      "types": [
-        "POWER"
-      ],
-      "corridor": true,
-      "traffic": 107.6,
-      "crit": 76.45,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0150 (criticality 76)"
-      ]
-    },
-    {
-      "id": "1129",
-      "sec": 6,
-      "line": "UP",
-      "day": 3,
-      "s": 4920,
-      "e": 5010,
-      "tasks": [
-        "T0199"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 98.9,
-      "crit": 73.86,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0199 (criticality 74)"
-      ]
-    },
-    {
-      "id": "1221",
+      "id": "1257",
       "sec": 6,
       "line": "DN",
-      "day": 3,
-      "s": 4920,
-      "e": 5085,
+      "day": 5,
+      "s": 7680,
+      "e": 7950,
       "tasks": [
-        "T0047",
-        "T0082"
+        "T0002",
+        "T0125"
       ],
       "depts": [
         "ENGG",
@@ -44058,662 +44585,22 @@
         "DISCONN",
         "TRAFFIC"
       ],
-      "corridor": true,
-      "traffic": 216.6,
-      "crit": 106.89,
+      "corridor": false,
+      "traffic": 299.3,
+      "crit": 112.5,
       "why": [
         "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0082 (criticality 75)"
+        "outside corridor -- 299 wtd detention min",
+        "driven by T0125 (criticality 57)"
       ]
     },
     {
-      "id": "223",
-      "sec": 1,
-      "line": "UP",
-      "day": 3,
-      "s": 4980,
-      "e": 5070,
-      "tasks": [
-        "T0004"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 13.5,
-      "crit": 44.23,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0004 (criticality 44)"
-      ]
-    },
-    {
-      "id": "765",
-      "sec": 4,
-      "line": "UP",
-      "day": 3,
-      "s": 4980,
-      "e": 5100,
-      "tasks": [
-        "T0011"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 57.2,
-      "crit": 43.95,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0011 (criticality 44)"
-      ]
-    },
-    {
-      "id": "857",
-      "sec": 4,
-      "line": "DN",
-      "day": 3,
-      "s": 4980,
-      "e": 5070,
-      "tasks": [
-        "T0169"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 30.0,
-      "crit": 24.06,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0169 (criticality 24)"
-      ]
-    },
-    {
-      "id": "1038",
-      "sec": 5,
-      "line": "DN",
-      "day": 3,
-      "s": 5040,
-      "e": 5130,
-      "tasks": [
-        "T0134"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 173.9,
-      "crit": 27.5,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0134 (criticality 28)"
-      ]
-    },
-    {
-      "id": "405",
-      "sec": 2,
-      "line": "UP",
-      "day": 3,
-      "s": 5040,
-      "e": 5160,
-      "tasks": [
-        "T0130"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 44.8,
-      "crit": 55.32,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0130 (criticality 55)"
-      ]
-    },
-    {
-      "id": "492",
-      "sec": 2,
-      "line": "DN",
-      "day": 3,
-      "s": 5040,
-      "e": 5160,
-      "tasks": [
-        "T0181"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 181.0,
-      "crit": 43.88,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0181 (criticality 44)"
-      ]
-    },
-    {
-      "id": "683",
-      "sec": 3,
-      "line": "DN",
-      "day": 3,
-      "s": 5220,
-      "e": 5400,
-      "tasks": [
-        "T0013"
-      ],
-      "depts": [
-        "TRD"
-      ],
-      "types": [
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 260.7,
-      "crit": 63.28,
-      "why": [
-        "outside corridor -- 261 wtd detention min",
-        "driven by T0013 (criticality 63)"
-      ]
-    },
-    {
-      "id": "586",
-      "sec": 3,
-      "line": "UP",
-      "day": 3,
-      "s": 5700,
-      "e": 5820,
-      "tasks": [
-        "T0087"
-      ],
-      "depts": [
-        "TRD"
-      ],
-      "types": [
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 40.0,
-      "crit": 37.57,
-      "why": [
-        "outside corridor -- 40 wtd detention min",
-        "driven by T0087 (criticality 38)"
-      ]
-    },
-    {
-      "id": "1061",
-      "sec": 5,
-      "line": "DN",
-      "day": 4,
-      "s": 6240,
-      "e": 6435,
-      "tasks": [
-        "T0172"
-      ],
-      "depts": [
-        "TRD"
-      ],
-      "types": [
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 173.2,
-      "crit": 86.34,
-      "why": [
-        "outside corridor -- 173 wtd detention min",
-        "driven by T0172 (criticality 86)"
-      ]
-    },
-    {
-      "id": "509",
-      "sec": 2,
-      "line": "DN",
-      "day": 4,
-      "s": 6300,
-      "e": 6435,
-      "tasks": [
-        "T0136"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": false,
-      "traffic": 213.0,
-      "crit": 34.0,
-      "why": [
-        "outside corridor -- 213 wtd detention min",
-        "driven by T0136 (criticality 34)"
-      ]
-    },
-    {
-      "id": "1142",
-      "sec": 6,
-      "line": "UP",
-      "day": 4,
-      "s": 6360,
-      "e": 6480,
-      "tasks": [
-        "T0173"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 88.0,
-      "crit": 63.83,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0173 (criticality 64)"
-      ]
-    },
-    {
-      "id": "1233",
-      "sec": 6,
-      "line": "DN",
-      "day": 4,
-      "s": 6360,
-      "e": 6480,
-      "tasks": [
-        "T0039",
-        "T0191"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 159.5,
-      "crit": 138.2,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0191 (criticality 92)"
-      ]
-    },
-    {
-      "id": "237",
-      "sec": 1,
-      "line": "UP",
-      "day": 4,
-      "s": 6420,
-      "e": 6510,
-      "tasks": [
-        "T0067"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 10.2,
-      "crit": 74.28,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0067 (criticality 74)"
-      ]
-    },
-    {
-      "id": "870",
-      "sec": 4,
-      "line": "DN",
-      "day": 4,
-      "s": 6420,
-      "e": 6540,
-      "tasks": [
-        "T0016"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 109.2,
-      "crit": 83.14,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0016 (criticality 83)"
-      ]
-    },
-    {
-      "id": "1052",
-      "sec": 5,
-      "line": "DN",
-      "day": 4,
-      "s": 6480,
-      "e": 6615,
-      "tasks": [
-        "T0051"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 197.5,
-      "crit": 26.88,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0051 (criticality 27)"
-      ]
-    },
-    {
-      "id": "418",
-      "sec": 2,
-      "line": "UP",
-      "day": 4,
-      "s": 6480,
-      "e": 6600,
-      "tasks": [
-        "T0019"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 81.9,
-      "crit": 41.99,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0019 (criticality 42)"
-      ]
-    },
-    {
-      "id": "1145",
-      "sec": 6,
-      "line": "UP",
-      "day": 4,
-      "s": 6540,
-      "e": 6645,
-      "tasks": [
-        "T0157"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 0.0,
-      "crit": 49.28,
-      "why": [
-        "outside corridor -- 0 wtd detention min",
-        "driven by T0157 (criticality 49)"
-      ]
-    },
-    {
-      "id": "1238",
-      "sec": 6,
-      "line": "DN",
-      "day": 4,
-      "s": 6600,
-      "e": 6825,
-      "tasks": [
-        "T0032",
-        "T0073"
-      ],
-      "depts": [
-        "S&T",
-        "TRD"
-      ],
-      "types": [
-        "DISCONN",
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 352.2,
-      "crit": 146.41,
-      "why": [
-        "clubbed: S&T, TRD share one closure",
-        "outside corridor -- 352 wtd detention min",
-        "driven by T0073 (criticality 85)"
-      ]
-    },
-    {
-      "id": "1159",
-      "sec": 6,
-      "line": "UP",
-      "day": 5,
-      "s": 7200,
-      "e": 7365,
-      "tasks": [
-        "T0026"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 117.4,
-      "crit": 74.16,
-      "why": [
-        "outside corridor -- 117 wtd detention min",
-        "driven by T0026 (criticality 74)"
-      ]
-    },
-    {
-      "id": "528",
-      "sec": 2,
-      "line": "DN",
-      "day": 5,
-      "s": 7200,
-      "e": 7335,
-      "tasks": [
-        "T0072",
-        "T0090"
-      ],
-      "depts": [
-        "S&T",
-        "TRD"
-      ],
-      "types": [
-        "DISCONN",
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 179.7,
-      "crit": 106.63,
-      "why": [
-        "clubbed: S&T, TRD share one closure",
-        "outside corridor -- 180 wtd detention min",
-        "driven by T0090 (criticality 56)"
-      ]
-    },
-    {
-      "id": "439",
+      "id": "442",
       "sec": 2,
       "line": "UP",
       "day": 5,
       "s": 7740,
-      "e": 7860,
-      "tasks": [
-        "T0079"
-      ],
-      "depts": [
-        "TRD"
-      ],
-      "types": [
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 129.6,
-      "crit": 31.39,
-      "why": [
-        "outside corridor -- 130 wtd detention min",
-        "driven by T0079 (criticality 31)"
-      ]
-    },
-    {
-      "id": "524",
-      "sec": 2,
-      "line": "DN",
-      "day": 5,
-      "s": 7740,
-      "e": 7935,
-      "tasks": [
-        "T0152",
-        "T0195"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 284.5,
-      "crit": 141.23,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 284 wtd detention min",
-        "driven by T0152 (criticality 84)"
-      ]
-    },
-    {
-      "id": "159",
-      "sec": 0,
-      "line": "DN",
-      "day": 5,
-      "s": 7800,
-      "e": 7905,
-      "tasks": [
-        "T0057"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 97.5,
-      "crit": 78.93,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0057 (criticality 79)"
-      ]
-    },
-    {
-      "id": "1155",
-      "sec": 6,
-      "line": "UP",
-      "day": 5,
-      "s": 7800,
-      "e": 7890,
-      "tasks": [
-        "T0035"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 116.4,
-      "crit": 39.2,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0035 (criticality 39)"
-      ]
-    },
-    {
-      "id": "1246",
-      "sec": 6,
-      "line": "DN",
-      "day": 5,
-      "s": 7800,
-      "e": 7890,
-      "tasks": [
-        "T0034"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 138.9,
-      "crit": 64.44,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0034 (criticality 64)"
-      ]
-    },
-    {
-      "id": "700",
-      "sec": 3,
-      "line": "DN",
-      "day": 5,
-      "s": 7800,
-      "e": 7890,
-      "tasks": [
-        "T0188"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 150.5,
-      "crit": 40.12,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0188 (criticality 40)"
-      ]
-    },
-    {
-      "id": "436",
-      "sec": 2,
-      "line": "UP",
-      "day": 5,
-      "s": 7860,
-      "e": 8085,
+      "e": 7965,
       "tasks": [
         "T0054"
       ],
@@ -44724,11 +44611,59 @@
         "DISCONN"
       ],
       "corridor": false,
-      "traffic": 107.5,
+      "traffic": 156.5,
       "crit": 8.91,
       "why": [
-        "outside corridor -- 108 wtd detention min",
+        "outside corridor -- 156 wtd detention min",
         "driven by T0054 (criticality 9)"
+      ]
+    },
+    {
+      "id": "159",
+      "sec": 0,
+      "line": "DN",
+      "day": 5,
+      "s": 7800,
+      "e": 7935,
+      "tasks": [
+        "T0150"
+      ],
+      "depts": [
+        "TRD"
+      ],
+      "types": [
+        "POWER"
+      ],
+      "corridor": true,
+      "traffic": 97.5,
+      "crit": 76.45,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0150 (criticality 76)"
+      ]
+    },
+    {
+      "id": "1155",
+      "sec": 6,
+      "line": "UP",
+      "day": 5,
+      "s": 7800,
+      "e": 7890,
+      "tasks": [
+        "T0199"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 116.4,
+      "crit": 73.86,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0199 (criticality 74)"
       ]
     },
     {
@@ -44756,195 +44691,40 @@
       ]
     },
     {
-      "id": "1164",
+      "id": "519",
+      "sec": 2,
+      "line": "DN",
+      "day": 5,
+      "s": 7920,
+      "e": 8055,
+      "tasks": [
+        "T0114",
+        "T0152"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 311.4,
+      "crit": 162.38,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0152 (criticality 84)"
+      ]
+    },
+    {
+      "id": "1163",
       "sec": 6,
       "line": "UP",
       "day": 5,
       "s": 7980,
-      "e": 8160,
-      "tasks": [
-        "T0099",
-        "T0100",
-        "T0163"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T",
-        "TRD"
-      ],
-      "types": [
-        "DISCONN",
-        "POWER",
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 88.5,
-      "crit": 195.33,
-      "why": [
-        "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 88 wtd detention min",
-        "driven by T0099 (criticality 79)"
-      ]
-    },
-    {
-      "id": "175",
-      "sec": 0,
-      "line": "DN",
-      "day": 6,
-      "s": 8640,
-      "e": 8805,
-      "tasks": [
-        "T0088"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 83.2,
-      "crit": 38.03,
-      "why": [
-        "outside corridor -- 83 wtd detention min",
-        "driven by T0088 (criticality 38)"
-      ]
-    },
-    {
-      "id": "723",
-      "sec": 3,
-      "line": "DN",
-      "day": 6,
-      "s": 8640,
-      "e": 8880,
-      "tasks": [
-        "T0012"
-      ],
-      "depts": [
-        "TRD"
-      ],
-      "types": [
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 210.9,
-      "crit": 79.38,
-      "why": [
-        "outside corridor -- 211 wtd detention min",
-        "driven by T0012 (criticality 79)"
-      ]
-    },
-    {
-      "id": "719",
-      "sec": 3,
-      "line": "DN",
-      "day": 6,
-      "s": 9120,
-      "e": 9375,
-      "tasks": [
-        "T0027",
-        "T0096"
-      ],
-      "depts": [
-        "S&T",
-        "TRD"
-      ],
-      "types": [
-        "DISCONN",
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 228.2,
-      "crit": 165.75,
-      "why": [
-        "clubbed: S&T, TRD share one closure",
-        "outside corridor -- 228 wtd detention min",
-        "driven by T0096 (criticality 88)"
-      ]
-    },
-    {
-      "id": "900",
-      "sec": 4,
-      "line": "DN",
-      "day": 6,
-      "s": 9120,
-      "e": 9360,
-      "tasks": [
-        "T0128"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": false,
-      "traffic": 306.2,
-      "crit": 61.2,
-      "why": [
-        "outside corridor -- 306 wtd detention min",
-        "driven by T0128 (criticality 61)"
-      ]
-    },
-    {
-      "id": "268",
-      "sec": 1,
-      "line": "UP",
-      "day": 6,
-      "s": 9180,
-      "e": 9435,
-      "tasks": [
-        "T0143"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 66.8,
-      "crit": 20.86,
-      "why": [
-        "outside corridor -- 67 wtd detention min",
-        "driven by T0143 (criticality 21)"
-      ]
-    },
-    {
-      "id": "534",
-      "sec": 2,
-      "line": "DN",
-      "day": 6,
-      "s": 9180,
-      "e": 9270,
-      "tasks": [
-        "T0122",
-        "T0135"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 100.5,
-      "crit": 128.23,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 101 wtd detention min",
-        "driven by T0122 (criticality 84)"
-      ]
-    },
-    {
-      "id": "1168",
-      "sec": 6,
-      "line": "UP",
-      "day": 6,
-      "s": 9240,
-      "e": 9345,
+      "e": 8085,
       "tasks": [
         "T0095"
       ],
@@ -44954,103 +44734,23 @@
       "types": [
         "TRAFFIC"
       ],
-      "corridor": true,
-      "traffic": 88.0,
+      "corridor": false,
+      "traffic": 0.0,
       "crit": 79.34,
       "why": [
-        "inside mandated corridor",
+        "outside corridor -- 0 wtd detention min",
         "driven by T0095 (criticality 79)"
       ]
     },
     {
-      "id": "1260",
-      "sec": 6,
+      "id": "708",
+      "sec": 3,
       "line": "DN",
-      "day": 6,
-      "s": 9240,
-      "e": 9420,
+      "day": 5,
+      "s": 8100,
+      "e": 8190,
       "tasks": [
-        "T0008",
-        "T0111"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 271.8,
-      "crit": 104.79,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0111 (criticality 72)"
-      ]
-    },
-    {
-      "id": "532",
-      "sec": 2,
-      "line": "DN",
-      "day": 6,
-      "s": 9360,
-      "e": 9495,
-      "tasks": [
-        "T0114"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 247.4,
-      "crit": 77.96,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0114 (criticality 78)"
-      ]
-    },
-    {
-      "id": "1173",
-      "sec": 6,
-      "line": "UP",
-      "day": 6,
-      "s": 9480,
-      "e": 9705,
-      "tasks": [
-        "T0033",
-        "T0061"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 433.0,
-      "crit": 45.19,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 433 wtd detention min",
-        "driven by T0061 (criticality 26)"
-      ]
-    },
-    {
-      "id": "539",
-      "sec": 2,
-      "line": "DN",
-      "day": 6,
-      "s": 9720,
-      "e": 9810,
-      "tasks": [
-        "T0183"
+        "T0171"
       ],
       "depts": [
         "TRD"
@@ -45059,11 +44759,219 @@
         "POWER"
       ],
       "corridor": false,
-      "traffic": 142.5,
-      "crit": 56.62,
+      "traffic": 58.8,
+      "crit": 50.21,
       "why": [
-        "outside corridor -- 142 wtd detention min",
-        "driven by T0183 (criticality 57)"
+        "outside corridor -- 59 wtd detention min",
+        "driven by T0171 (criticality 50)"
+      ]
+    },
+    {
+      "id": "1074",
+      "sec": 5,
+      "line": "DN",
+      "day": 5,
+      "s": 8340,
+      "e": 8565,
+      "tasks": [
+        "T0172",
+        "T0192"
+      ],
+      "depts": [
+        "ENGG",
+        "TRD"
+      ],
+      "types": [
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 302.1,
+      "crit": 115.27,
+      "why": [
+        "clubbed: ENGG, TRD share one closure",
+        "outside corridor -- 302 wtd detention min",
+        "driven by T0172 (criticality 86)"
+      ]
+    },
+    {
+      "id": "1169",
+      "sec": 6,
+      "line": "UP",
+      "day": 6,
+      "s": 9240,
+      "e": 9390,
+      "tasks": [
+        "T0099",
+        "T0163"
+      ],
+      "depts": [
+        "ENGG",
+        "TRD"
+      ],
+      "types": [
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 105.8,
+      "crit": 149.56,
+      "why": [
+        "clubbed: ENGG, TRD share one closure",
+        "inside mandated corridor",
+        "driven by T0099 (criticality 79)"
+      ]
+    },
+    {
+      "id": "713",
+      "sec": 3,
+      "line": "DN",
+      "day": 6,
+      "s": 9240,
+      "e": 9345,
+      "tasks": [
+        "T0126"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 188.8,
+      "crit": 67.57,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0126 (criticality 68)"
+      ]
+    },
+    {
+      "id": "1078",
+      "sec": 5,
+      "line": "DN",
+      "day": 6,
+      "s": 9360,
+      "e": 9495,
+      "tasks": [
+        "T0051"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 200.4,
+      "crit": 26.88,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0051 (criticality 27)"
+      ]
+    },
+    {
+      "id": "444",
+      "sec": 2,
+      "line": "UP",
+      "day": 6,
+      "s": 9360,
+      "e": 9480,
+      "tasks": [
+        "T0019"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 66.1,
+      "crit": 41.99,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0019 (criticality 42)"
+      ]
+    },
+    {
+      "id": "531",
+      "sec": 2,
+      "line": "DN",
+      "day": 6,
+      "s": 9360,
+      "e": 9480,
+      "tasks": [
+        "T0122",
+        "T0181"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 190.9,
+      "crit": 128.31,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0122 (criticality 84)"
+      ]
+    },
+    {
+      "id": "1172",
+      "sec": 6,
+      "line": "UP",
+      "day": 6,
+      "s": 9480,
+      "e": 9570,
+      "tasks": [
+        "T0035"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 7.9,
+      "crit": 39.2,
+      "why": [
+        "outside corridor -- 8 wtd detention min",
+        "driven by T0035 (criticality 39)"
+      ]
+    },
+    {
+      "id": "542",
+      "sec": 2,
+      "line": "DN",
+      "day": 6,
+      "s": 9720,
+      "e": 9915,
+      "tasks": [
+        "T0090",
+        "T0198"
+      ],
+      "depts": [
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER"
+      ],
+      "corridor": false,
+      "traffic": 208.5,
+      "crit": 91.09,
+      "why": [
+        "clubbed: S&T, TRD share one closure",
+        "outside corridor -- 208 wtd detention min",
+        "driven by T0090 (criticality 56)"
       ]
     }
   ],
@@ -45088,7 +44996,11 @@
         "asset age": 0.6254958402561226,
         "reactive defect": 0.5337170892128945,
         "repeat failures at this km": -0.3267924373775657
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 30.79,
+      "p_fail": 0.9871
     },
     {
       "id": "T0002",
@@ -45110,7 +45022,11 @@
         "reactive defect": 0.6243387741660024,
         "repeat failures at this km": 0.559634499816402,
         "work type": 0.46179621833725676
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 17.99,
+      "p_fail": 0.9434
     },
     {
       "id": "T0003",
@@ -45132,7 +45048,11 @@
         "reactive defect": -1.3047481819655016,
         "work type": -0.547829357500628,
         "traffic tonnage (GMT)": -0.518556837140245
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 66.66,
+      "p_fail": 0.6813
     },
     {
       "id": "T0004",
@@ -45154,7 +45074,11 @@
         "asset age": 0.9153420261297078,
         "work type": 0.7697604794021057,
         "repeat failures at this km": 0.7266938487600878
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 33.95,
+      "p_fail": 0.963
     },
     {
       "id": "T0005",
@@ -45176,7 +45100,11 @@
         "work type": -0.9370395507142613,
         "days overdue": 0.9288148645754633,
         "asset age": -0.8461530355163823
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 87.59,
+      "p_fail": 0.1149
     },
     {
       "id": "T0006",
@@ -45198,7 +45126,11 @@
         "work type": 0.6495455245929616,
         "repeat failures at this km": -0.4551310271321029,
         "traffic tonnage (GMT)": 0.39766551095120384
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 49.54,
+      "p_fail": 0.9066
     },
     {
       "id": "T0007",
@@ -45220,7 +45152,11 @@
         "reactive defect": -1.154512607563562,
         "defect severity": -0.9939174843883767,
         "repeat failures at this km": -0.739786840297678
-      }
+      },
+      "machine": "BCM",
+      "night_work_allowed": false,
+      "e_days": 86.73,
+      "p_fail": 0.3584
     },
     {
       "id": "T0008",
@@ -45242,7 +45178,11 @@
         "defect severity": -1.0908739803895882,
         "reactive defect": 1.036471920842258,
         "traffic tonnage (GMT)": 0.40379529405858156
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 55.61,
+      "p_fail": 0.9941
     },
     {
       "id": "T0009",
@@ -45264,7 +45204,11 @@
         "reactive defect": -1.2330535316475741,
         "work type": -0.6944907964656533,
         "repeat failures at this km": 0.4216157348871691
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 84.22,
+      "p_fail": 0.8207
     },
     {
       "id": "T0010",
@@ -45286,7 +45230,11 @@
         "reactive defect": 0.6712876278999235,
         "repeat failures at this km": 0.655888338023721,
         "work type": -0.508512371720036
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 30.63,
+      "p_fail": 0.9549
     },
     {
       "id": "T0011",
@@ -45308,7 +45256,11 @@
         "reactive defect": 0.7426168264138641,
         "repeat failures at this km": 0.7197761427128901,
         "work type": 0.2938738032492819
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 34.81,
+      "p_fail": 0.9877
     },
     {
       "id": "T0012",
@@ -45330,7 +45282,11 @@
         "days overdue": 1.1533404681890576,
         "asset age": 0.6053883473626502,
         "reactive defect": 0.5936077001854352
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 7.75,
+      "p_fail": 0.9998
     },
     {
       "id": "T0013",
@@ -45352,7 +45308,11 @@
         "work type": -0.6690717151889334,
         "reactive defect": 0.6433442340735775,
         "asset age": 0.3661405277701292
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 17.0,
+      "p_fail": 0.9924
     },
     {
       "id": "T0014",
@@ -45374,7 +45334,11 @@
         "reactive defect": -1.3640976907195166,
         "repeat failures at this km": -0.6076054399864365,
         "work type": 0.5448376660232293
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 92.08,
+      "p_fail": 0.8503
     },
     {
       "id": "T0015",
@@ -45396,7 +45360,11 @@
         "days overdue": 1.4729403982460112,
         "repeat failures at this km": -0.402959909222594,
         "gradient": 0.29848952075999413
-      }
+      },
+      "machine": "BCM",
+      "night_work_allowed": false,
+      "e_days": 49.21,
+      "p_fail": 0.5167
     },
     {
       "id": "T0016",
@@ -45418,7 +45386,11 @@
         "work type": 0.64300123877507,
         "repeat failures at this km": 0.47266185505589564,
         "reactive defect": 0.36688121291560616
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 6.0,
+      "p_fail": 0.9976
     },
     {
       "id": "T0017",
@@ -45440,7 +45412,11 @@
         "reactive defect": -0.9478237051883676,
         "work type": -0.7196177791860425,
         "gradient": 0.2380790716779129
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 78.44,
+      "p_fail": 0.5442
     },
     {
       "id": "T0018",
@@ -45462,7 +45438,11 @@
         "days overdue": -1.1801556041715726,
         "asset age": -0.6925868591639722,
         "curvature": -0.51781604192925
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 27.0,
+      "p_fail": 0.5725
     },
     {
       "id": "T0019",
@@ -45484,7 +45464,11 @@
         "work type": 1.107250779356773,
         "reactive defect": 1.073401401297261,
         "asset age": 0.5298113882887648
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 40.0,
+      "p_fail": 0.9959
     },
     {
       "id": "T0020",
@@ -45506,7 +45490,11 @@
         "repeat failures at this km": 1.2658586133079606,
         "work type": -0.5772817871971726,
         "reactive defect": 0.4173300446279831
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 33.97,
+      "p_fail": 0.5639
     },
     {
       "id": "T0021",
@@ -45528,7 +45516,11 @@
         "curvature": 0.861975700092652,
         "days overdue": 0.7171621266991349,
         "work type": 0.4130435238798761
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 80.22,
+      "p_fail": 0.6983
     },
     {
       "id": "T0022",
@@ -45550,7 +45542,11 @@
         "reactive defect": -1.5703759669784267,
         "curvature": -0.4458530828400319,
         "gradient": -0.4453304320640696
-      }
+      },
+      "machine": "RCRV",
+      "night_work_allowed": false,
+      "e_days": 68.09,
+      "p_fail": 0.4429
     },
     {
       "id": "T0023",
@@ -45572,7 +45568,11 @@
         "work type": -0.8896064519983612,
         "reactive defect": 0.3757541660739875,
         "defect severity": -0.27087888754860134
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 15.67,
+      "p_fail": 0.7517
     },
     {
       "id": "T0024",
@@ -45594,7 +45594,11 @@
         "reactive defect": -1.3148774509682526,
         "asset age": -0.721817759875565,
         "repeat failures at this km": -0.33267074682193953
-      }
+      },
+      "machine": "RCRV",
+      "night_work_allowed": false,
+      "e_days": 101.8,
+      "p_fail": 0.5137
     },
     {
       "id": "T0025",
@@ -45616,7 +45620,11 @@
         "days overdue": 0.8731326266454654,
         "curvature": -0.33346066912891664,
         "gradient": -0.3196375300780878
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 98.8,
+      "p_fail": 0.1852
     },
     {
       "id": "T0026",
@@ -45638,7 +45646,11 @@
         "work type": 0.5733945374797587,
         "traffic tonnage (GMT)": -0.47015962307190406,
         "asset age": 0.3833920189889717
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 6.43,
+      "p_fail": 0.9815
     },
     {
       "id": "T0027",
@@ -45660,7 +45672,11 @@
         "reactive defect": 0.7380395297350287,
         "asset age": -0.3751147433616169,
         "work type": 0.3090052215736499
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 8.52,
+      "p_fail": 0.9992
     },
     {
       "id": "T0028",
@@ -45682,7 +45698,11 @@
         "asset age": 1.1746551159919043,
         "days overdue": 0.7423745090422081,
         "curvature": 0.47523074780098257
-      }
+      },
+      "machine": "RCRV",
+      "night_work_allowed": true,
+      "e_days": 77.91,
+      "p_fail": 0.8425
     },
     {
       "id": "T0029",
@@ -45704,7 +45724,11 @@
         "work type": -0.8901807880785206,
         "days overdue": 0.6614828516302687,
         "traffic tonnage (GMT)": -0.3435797882178481
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 86.95,
+      "p_fail": 0.3232
     },
     {
       "id": "T0030",
@@ -45726,7 +45750,11 @@
         "repeat failures at this km": -1.0817164131148922,
         "work type": -0.7629516929877979,
         "days overdue": 0.6088270789356925
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 87.04,
+      "p_fail": 0.0353
     },
     {
       "id": "T0031",
@@ -45748,7 +45776,11 @@
         "reactive defect": -1.1759883671878346,
         "repeat failures at this km": 1.1502963817536571,
         "asset age": 0.6207663414107502
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 40.98,
+      "p_fail": 0.9371
     },
     {
       "id": "T0032",
@@ -45770,7 +45802,11 @@
         "defect severity": 0.9606000164447364,
         "reactive defect": 0.6608468749484498,
         "work type": 0.545333542661024
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 15.47,
+      "p_fail": 0.9994
     },
     {
       "id": "T0033",
@@ -45792,7 +45828,11 @@
         "reactive defect": 1.0180241226071842,
         "repeat failures at this km": -0.9428973198758985,
         "asset age": -0.4581891450255167
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 91.94,
+      "p_fail": 0.8663
     },
     {
       "id": "T0034",
@@ -45814,7 +45854,11 @@
         "repeat failures at this km": 1.0720666286512568,
         "work type": 0.5957777193613644,
         "curvature": -0.582746233951905
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 4.8,
+      "p_fail": 0.8001
     },
     {
       "id": "T0035",
@@ -45836,7 +45880,11 @@
         "reactive defect": 0.9650715088166664,
         "traffic tonnage (GMT)": -0.839007813846198,
         "repeat failures at this km": 0.7944836866363432
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 39.71,
+      "p_fail": 0.9928
     },
     {
       "id": "T0036",
@@ -45858,7 +45906,11 @@
         "asset age": 0.559934617993188,
         "curvature": 0.5174257367006738,
         "defect severity": 0.37616458932782987
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 7.38,
+      "p_fail": 0.9884
     },
     {
       "id": "T0037",
@@ -45880,7 +45932,11 @@
         "reactive defect": -0.9700598140561928,
         "work type": -0.7940568545173361,
         "traffic tonnage (GMT)": -0.27603955844241485
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 77.39,
+      "p_fail": 0.516
     },
     {
       "id": "T0038",
@@ -45902,7 +45958,11 @@
         "reactive defect": -1.066564083331197,
         "curvature": 0.7787102299649957,
         "days overdue": 0.641397230773527
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 40.6,
+      "p_fail": 0.9034
     },
     {
       "id": "T0039",
@@ -45924,7 +45984,11 @@
         "reactive defect": 0.6968132302974938,
         "repeat failures at this km": 0.6536348701202452,
         "work type": 0.5463255071669751
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 29.37,
+      "p_fail": 0.9796
     },
     {
       "id": "T0040",
@@ -45946,7 +46010,11 @@
         "work type": 0.7331730881513505,
         "traffic tonnage (GMT)": -0.5630190616386597,
         "repeat failures at this km": 0.536880683421024
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 20.65,
+      "p_fail": 0.9983
     },
     {
       "id": "T0041",
@@ -45968,7 +46036,11 @@
         "asset age": -0.46221007681998133,
         "reactive defect": 0.32457380957899357,
         "repeat failures at this km": 0.23116616742030288
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 81.13,
+      "p_fail": 0.1138
     },
     {
       "id": "T0042",
@@ -45990,7 +46062,11 @@
         "reactive defect": 0.8350531008935285,
         "repeat failures at this km": 0.6911627380292128,
         "work type": -0.4753863379575294
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 50.8,
+      "p_fail": 0.9281
     },
     {
       "id": "T0043",
@@ -46012,7 +46088,11 @@
         "defect severity": -1.6352102288500212,
         "reactive defect": -1.087123426753528,
         "curvature": 0.5555100474440122
-      }
+      },
+      "machine": "RCRV",
+      "night_work_allowed": false,
+      "e_days": 13.97,
+      "p_fail": 0.9925
     },
     {
       "id": "T0044",
@@ -46034,7 +46114,11 @@
         "repeat failures at this km": 0.7638418604218873,
         "reactive defect": 0.6148777200373864,
         "work type": -0.5286286958488436
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 4.8,
+      "p_fail": 0.9999
     },
     {
       "id": "T0045",
@@ -46056,7 +46140,11 @@
         "reactive defect": 0.7228136272816194,
         "days overdue": 0.6914790738747821,
         "work type": 0.44026132417805125
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 48.12,
+      "p_fail": 0.8778
     },
     {
       "id": "T0046",
@@ -46078,7 +46166,11 @@
         "repeat failures at this km": -1.2974802595723665,
         "gradient": -0.5766168788735486,
         "work type": -0.379157425824001
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 66.28,
+      "p_fail": 0.4062
     },
     {
       "id": "T0047",
@@ -46100,7 +46192,11 @@
         "work type": 0.5538806379521828,
         "reactive defect": 0.428240178645947,
         "days overdue": -0.23272945509333673
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 32.8,
+      "p_fail": 0.7039
     },
     {
       "id": "T0048",
@@ -46122,7 +46218,11 @@
         "reactive defect": 0.43768605488814405,
         "days overdue": 0.35475529696530256,
         "repeat failures at this km": 0.23185463584731716
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 19.71,
+      "p_fail": 0.9996
     },
     {
       "id": "T0049",
@@ -46144,7 +46244,11 @@
         "reactive defect": -1.0343176164899321,
         "repeat failures at this km": 0.6335282287031518,
         "work type": -0.38249043374057934
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 84.32,
+      "p_fail": 0.874
     },
     {
       "id": "T0050",
@@ -46166,7 +46270,11 @@
         "days overdue": 0.8900651925664218,
         "curvature": -0.3327374746946022,
         "gradient": -0.3119840294692576
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 98.85,
+      "p_fail": 0.193
     },
     {
       "id": "T0051",
@@ -46188,7 +46296,11 @@
         "defect severity": -1.0724339766905349,
         "work type": -0.6505039812900385,
         "gradient": -0.23629457137903004
-      }
+      },
+      "machine": "UTV",
+      "night_work_allowed": false,
+      "e_days": 65.33,
+      "p_fail": 0.8754
     },
     {
       "id": "T0052",
@@ -46210,7 +46322,11 @@
         "days overdue": -0.8545447529704749,
         "asset age": 0.6420492311837852,
         "curvature": -0.4899410339253835
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 12.86,
+      "p_fail": 0.9867
     },
     {
       "id": "T0053",
@@ -46232,7 +46348,11 @@
         "defect severity": -1.5411992647608586,
         "reactive defect": -1.2388138200915766,
         "traffic tonnage (GMT)": 0.3020118291737444
-      }
+      },
+      "machine": "BCM",
+      "night_work_allowed": false,
+      "e_days": 99.93,
+      "p_fail": 0.2987
     },
     {
       "id": "T0054",
@@ -46254,7 +46374,11 @@
         "reactive defect": -1.376335540053362,
         "asset age": -0.6013473131606277,
         "work type": -0.3142297670417255
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 98.48,
+      "p_fail": 0.3878
     },
     {
       "id": "T0055",
@@ -46276,7 +46400,11 @@
         "repeat failures at this km": 0.6786193627552792,
         "reactive defect": 0.46388179334063745,
         "gradient": -0.4225279410983705
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 28.62,
+      "p_fail": 0.4919
     },
     {
       "id": "T0056",
@@ -46298,7 +46426,11 @@
         "work type": -0.9860606388090238,
         "days overdue": 0.9418469405941613,
         "traffic tonnage (GMT)": -0.5183604434354997
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 73.77,
+      "p_fail": 0.1048
     },
     {
       "id": "T0057",
@@ -46320,7 +46452,11 @@
         "repeat failures at this km": 0.6169025284652747,
         "work type": 0.4155247260890619,
         "asset age": -0.3911304824150513
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 6.24,
+      "p_fail": 0.996
     },
     {
       "id": "T0058",
@@ -46342,7 +46478,11 @@
         "traffic tonnage (GMT)": -0.4119326186725863,
         "asset age": -0.3458562539735093,
         "gradient": -0.3030781549664506
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 53.57,
+      "p_fail": 0.1537
     },
     {
       "id": "T0059",
@@ -46364,7 +46504,11 @@
         "work type": 0.5619348299147349,
         "reactive defect": 0.43892588240229974,
         "gradient": 0.30699921883494
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 2.0,
+      "p_fail": 0.9945
     },
     {
       "id": "T0060",
@@ -46386,7 +46530,11 @@
         "gradient": -0.6290116088280222,
         "reactive defect": 0.5365854838254177,
         "curvature": -0.5154179412042617
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 46.09,
+      "p_fail": 0.1041
     },
     {
       "id": "T0061",
@@ -46408,7 +46556,11 @@
         "reactive defect": -1.1111139168923354,
         "work type": -0.9154876760496421,
         "repeat failures at this km": 0.7075719954858651
-      }
+      },
+      "machine": "UTV",
+      "night_work_allowed": true,
+      "e_days": 52.0,
+      "p_fail": 0.7638
     },
     {
       "id": "T0062",
@@ -46430,7 +46582,11 @@
         "defect severity": -0.39512050995341946,
         "days overdue": 0.38015610424392804,
         "gradient": -0.33795059657104054
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 58.4,
+      "p_fail": 0.1694
     },
     {
       "id": "T0063",
@@ -46452,7 +46608,11 @@
         "defect severity": -1.0408560952544275,
         "work type": -0.8013749109280516,
         "traffic tonnage (GMT)": 0.484320844845643
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 62.25,
+      "p_fail": 0.8406
     },
     {
       "id": "T0064",
@@ -46474,7 +46634,11 @@
         "repeat failures at this km": 1.5126545115718224,
         "work type": 0.5330666578313084,
         "traffic tonnage (GMT)": -0.40232195315347585
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 4.67,
+      "p_fail": 0.5791
     },
     {
       "id": "T0065",
@@ -46496,7 +46660,11 @@
         "reactive defect": -1.2820149077013685,
         "repeat failures at this km": 1.0320253097751348,
         "work type": -0.5438722677423942
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 31.95,
+      "p_fail": 0.8675
     },
     {
       "id": "T0066",
@@ -46518,7 +46686,11 @@
         "repeat failures at this km": 0.6539255238360941,
         "defect severity": 0.6447233265107523,
         "curvature": -0.41550057499980697
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 16.22,
+      "p_fail": 0.9952
     },
     {
       "id": "T0067",
@@ -46540,7 +46712,11 @@
         "work type": 0.7370184058133328,
         "asset age": 0.6803718824771223,
         "curvature": 0.4926317201774372
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 9.52,
+      "p_fail": 0.9997
     },
     {
       "id": "T0068",
@@ -46562,7 +46738,11 @@
         "days overdue": 1.080064486980757,
         "asset age": 0.5273090383917773,
         "repeat failures at this km": -0.4153702843929015
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 71.59,
+      "p_fail": 0.7321
     },
     {
       "id": "T0069",
@@ -46584,7 +46764,11 @@
         "asset age": -0.6146648051272553,
         "defect severity": 0.5568518155523389,
         "work type": 0.43021715336441696
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 22.43,
+      "p_fail": 0.959
     },
     {
       "id": "T0070",
@@ -46606,7 +46790,11 @@
         "days overdue": -0.9154499062966392,
         "asset age": 0.43809443156380995,
         "traffic tonnage (GMT)": 0.35340914479023106
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 6.55,
+      "p_fail": 0.9998
     },
     {
       "id": "T0071",
@@ -46628,7 +46816,11 @@
         "days overdue": 1.0838284907901021,
         "traffic tonnage (GMT)": -0.7088289417015456,
         "reactive defect": 0.6736668113168991
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 9.99,
+      "p_fail": 0.9993
     },
     {
       "id": "T0072",
@@ -46650,7 +46842,11 @@
         "reactive defect": -1.2565374146557606,
         "days overdue": 0.9247160662845627,
         "traffic tonnage (GMT)": 0.5060969264452403
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 24.21,
+      "p_fail": 0.9201
     },
     {
       "id": "T0073",
@@ -46672,7 +46868,11 @@
         "asset age": -0.5086679926495804,
         "reactive defect": 0.4927486351612414,
         "curvature": 0.39884553272505985
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 3.03,
+      "p_fail": 0.9996
     },
     {
       "id": "T0074",
@@ -46694,7 +46894,11 @@
         "traffic tonnage (GMT)": -0.993930838859513,
         "repeat failures at this km": 0.7766733184190505,
         "reactive defect": 0.6978034466200993
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 11.62,
+      "p_fail": 0.9994
     },
     {
       "id": "T0075",
@@ -46716,7 +46920,11 @@
         "asset age": 1.0837316010850284,
         "reactive defect": 0.9465071405858029,
         "work type": -0.3820306378499928
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 46.73,
+      "p_fail": 0.9945
     },
     {
       "id": "T0076",
@@ -46738,7 +46946,11 @@
         "asset age": 0.4443503547916115,
         "traffic tonnage (GMT)": 0.3219562433235092,
         "reactive defect": 0.3021678254539151
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 12.52,
+      "p_fail": 0.9949
     },
     {
       "id": "T0077",
@@ -46760,7 +46972,11 @@
         "repeat failures at this km": 1.0392660005181125,
         "reactive defect": 0.4971667581916993,
         "work type": -0.45781775226353666
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 8.29,
+      "p_fail": 0.9996
     },
     {
       "id": "T0078",
@@ -46782,7 +46998,11 @@
         "reactive defect": 0.713233795005464,
         "work type": 0.5039690224947647,
         "repeat failures at this km": 0.4457490267505416
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 13.36,
+      "p_fail": 0.9999
     },
     {
       "id": "T0079",
@@ -46804,7 +47024,11 @@
         "reactive defect": 0.9185345632734886,
         "traffic tonnage (GMT)": 0.6961057061251328,
         "gradient": 0.5620435416060042
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 63.15,
+      "p_fail": 0.9906
     },
     {
       "id": "T0080",
@@ -46826,7 +47050,11 @@
         "work type": -0.8939010035939297,
         "days overdue": 0.6196791410433765,
         "traffic tonnage (GMT)": -0.6015412872114254
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 65.55,
+      "p_fail": 0.1916
     },
     {
       "id": "T0081",
@@ -46848,7 +47076,11 @@
         "reactive defect": -1.3353212723886316,
         "traffic tonnage (GMT)": -1.0500146219669975,
         "days overdue": 0.9512287076264883
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 53.97,
+      "p_fail": 0.7392
     },
     {
       "id": "T0082",
@@ -46870,7 +47102,11 @@
         "reactive defect": 0.8140734105236566,
         "asset age": 0.6510284494796819,
         "curvature": 0.4429710403256245
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 7.12,
+      "p_fail": 0.9996
     },
     {
       "id": "T0083",
@@ -46892,7 +47128,11 @@
         "defect severity": -0.9753151309263859,
         "asset age": 0.4397287053292187,
         "work type": -0.42071175829198676
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 64.92,
+      "p_fail": 0.8754
     },
     {
       "id": "T0084",
@@ -46914,7 +47154,11 @@
         "work type": 0.45919901091888027,
         "reactive defect": 0.341829609749923,
         "curvature": -0.33336930029496203
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 14.43,
+      "p_fail": 0.9978
     },
     {
       "id": "T0085",
@@ -46936,7 +47180,11 @@
         "repeat failures at this km": 1.509604010248752,
         "traffic tonnage (GMT)": -0.45208692262939487,
         "asset age": -0.39539169016541753
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 38.54,
+      "p_fail": 0.2628
     },
     {
       "id": "T0086",
@@ -46958,7 +47206,11 @@
         "days overdue": -1.748012913523953,
         "traffic tonnage (GMT)": -0.9370775938274775,
         "reactive defect": 0.29213219875322144
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 9.93,
+      "p_fail": 0.9965
     },
     {
       "id": "T0087",
@@ -46980,7 +47232,11 @@
         "days overdue": 1.225217733300877,
         "asset age": -0.8553035103777499,
         "work type": -0.8218134098846791
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 40.71,
+      "p_fail": 0.9227
     },
     {
       "id": "T0088",
@@ -47002,7 +47258,11 @@
         "work type": 0.9221207671947326,
         "reactive defect": 0.8517390173367083,
         "asset age": -0.6762897192390511
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 43.04,
+      "p_fail": 0.9672
     },
     {
       "id": "T0089",
@@ -47024,7 +47284,11 @@
         "repeat failures at this km": 1.420511633483394,
         "curvature": -0.5275828111836464,
         "asset age": -0.5052490447801333
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 67.22,
+      "p_fail": 0.4278
     },
     {
       "id": "T0090",
@@ -47046,7 +47310,11 @@
         "repeat failures at this km": 1.3435977152556524,
         "reactive defect": 0.7395883209190665,
         "work type": 0.4260096992028752
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 22.86,
+      "p_fail": 0.9881
     },
     {
       "id": "T0091",
@@ -47068,7 +47336,11 @@
         "days overdue": 0.9039409823941938,
         "curvature": 0.8502380476389659,
         "asset age": 0.294533687802791
-      }
+      },
+      "machine": "RCRV",
+      "night_work_allowed": false,
+      "e_days": 82.82,
+      "p_fail": 0.7851
     },
     {
       "id": "T0092",
@@ -47090,7 +47362,11 @@
         "defect severity": -1.6309257183367707,
         "reactive defect": -1.0583363558540566,
         "work type": 0.695456497628719
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 48.89,
+      "p_fail": 0.9752
     },
     {
       "id": "T0093",
@@ -47112,7 +47388,11 @@
         "asset age": -0.5358749796285801,
         "repeat failures at this km": -0.5202200674169147,
         "gradient": -0.4150779989419593
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 85.41,
+      "p_fail": 0.0389
     },
     {
       "id": "T0094",
@@ -47134,7 +47414,11 @@
         "days overdue": 1.6499904646311085,
         "reactive defect": -1.0750047864588428,
         "curvature": -0.5540231614512922
-      }
+      },
+      "machine": "RCRV",
+      "night_work_allowed": false,
+      "e_days": 58.96,
+      "p_fail": 0.9286
     },
     {
       "id": "T0095",
@@ -47156,7 +47440,11 @@
         "days overdue": 1.0216033367137192,
         "reactive defect": 0.6545368658377122,
         "curvature": 0.4688962577815564
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 4.69,
+      "p_fail": 0.9999
     },
     {
       "id": "T0096",
@@ -47178,7 +47466,11 @@
         "repeat failures at this km": 1.100802570344085,
         "reactive defect": 0.5303869694300832,
         "curvature": 0.32899620899273757
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 4.05,
+      "p_fail": 0.9999
     },
     {
       "id": "T0097",
@@ -47200,7 +47492,11 @@
         "reactive defect": -1.3229789828996135,
         "repeat failures at this km": 0.3618686224666232,
         "gradient": 0.3583190281355874
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 84.0,
+      "p_fail": 0.7693
     },
     {
       "id": "T0098",
@@ -47222,7 +47518,11 @@
         "defect severity": -1.4847651327197857,
         "reactive defect": -1.0982004222929331,
         "gradient": 0.26078874501648286
-      }
+      },
+      "machine": "BCM",
+      "night_work_allowed": false,
+      "e_days": 86.96,
+      "p_fail": 0.5703
     },
     {
       "id": "T0099",
@@ -47244,7 +47544,11 @@
         "days overdue": 1.0448193391373168,
         "reactive defect": 0.6138775184308997,
         "curvature": 0.513036038607742
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 4.73,
+      "p_fail": 1.0
     },
     {
       "id": "T0100",
@@ -47266,7 +47570,11 @@
         "repeat failures at this km": 1.289722179653397,
         "asset age": 0.46393750987987464,
         "reactive defect": 0.4113926502757696
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 16.12,
+      "p_fail": 0.767
     },
     {
       "id": "T0101",
@@ -47288,7 +47596,11 @@
         "repeat failures at this km": 0.5852924341720396,
         "reactive defect": 0.5081354835468539,
         "curvature": -0.3244719157165335
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 11.9,
+      "p_fail": 0.9991
     },
     {
       "id": "T0102",
@@ -47310,7 +47622,11 @@
         "defect severity": -1.3496892495897206,
         "reactive defect": -1.0726163502132882,
         "traffic tonnage (GMT)": 0.290582398306231
-      }
+      },
+      "machine": "BCM",
+      "night_work_allowed": false,
+      "e_days": 102.83,
+      "p_fail": 0.7644
     },
     {
       "id": "T0103",
@@ -47332,7 +47648,11 @@
         "work type": -0.5928247787568665,
         "reactive defect": 0.3865484995373316,
         "curvature": 0.3554182714618653
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 10.19,
+      "p_fail": 0.9747
     },
     {
       "id": "T0104",
@@ -47354,7 +47674,11 @@
         "repeat failures at this km": 1.0588638365913317,
         "curvature": -0.4302204438156384,
         "traffic tonnage (GMT)": 0.3217436754014958
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 1.2,
+      "p_fail": 0.9972
     },
     {
       "id": "T0105",
@@ -47376,7 +47700,11 @@
         "defect severity": 0.9623194906683985,
         "reactive defect": 0.8107404282868516,
         "asset age": -0.34739386035220643
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 23.0,
+      "p_fail": 0.9984
     },
     {
       "id": "T0106",
@@ -47398,7 +47726,11 @@
         "days overdue": 0.8892602389101116,
         "work type": 0.6550593875141774,
         "reactive defect": 0.5613433461819101
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 14.82,
+      "p_fail": 0.9986
     },
     {
       "id": "T0107",
@@ -47420,7 +47752,11 @@
         "reactive defect": 0.6594832393405996,
         "repeat failures at this km": 0.6340787858666509,
         "work type": -0.5859635181698448
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 30.85,
+      "p_fail": 0.9164
     },
     {
       "id": "T0108",
@@ -47442,7 +47778,11 @@
         "repeat failures at this km": 1.4735762890543602,
         "reactive defect": -1.1101321224819483,
         "asset age": -0.7774967801348629
-      }
+      },
+      "machine": "RCRV",
+      "night_work_allowed": false,
+      "e_days": 69.79,
+      "p_fail": 0.7443
     },
     {
       "id": "T0109",
@@ -47464,7 +47804,11 @@
         "reactive defect": -1.3064687081682957,
         "work type": -0.5128986889014759,
         "gradient": -0.29115018832337813
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 96.3,
+      "p_fail": 0.6558
     },
     {
       "id": "T0110",
@@ -47486,7 +47830,11 @@
         "defect severity": -1.0322773308020985,
         "days overdue": 0.6197614042169497,
         "work type": -0.5695862799278892
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 84.78,
+      "p_fail": 0.0265
     },
     {
       "id": "T0111",
@@ -47508,7 +47856,11 @@
         "reactive defect": 0.6715816172996308,
         "work type": 0.5052514811148416,
         "repeat failures at this km": 0.2110208318480296
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 8.78,
+      "p_fail": 0.9998
     },
     {
       "id": "T0112",
@@ -47530,7 +47882,11 @@
         "repeat failures at this km": 0.9000410906898739,
         "work type": -0.8369898909771896,
         "reactive defect": 0.7150520890047132
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 33.82,
+      "p_fail": 0.9784
     },
     {
       "id": "T0113",
@@ -47552,7 +47908,11 @@
         "reactive defect": 0.7704815363264813,
         "work type": -0.6989295513108067,
         "asset age": 0.5007657024529758
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 9.04,
+      "p_fail": 0.9987
     },
     {
       "id": "T0114",
@@ -47574,7 +47934,11 @@
         "reactive defect": 0.5932443543394867,
         "repeat failures at this km": 0.583358202468,
         "gradient": -0.5790896947602734
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 8.33,
+      "p_fail": 0.9995
     },
     {
       "id": "T0115",
@@ -47596,7 +47960,11 @@
         "repeat failures at this km": -0.8515742718547602,
         "work type": 0.31058714863546016,
         "days overdue": 0.2762601410490264
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 90.39,
+      "p_fail": 0.1233
     },
     {
       "id": "T0116",
@@ -47618,7 +47986,11 @@
         "gradient": -0.664666670850222,
         "reactive defect": 0.453270469455546,
         "traffic tonnage (GMT)": -0.3714223874043734
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 29.09,
+      "p_fail": 0.1379
     },
     {
       "id": "T0117",
@@ -47640,7 +48012,11 @@
         "work type": -0.7456300000492134,
         "reactive defect": 0.5329758528238657,
         "curvature": 0.5181887436910273
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 27.38,
+      "p_fail": 0.8766
     },
     {
       "id": "T0118",
@@ -47662,7 +48038,11 @@
         "days overdue": 0.986459886335014,
         "work type": -0.7689497598059843,
         "traffic tonnage (GMT)": -0.35790514684331637
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 81.04,
+      "p_fail": 0.1705
     },
     {
       "id": "T0119",
@@ -47684,7 +48064,11 @@
         "reactive defect": 0.868435924187638,
         "defect severity": 0.4758839065669314,
         "curvature": 0.3182403120595432
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 13.0,
+      "p_fail": 0.9984
     },
     {
       "id": "T0120",
@@ -47706,7 +48090,11 @@
         "reactive defect": -1.1236313275479368,
         "curvature": 0.8073430155024465,
         "repeat failures at this km": -0.5903549810419777
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 86.67,
+      "p_fail": 0.838
     },
     {
       "id": "T0121",
@@ -47728,7 +48116,11 @@
         "days overdue": -1.3500070177211303,
         "asset age": -0.5375923659196404,
         "traffic tonnage (GMT)": -0.5001739751610228
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 38.36,
+      "p_fail": 0.3916
     },
     {
       "id": "T0122",
@@ -47750,7 +48142,11 @@
         "repeat failures at this km": 0.8012385361054732,
         "traffic tonnage (GMT)": 0.6246255533920524,
         "asset age": -0.3318705058968892
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 5.36,
+      "p_fail": 0.9986
     },
     {
       "id": "T0123",
@@ -47772,7 +48168,11 @@
         "repeat failures at this km": 1.2745034191369384,
         "reactive defect": 0.7295736544451138,
         "work type": 0.4026247433351123
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 2.96,
+      "p_fail": 0.9999
     },
     {
       "id": "T0124",
@@ -47794,7 +48194,11 @@
         "reactive defect": -1.396296632366345,
         "work type": -0.5609227174076392,
         "repeat failures at this km": -0.3970690234960993
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 95.4,
+      "p_fail": 0.373
     },
     {
       "id": "T0125",
@@ -47816,7 +48220,11 @@
         "work type": 0.6472925570814877,
         "reactive defect": 0.6400496329888508,
         "repeat failures at this km": 0.6077147548821247
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 17.86,
+      "p_fail": 0.9804
     },
     {
       "id": "T0126",
@@ -47838,7 +48246,11 @@
         "traffic tonnage (GMT)": -0.7441912299761456,
         "reactive defect": 0.6914795413682956,
         "repeat failures at this km": 0.5890171993598088
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 14.31,
+      "p_fail": 0.9989
     },
     {
       "id": "T0127",
@@ -47860,7 +48272,11 @@
         "days overdue": -0.9158387561203007,
         "work type": 0.5384515922685519,
         "asset age": 0.5230294141177846
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 6.02,
+      "p_fail": 0.9997
     },
     {
       "id": "T0128",
@@ -47882,7 +48298,11 @@
         "days overdue": 0.9933223585848879,
         "reactive defect": 0.9093960706529026,
         "work type": 0.5896877174400751
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 18.49,
+      "p_fail": 0.9891
     },
     {
       "id": "T0129",
@@ -47904,7 +48324,11 @@
         "reactive defect": -1.1200636997016762,
         "work type": -0.8440545934459628,
         "days overdue": 0.7152496114308159
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 74.26,
+      "p_fail": 0.7849
     },
     {
       "id": "T0130",
@@ -47926,7 +48350,11 @@
         "reactive defect": 0.8171053295093833,
         "gradient": 0.433874016366236,
         "defect severity": -0.11775682460863712
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 23.05,
+      "p_fail": 0.9944
     },
     {
       "id": "T0131",
@@ -47948,7 +48376,11 @@
         "reactive defect": 0.6567269408338482,
         "work type": -0.6539667533267136,
         "repeat failures at this km": 0.5989066523668013
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 30.9,
+      "p_fail": 0.9208
     },
     {
       "id": "T0132",
@@ -47970,7 +48402,11 @@
         "repeat failures at this km": 1.0778788846082277,
         "work type": -0.7846790042344809,
         "gradient": 0.4131664575505188
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 28.04,
+      "p_fail": 0.5964
     },
     {
       "id": "T0133",
@@ -47992,7 +48428,11 @@
         "reactive defect": 0.9121540690685189,
         "repeat failures at this km": 0.7249643994398535,
         "work type": 0.5061442863983113
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 43.66,
+      "p_fail": 0.9955
     },
     {
       "id": "T0134",
@@ -48014,7 +48454,11 @@
         "reactive defect": 0.6888462135339586,
         "days overdue": 0.5398462060005589,
         "asset age": 0.3405182170106445
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 67.46,
+      "p_fail": 0.9157
     },
     {
       "id": "T0135",
@@ -48036,7 +48480,11 @@
         "work type": 0.5404521010588461,
         "defect severity": 0.2943714617415771,
         "curvature": -0.2646490284959723
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 38.0,
+      "p_fail": 0.9964
     },
     {
       "id": "T0136",
@@ -48058,7 +48506,11 @@
         "repeat failures at this km": 0.7428832267796106,
         "reactive defect": 0.6386474994161782,
         "curvature": -0.4741310997146516
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 47.42,
+      "p_fail": 0.8804
     },
     {
       "id": "T0137",
@@ -48080,7 +48532,11 @@
         "asset age": -0.6522058542725181,
         "work type": -0.6289516557817049,
         "reactive defect": 0.6179913835760715
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 15.04,
+      "p_fail": 0.9966
     },
     {
       "id": "T0138",
@@ -48102,7 +48558,11 @@
         "days overdue": 1.04123445595017,
         "asset age": 0.5695486722570617,
         "repeat failures at this km": -0.4021840227840594
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 92.54,
+      "p_fail": 0.8025
     },
     {
       "id": "T0139",
@@ -48124,7 +48584,11 @@
         "reactive defect": 0.5341956205388599,
         "traffic tonnage (GMT)": 0.4483004833664434,
         "days overdue": -0.2921577745606312
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 38.13,
+      "p_fail": 0.9461
     },
     {
       "id": "T0140",
@@ -48146,7 +48610,11 @@
         "days overdue": 1.4074690827099328,
         "reactive defect": -0.9874722867386688,
         "work type": -0.4019050967707125
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 75.8,
+      "p_fail": 0.909
     },
     {
       "id": "T0141",
@@ -48168,7 +48636,11 @@
         "repeat failures at this km": 0.764456306328007,
         "reactive defect": 0.6333000088694117,
         "work type": 0.5004480380507458
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 7.68,
+      "p_fail": 0.9999
     },
     {
       "id": "T0142",
@@ -48190,7 +48662,11 @@
         "reactive defect": 1.0462518856274832,
         "asset age": 0.8095843585652096,
         "work type": 0.4897049466847885
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 72.02,
+      "p_fail": 0.9977
     },
     {
       "id": "T0143",
@@ -48212,7 +48688,11 @@
         "reactive defect": -1.3509045180604808,
         "repeat failures at this km": -0.603923345947897,
         "work type": 0.547465388513958
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 91.97,
+      "p_fail": 0.8664
     },
     {
       "id": "T0144",
@@ -48234,7 +48714,11 @@
         "days overdue": -1.0734549955662553,
         "asset age": -0.441759314624957,
         "curvature": -0.435250001629328
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 5.66,
+      "p_fail": 0.996
     },
     {
       "id": "T0145",
@@ -48256,7 +48740,11 @@
         "days overdue": -1.3821925394596641,
         "asset age": -0.5109868759762514,
         "traffic tonnage (GMT)": 0.2668058298542034
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 4.81,
+      "p_fail": 0.6972
     },
     {
       "id": "T0146",
@@ -48278,7 +48766,11 @@
         "traffic tonnage (GMT)": -0.4007927712595807,
         "reactive defect": 0.30493848785273037,
         "curvature": -0.2642447027754373
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 45.94,
+      "p_fail": 0.084
     },
     {
       "id": "T0147",
@@ -48300,7 +48792,11 @@
         "defect severity": 1.1364608831161775,
         "reactive defect": 0.7152052993166462,
         "work type": 0.4181637980048039
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 18.85,
+      "p_fail": 0.9996
     },
     {
       "id": "T0148",
@@ -48322,7 +48818,11 @@
         "asset age": -0.46759946915328493,
         "gradient": -0.414928282998436,
         "repeat failures at this km": -0.3824498951183024
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 32.95,
+      "p_fail": 0.2063
     },
     {
       "id": "T0149",
@@ -48344,7 +48844,11 @@
         "work type": -0.73607491611235,
         "reactive defect": 0.673733698469976,
         "gradient": 0.5688940170280341
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 20.87,
+      "p_fail": 0.9993
     },
     {
       "id": "T0150",
@@ -48366,7 +48870,11 @@
         "work type": -0.6691657043931852,
         "traffic tonnage (GMT)": 0.4320311511763795,
         "reactive defect": 0.41797619175600137
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 7.52,
+      "p_fail": 0.9987
     },
     {
       "id": "T0151",
@@ -48388,7 +48896,11 @@
         "reactive defect": -1.0589451442270301,
         "work type": 0.9965268924031233,
         "repeat failures at this km": 0.7955633017374985
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 73.16,
+      "p_fail": 0.9803
     },
     {
       "id": "T0152",
@@ -48410,7 +48922,11 @@
         "repeat failures at this km": 0.8032998087604801,
         "traffic tonnage (GMT)": 0.6208574404081209,
         "curvature": -0.29089067554241593
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 5.34,
+      "p_fail": 0.9978
     },
     {
       "id": "T0153",
@@ -48432,7 +48948,11 @@
         "reactive defect": -1.348861044659392,
         "work type": -1.1172393296898229,
         "asset age": -1.1102758701724456
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 64.76,
+      "p_fail": 0.0914
     },
     {
       "id": "T0154",
@@ -48454,7 +48974,11 @@
         "curvature": -0.7718996141126746,
         "asset age": 0.5039267205522986,
         "work type": 0.4575414717982927
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 54.0,
+      "p_fail": 0.0847
     },
     {
       "id": "T0155",
@@ -48476,7 +49000,11 @@
         "days overdue": 0.8974959355812623,
         "reactive defect": 0.7595262509841283,
         "asset age": 0.3066216568830911
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 44.25,
+      "p_fail": 0.9767
     },
     {
       "id": "T0156",
@@ -48498,7 +49026,11 @@
         "days overdue": 1.2641797061727893,
         "reactive defect": 0.7222282165502889,
         "traffic tonnage (GMT)": -0.685158319461337
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 7.91,
+      "p_fail": 0.9995
     },
     {
       "id": "T0157",
@@ -48520,7 +49052,11 @@
         "days overdue": 1.4089113139010276,
         "reactive defect": 0.8434264209701926,
         "work type": 0.6284555308778308
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 25.76,
+      "p_fail": 0.9983
     },
     {
       "id": "T0158",
@@ -48542,7 +49078,11 @@
         "repeat failures at this km": 0.9468304089935146,
         "reactive defect": 0.7605093303299219,
         "curvature": 0.4343998495395976
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 48.9,
+      "p_fail": 0.9795
     },
     {
       "id": "T0159",
@@ -48564,7 +49104,11 @@
         "days overdue": 1.155609628265274,
         "work type": -0.8199222425084428,
         "gradient": -0.5845310449486807
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 16.39,
+      "p_fail": 0.8686
     },
     {
       "id": "T0160",
@@ -48586,7 +49130,11 @@
         "days overdue": 1.1944501652017703,
         "reactive defect": -1.186198695851186,
         "asset age": 0.7949307822294832
-      }
+      },
+      "machine": "RCRV",
+      "night_work_allowed": false,
+      "e_days": 22.68,
+      "p_fail": 0.9309
     },
     {
       "id": "T0161",
@@ -48608,7 +49156,11 @@
         "days overdue": 1.0130442904490058,
         "work type": -0.7304689521637057,
         "asset age": -0.46228083522896746
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 96.07,
+      "p_fail": 0.1512
     },
     {
       "id": "T0162",
@@ -48630,7 +49182,11 @@
         "reactive defect": 1.1033600730922384,
         "asset age": 0.8983312308910866,
         "repeat failures at this km": 0.38462323322475395
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 48.63,
+      "p_fail": 0.9968
     },
     {
       "id": "T0163",
@@ -48652,7 +49208,11 @@
         "reactive defect": 0.7990649324271059,
         "curvature": 0.4577519871715855,
         "work type": 0.4408780681564014
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 9.12,
+      "p_fail": 0.9992
     },
     {
       "id": "T0164",
@@ -48674,7 +49234,11 @@
         "work type": 0.7082061266986932,
         "curvature": -0.6989324001610636,
         "traffic tonnage (GMT)": -0.5943616592915628
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 74.96,
+      "p_fail": 0.0274
     },
     {
       "id": "T0165",
@@ -48696,7 +49260,11 @@
         "work type": -1.0620078917382207,
         "reactive defect": 0.9697689416468717,
         "asset age": -0.6831976905717854
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 61.12,
+      "p_fail": 0.7979
     },
     {
       "id": "T0166",
@@ -48718,7 +49286,11 @@
         "reactive defect": -0.9400870202630182,
         "curvature": -0.33249154877129333,
         "work type": -0.32914467158885946
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 86.38,
+      "p_fail": 0.938
     },
     {
       "id": "T0167",
@@ -48740,7 +49312,11 @@
         "repeat failures at this km": 1.2951740980614406,
         "reactive defect": -1.0079121312912265,
         "work type": 0.44692808499828385
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 75.74,
+      "p_fail": 0.9405
     },
     {
       "id": "T0168",
@@ -48762,7 +49338,11 @@
         "days overdue": 0.9039409823941938,
         "curvature": 0.8502380476389659,
         "asset age": 0.294533687802791
-      }
+      },
+      "machine": "RCRV",
+      "night_work_allowed": false,
+      "e_days": 82.82,
+      "p_fail": 0.7851
     },
     {
       "id": "T0169",
@@ -48784,7 +49364,11 @@
         "work type": 0.8125814811884707,
         "reactive defect": 0.6562820380434159,
         "asset age": -0.4290561981934454
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 63.95,
+      "p_fail": 0.7534
     },
     {
       "id": "T0170",
@@ -48806,7 +49390,11 @@
         "reactive defect": 1.1107998599317856,
         "asset age": 1.0545626502333156,
         "work type": 0.7518905002059568
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 46.19,
+      "p_fail": 0.9969
     },
     {
       "id": "T0171",
@@ -48828,7 +49416,11 @@
         "repeat failures at this km": 0.8570343721610925,
         "reactive defect": 0.6965777431287181,
         "curvature": 0.4079459136891387
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 28.8,
+      "p_fail": 0.9851
     },
     {
       "id": "T0172",
@@ -48850,7 +49442,11 @@
         "repeat failures at this km": 1.0365953811992694,
         "reactive defect": 0.57258394574231,
         "work type": -0.40271304393935276
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 3.88,
+      "p_fail": 0.9997
     },
     {
       "id": "T0173",
@@ -48872,7 +49468,11 @@
         "days overdue": -0.7024255117624658,
         "asset age": 0.5509180647628491,
         "reactive defect": 0.3874598070354661
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 12.94,
+      "p_fail": 0.9959
     },
     {
       "id": "T0174",
@@ -48894,7 +49494,11 @@
         "reactive defect": 0.47942981420928105,
         "gradient": -0.28986128198176775,
         "asset age": -0.27116144205969694
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 36.73,
+      "p_fail": 0.4261
     },
     {
       "id": "T0175",
@@ -48916,7 +49520,11 @@
         "work type": 0.7141171973366026,
         "asset age": 0.49030938592833023,
         "reactive defect": 0.46706978061516663
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 14.79,
+      "p_fail": 0.9752
     },
     {
       "id": "T0176",
@@ -48938,7 +49546,11 @@
         "reactive defect": -1.1844896613592952,
         "work type": -0.3152677431877927,
         "repeat failures at this km": 0.3017242629177049
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 86.95,
+      "p_fail": 0.9237
     },
     {
       "id": "T0177",
@@ -48960,7 +49572,11 @@
         "reactive defect": -1.1385333047776351,
         "repeat failures at this km": 0.723607454871553,
         "work type": -0.39643619289746
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 59.62,
+      "p_fail": 0.8865
     },
     {
       "id": "T0178",
@@ -48982,7 +49598,11 @@
         "defect severity": -1.0844280628984775,
         "traffic tonnage (GMT)": 0.6546974441913663,
         "gradient": 0.5823221942576224
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 76.93,
+      "p_fail": 0.9773
     },
     {
       "id": "T0179",
@@ -49004,7 +49624,11 @@
         "reactive defect": -1.1407609684721651,
         "work type": -0.8018930251945431,
         "asset age": -0.5457720310174743
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 74.28,
+      "p_fail": 0.2326
     },
     {
       "id": "T0180",
@@ -49026,7 +49650,11 @@
         "defect severity": -1.0408560952544275,
         "work type": -0.8013749109280516,
         "traffic tonnage (GMT)": 0.484320844845643
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 62.25,
+      "p_fail": 0.8406
     },
     {
       "id": "T0181",
@@ -49048,7 +49676,11 @@
         "work type": 0.5301650691363199,
         "defect severity": 0.28542877327547506,
         "curvature": -0.2656313546404105
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 37.94,
+      "p_fail": 0.9972
     },
     {
       "id": "T0182",
@@ -49070,7 +49702,11 @@
         "work type": -0.4559696132181401,
         "gradient": 0.3217609237580019,
         "repeat failures at this km": -0.21106024206963828
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 39.73,
+      "p_fail": 0.6388
     },
     {
       "id": "T0183",
@@ -49092,7 +49728,11 @@
         "defect severity": 0.9772964923250426,
         "reactive defect": 0.8953673804155008,
         "asset age": -0.3238303319400429
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 22.69,
+      "p_fail": 0.9979
     },
     {
       "id": "T0184",
@@ -49114,7 +49754,11 @@
         "reactive defect": 0.8741877616237662,
         "work type": -0.8110953474339658,
         "traffic tonnage (GMT)": -0.6295002446750256
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": false,
+      "e_days": 75.16,
+      "p_fail": 0.5121
     },
     {
       "id": "T0185",
@@ -49136,7 +49780,11 @@
         "work type": 0.4760747277784706,
         "reactive defect": 0.40409669903870293,
         "days overdue": 0.34127537365188093
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 4.5,
+      "p_fail": 0.9999
     },
     {
       "id": "T0186",
@@ -49158,7 +49806,11 @@
         "repeat failures at this km": 1.227027557625946,
         "curvature": -0.752321873851284,
         "traffic tonnage (GMT)": -0.42728394152527244
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 44.6,
+      "p_fail": 0.1061
     },
     {
       "id": "T0187",
@@ -49180,7 +49832,11 @@
         "reactive defect": -0.9218890602427547,
         "repeat failures at this km": 0.5630686088029441,
         "traffic tonnage (GMT)": 0.40513231258968435
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 77.17,
+      "p_fail": 0.9438
     },
     {
       "id": "T0188",
@@ -49202,7 +49858,11 @@
         "days overdue": 0.8581685987263693,
         "reactive defect": 0.6587827640467833,
         "work type": 0.6574243756491089
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 38.97,
+      "p_fail": 0.9232
     },
     {
       "id": "T0189",
@@ -49224,7 +49884,11 @@
         "days overdue": -1.4300993995722304,
         "traffic tonnage (GMT)": 0.630619899784284,
         "asset age": 0.45901485705201117
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 42.54,
+      "p_fail": 0.9681
     },
     {
       "id": "T0190",
@@ -49246,7 +49910,11 @@
         "days overdue": 1.214831729652056,
         "reactive defect": 0.7425942194610554,
         "work type": 0.6572931674594632
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 92.0,
+      "p_fail": 0.5689
     },
     {
       "id": "T0191",
@@ -49268,7 +49936,11 @@
         "days overdue": -0.9501835163994613,
         "traffic tonnage (GMT)": 0.5619936454457232,
         "work type": 0.4494859733412085
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 0.47,
+      "p_fail": 0.9998
     },
     {
       "id": "T0192",
@@ -49290,7 +49962,11 @@
         "defect severity": -1.0182507144380484,
         "work type": -0.6859487816061564,
         "traffic tonnage (GMT)": 0.34549148387032075
-      }
+      },
+      "machine": "UTV",
+      "night_work_allowed": true,
+      "e_days": 64.49,
+      "p_fail": 0.9339
     },
     {
       "id": "T0193",
@@ -49312,7 +49988,11 @@
         "repeat failures at this km": 1.213600811087479,
         "days overdue": 0.9324155967635426,
         "work type": -0.6518436927380269
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 41.73,
+      "p_fail": 0.5115
     },
     {
       "id": "T0194",
@@ -49334,7 +50014,11 @@
         "repeat failures at this km": 1.3041811713948348,
         "reactive defect": -1.0248400872978316,
         "asset age": -0.38203460575759696
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 85.4,
+      "p_fail": 0.8319
     },
     {
       "id": "T0195",
@@ -49356,7 +50040,11 @@
         "repeat failures at this km": 1.402257571821773,
         "reactive defect": 0.9155182822975482,
         "work type": 0.48996364673647186
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 22.01,
+      "p_fail": 0.9883
     },
     {
       "id": "T0196",
@@ -49378,7 +50066,11 @@
         "defect severity": -1.5708774344176442,
         "reactive defect": -0.9619536714135459,
         "curvature": 0.48640032975898806
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 37.71,
+      "p_fail": 0.9759
     },
     {
       "id": "T0197",
@@ -49400,7 +50092,11 @@
         "repeat failures at this km": 1.4051838767337794,
         "reactive defect": -1.1117462279935983,
         "asset age": 0.7476182508771779
-      }
+      },
+      "machine": "TAMPER",
+      "night_work_allowed": false,
+      "e_days": 41.18,
+      "p_fail": 0.9753
     },
     {
       "id": "T0198",
@@ -49422,7 +50118,11 @@
         "reactive defect": -1.195923836404931,
         "days overdue": 1.0167814222542728,
         "traffic tonnage (GMT)": 0.5841860633045762
-      }
+      },
+      "machine": "TOWER_WAGON",
+      "night_work_allowed": true,
+      "e_days": 43.03,
+      "p_fail": 0.8599
     },
     {
       "id": "T0199",
@@ -49444,7 +50144,11 @@
         "work type": 0.8036069519929644,
         "asset age": 0.5639055955005198,
         "reactive defect": 0.393871777459846
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": false,
+      "e_days": 6.7,
+      "p_fail": 0.9849
     },
     {
       "id": "T0200",
@@ -49466,7 +50170,11 @@
         "repeat failures at this km": 0.9537772569368952,
         "reactive defect": 0.9071778147855948,
         "curvature": 0.7542832827655572
-      }
+      },
+      "machine": "NONE",
+      "night_work_allowed": true,
+      "e_days": 26.38,
+      "p_fail": 0.9943
     }
   ]
 }

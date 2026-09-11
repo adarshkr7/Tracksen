@@ -37,6 +37,11 @@ export interface Task {
   demanded: number;
   cancellation_risk: number | null;
   attribution: Record<string, number>;
+  machine: string;
+  night_work_allowed: boolean;
+  /** Cox expectation of days to failure — prices the cost of deferring. */
+  e_days: number | null;
+  p_fail: number | null;
 }
 
 export interface Metrics {
@@ -83,6 +88,11 @@ export interface PlanData {
   blocks: Block[];
   baselineBlocks: Block[];
   tasks: Task[];
+  /** Pricing constants, mirrored from the solver so client re-pricing matches. */
+  detentionWeights: number[];
+  regulationOverheadMin: number;
+  maxBlocksPerDeptPerDay: number;
+  machinePositioningMin: number;
 }
 
 export const DEPT_COLOR: Record<Dept, string> = {

@@ -172,12 +172,35 @@ because nothing off the shelf draws a train graph.
   plan underneath the same traffic, which is the comparison worth showing.
 - **Unified priority queue.** All three departments in one ranking, each row carrying
   its SHAP attribution and its demanded-vs-P90 duration.
+- **What-if simulator.** Drag any block along the time axis, or nudge it by ±15 min,
+  ±1 hour, ±1 day. Three things recompute on every move: the traffic cost of the new
+  window (priced against the actual paths it intersects), the risk carried forward by
+  deferring, and whether the move breaks a hard constraint. A dashed ghost marks where
+  the block was; conflicted blocks turn red and the totals bar refuses to call the
+  result a valid plan.
 - Click any block for its member tasks and the reasons it was placed where it was.
 
 The page reads `out/plan.json`; re-run the pipeline and `npm run sync` to refresh.
 
+### How what-if stays honest
+
+Client-side re-pricing uses the **same detention weights and regulation overhead** the
+solver optimised against — they travel in `plan.json` rather than being retyped in
+TypeScript, because a client that priced windows differently would tell the planner a
+move is cheap while the optimiser believed it expensive.
+
+Conflicts are checked against the same four hard rules the CP-SAT model enforces: line
+exclusivity, plant positioning (90-minute buffer, network-wide), the per-department
+daily block limit, and night-working restrictions. These are refusals, not preferences.
+
+Risk carried forward assumes an **exponential hazard** around the Cox expectation:
+a task with E[days to failure] = 5 deferred by one day carries 1 − e^(−1/5) ≈ 19% added
+failure probability. That memoryless assumption approximates the Cox model rather than
+re-deriving it — it is an order of magnitude while dragging, not a substitute for the
+nightly re-solve.
+
 ## Not built yet
 
-What-if simulator (drag a block, recompute traffic cost and carried-forward risk).
-Rolling-horizon re-solve with warm start (the hook exists in `BlockOptimiser.solve`,
+Re-solving from a what-if state (the moves are explored, not committed back to the
+solver). Rolling-horizon re-solve with warm start (the hook exists in `BlockOptimiser.solve`,
 untested). Monthly corridor-slot horizon. FastAPI service. Held-out model validation.

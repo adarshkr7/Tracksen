@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import KpiStrip from "./components/KpiStrip";
 import TaskQueue from "./components/TaskQueue";
 import TimeDistanceChart from "./components/TimeDistanceChart";
+import WhatIfPanel from "./components/WhatIfPanel";
 import {
   Block,
   CLASS_COLOR,
@@ -11,11 +12,12 @@ import {
   DEPT_FULL,
   Dept,
   LineName,
+  MIN_PER_DAY,
   PlanData,
+  Task,
   dayLabel,
-  fmt,
-  hhmm,
 } from "./lib/plan";
+import { buildPathIndex, findConflicts, planTotals } from "./lib/whatif";
 
 type Which = "optimised" | "baseline";
 
@@ -26,6 +28,7 @@ export default function Page() {
   const [line, setLine] = useState<LineName | "BOTH">("BOTH");
   const [which, setWhich] = useState<Which>("optimised");
   const [selected, setSelected] = useState<Block | null>(null);
+  const [moves, setMoves] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     fetch("/plan.json")
@@ -43,33 +46,73 @@ export default function Page() {
   );
 
   const taskById = useMemo(() => {
-    const m = new Map<string, PlanData["tasks"][number]>();
+    const m = new Map<string, Task>();
     data?.tasks.forEach((t) => m.set(t.id, t));
     return m;
   }, [data]);
+
+  const pathIndex = useMemo(
+    () => (data ? buildPathIndex(data.paths) : buildPathIndex([])),
+    [data],
+  );
+
+  // Every moved block re-checked against the hard rules, so the chart can mark them
+  // and the totals bar can refuse to call a broken plan an improvement.
+  const conflictedIds = useMemo(() => {
+    const out = new Set<string>();
+    if (!data || moves.size === 0) return out;
+    for (const [id, start] of moves) {
+      const b = blocks.find((x) => x.id === id);
+      if (!b) continue;
+      if (findConflicts(b, start, data, blocks, moves, taskById).length > 0) out.add(id);
+    }
+    return out;
+  }, [data, moves, blocks, taskById]);
+
+  const totals = useMemo(
+    () => (data ? planTotals(blocks, moves, data, pathIndex, conflictedIds) : null),
+    [data, blocks, moves, pathIndex, conflictedIds],
+  );
+
+  const baselineTotals = useMemo(
+    () => (data ? planTotals(blocks, new Map(), data, pathIndex, new Set()) : null),
+    [data, blocks, pathIndex],
+  );
+
+  const onMove = useCallback((blockId: string, startMin: number) => {
+    setMoves((prev) => {
+      const next = new Map(prev);
+      next.set(blockId, startMin);
+      return next;
+    });
+  }, []);
+
+  const onResetBlock = useCallback((blockId: string) => {
+    setMoves((prev) => {
+      const next = new Map(prev);
+      next.delete(blockId);
+      return next;
+    });
+  }, []);
 
   if (error) {
     return (
       <Shell>
         <div className="rounded-xl border p-6 text-[13px]"
           style={{ borderColor: "var(--line)", background: "var(--surface)" }}>
-          <p style={{ color: "var(--ink)" }} className="font-medium mb-1">
-            No plan loaded
-          </p>
-          <p style={{ color: "var(--ink-2)" }}>
-            {error}. Generate one first:
-          </p>
+          <p style={{ color: "var(--ink)" }} className="font-medium mb-1">No plan loaded</p>
+          <p style={{ color: "var(--ink-2)" }}>{error}. Generate one first:</p>
           <pre className="mt-3 rounded-lg p-3 text-[11.5px] overflow-x-auto"
             style={{ background: "var(--surface-2)", color: "var(--ink-2)" }}>
 python scripts/run_pipeline.py --days 7 --tasks 200{"\n"}
-npm run sync   # copies out/plan.json into web/public/
+npm run sync
           </pre>
         </div>
       </Shell>
     );
   }
 
-  if (!data) {
+  if (!data || !totals || !baselineTotals) {
     return (
       <Shell>
         <div className="h-[420px] rounded-xl border animate-pulse"
@@ -79,14 +122,16 @@ npm run sync   # copies out/plan.json into web/public/
   }
 
   const m = data.metrics;
-  const dayBlocks = blocks.filter(
-    (b) => b.day === day && (line === "BOTH" || b.line === line),
-  );
+  const editable = which === "optimised";
+  const dayBlocks = blocks.filter((b) => {
+    const s = moves.get(b.id) ?? b.s;
+    return Math.floor(s / MIN_PER_DAY) === day && (line === "BOTH" || b.line === line);
+  });
   const clubbedToday = dayBlocks.filter((b) => b.depts.length > 1).length;
+  const costDelta = totals.trafficCost - baselineTotals.trafficCost;
 
   return (
     <Shell>
-      {/* ---------- header ---------- */}
       <header className="mb-6">
         <div className="flex items-baseline gap-2.5 flex-wrap">
           <h1 className="serif text-[26px] leading-none tracking-tight"
@@ -106,6 +151,53 @@ npm run sync   # copies out/plan.json into web/public/
       <section className="mb-6">
         <KpiStrip baseline={m.baseline} optimised={m.optimised} />
       </section>
+
+      {/* ---------- what-if totals ---------- */}
+      {moves.size > 0 && (
+        <section className="mb-4 rounded-xl border px-4 py-2.5 flex items-center
+                            gap-x-6 gap-y-2 flex-wrap fade-in"
+          style={{
+            borderColor: conflictedIds.size ? "var(--danger)" : "var(--line-2)",
+            background: "var(--surface)",
+          }}>
+          <span className="text-[11px] uppercase tracking-wide"
+            style={{ color: "var(--ink-3)", letterSpacing: "0.05em" }}>
+            {moves.size} block{moves.size > 1 ? "s" : ""} moved
+          </span>
+
+          <span className="text-[12px] tnum" style={{ color: "var(--ink-2)" }}>
+            traffic cost{" "}
+            <b style={{ color: "var(--ink)" }}>{totals.trafficCost.toFixed(0)}</b>
+            {Math.abs(costDelta) >= 0.5 && (
+              <span style={{ color: costDelta < 0 ? "var(--accent)" : "var(--danger)" }}>
+                {" "}{costDelta > 0 ? "+" : ""}{costDelta.toFixed(0)}
+              </span>
+            )}
+          </span>
+
+          <span className="text-[12px] tnum" style={{ color: "var(--ink-2)" }}>
+            corridor{" "}
+            <b style={{ color: "var(--ink)" }}>
+              {Math.round(totals.corridorAdherence * 100)}%
+            </b>
+            <span style={{ color: "var(--ink-3)" }}>
+              {" "}from {Math.round(baselineTotals.corridorAdherence * 100)}%
+            </span>
+          </span>
+
+          {conflictedIds.size > 0 && (
+            <span className="text-[12px] tnum font-medium" style={{ color: "var(--danger)" }}>
+              {conflictedIds.size} in conflict — not a valid plan
+            </span>
+          )}
+
+          <button onClick={() => setMoves(new Map())}
+            className="ml-auto text-[11.5px] rounded-md px-2 py-1 border"
+            style={{ borderColor: "var(--line-2)", color: "var(--ink-2)" }}>
+            Reset all
+          </button>
+        </section>
+      )}
 
       {/* ---------- chart ---------- */}
       <section className="rounded-xl border mb-6"
@@ -132,16 +224,13 @@ npm run sync   # copies out/plan.json into web/public/
 
           <div className="flex items-center gap-1 ml-auto">
             {Array.from({ length: data.meta.horizon_days }, (_, d) => (
-              <button
-                key={d}
-                onClick={() => { setDay(d); setSelected(null); }}
+              <button key={d} onClick={() => setDay(d)}
                 className="rounded-md px-2 py-1 text-[11.5px] tnum transition-colors"
                 style={{
                   background: d === day ? "var(--surface-2)" : "transparent",
                   color: d === day ? "var(--ink)" : "var(--ink-3)",
                   border: `1px solid ${d === day ? "var(--line-2)" : "transparent"}`,
-                }}
-              >
+                }}>
                 {dayLabel(d)}
               </button>
             ))}
@@ -159,6 +248,10 @@ npm run sync   # copies out/plan.json into web/public/
             line={line}
             onSelect={setSelected}
             selectedId={selected?.id ?? null}
+            moves={moves}
+            onMove={editable ? onMove : undefined}
+            conflictedIds={conflictedIds}
+            draggable={editable}
           />
         </div>
 
@@ -187,70 +280,27 @@ npm run sync   # copies out/plan.json into web/public/
           </span>
           <span className="ml-auto tnum">
             {dayBlocks.length} blocks · {clubbedToday} clubbed
+            {editable && " · drag a block to test a move"}
           </span>
         </div>
       </section>
 
-      {/* ---------- selection ---------- */}
       {selected && (
-        <section className="rounded-xl border mb-6 fade-in"
-          style={{ borderColor: "var(--line-2)", background: "var(--surface)" }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b"
-            style={{ borderColor: "var(--line)" }}>
-            <div className="flex items-baseline gap-2.5 flex-wrap">
-              <span className="text-[13px] font-medium" style={{ color: "var(--ink)" }}>
-                {data.sections[selected.sec].a}–{data.sections[selected.sec].b}
-              </span>
-              <span className="text-[12px] tnum" style={{ color: "var(--ink-3)" }}>
-                {selected.line} · {dayLabel(selected.day)} {hhmm(selected.s)}–{hhmm(selected.e)}
-                {" · "}{selected.e - selected.s} min
-              </span>
-            </div>
-            <button onClick={() => setSelected(null)}
-              className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-              close
-            </button>
-          </div>
-
-          <div className="px-4 py-3 grid gap-4 md:grid-cols-[1fr_240px]">
-            <div>
-              {selected.tasks.map((tid) => {
-                const t = taskById.get(tid);
-                if (!t) return null;
-                return (
-                  <div key={tid} className="flex items-start gap-2.5 py-1.5 text-[12px]">
-                    <span className="rounded px-1.5 py-px text-[10px] font-medium shrink-0
-                                     w-11 text-center mt-px"
-                      style={{ background: DEPT_COLOR[t.dept], color: "#fff" }}>
-                      {t.dept}
-                    </span>
-                    <div className="min-w-0">
-                      <div style={{ color: "var(--ink)" }}>{t.type}</div>
-                      <div className="text-[11px] tnum mt-0.5" style={{ color: "var(--ink-3)" }}>
-                        {t.id} · km {t.km.toFixed(1)} · severity {t.severity} ·
-                        criticality {t.criticality?.toFixed(0)} ·
-                        demanded {t.demanded}m → reserved {t.p90}m
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="text-[11.5px] space-y-1.5 md:border-l md:pl-4"
-              style={{ borderColor: "var(--line)", color: "var(--ink-2)" }}>
-              {selected.why.map((w, i) => (
-                <div key={i} className="flex gap-1.5">
-                  <span style={{ color: "var(--ink-3)" }}>—</span>
-                  <span>{w}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        <section className="mb-6">
+          <WhatIfPanel
+            block={selected}
+            data={data}
+            blocks={blocks}
+            moves={moves}
+            index={pathIndex}
+            taskById={taskById}
+            onMove={onMove}
+            onReset={onResetBlock}
+            onClose={() => setSelected(null)}
+          />
         </section>
       )}
 
-      {/* ---------- queue ---------- */}
       <section className="mb-6">
         <div className="flex items-baseline justify-between mb-3">
           <h2 className="text-[13px] font-medium" style={{ color: "var(--ink)" }}>
@@ -264,26 +314,23 @@ npm run sync   # copies out/plan.json into web/public/
         <TaskQueue tasks={data.tasks} blocks={data.blocks} />
       </section>
 
-      {/* ---------- footnote ---------- */}
-      <footer className="text-[11px] leading-relaxed pb-10"
-        style={{ color: "var(--ink-3)" }}>
+      <footer className="text-[11px] leading-relaxed pb-10" style={{ color: "var(--ink-3)" }}>
         <p>
           Synthetic data modelled on published maintenance intervals; no live railway
           operational data. Figures compare two runs of the same simulator over an
           identical task population. Solver stopped at a{" "}
           {typeof data.meta.solver.gap_pct === "number"
-            ? `${data.meta.solver.gap_pct}%`
-            : "reported"}{" "}
+            ? `${data.meta.solver.gap_pct}%` : "reported"}{" "}
           optimality gap, so results are a floor. Weights — clubbing β{" "}
-          {data.meta.weights.clubbing}, traffic λ {data.meta.weights.traffic},
-          corridor {data.meta.weights.corridor}, overdue μ {data.meta.weights.overdue}
-          {" "}— are planner-tunable, not fixed constants.
+          {data.meta.weights.clubbing}, traffic λ {data.meta.weights.traffic}, corridor{" "}
+          {data.meta.weights.corridor}, overdue μ {data.meta.weights.overdue} — are
+          planner-tunable, not fixed constants.
         </p>
         <p className="mt-1.5">
-          Duration model: the demanded figure contains the actual work{" "}
-          {Math.round((data.model_checks.duration?.demanded_coverage ?? 0) * 100)}% of
-          the time; the P90 reservation contains it{" "}
-          {Math.round((data.model_checks.duration?.p90_coverage ?? 0) * 100)}%.
+          What-if re-prices windows client-side using the same detention weights and
+          regulation overhead the solver optimised against. Risk carried forward assumes
+          an exponential hazard around the Cox expectation — an order of magnitude while
+          dragging, not a substitute for the nightly re-solve.
         </p>
       </footer>
     </Shell>
@@ -309,16 +356,13 @@ function Segmented({
     <div className="inline-flex rounded-md border overflow-hidden"
       style={{ borderColor: "var(--line-2)" }}>
       {options.map((o, i) => (
-        <button
-          key={o.id}
-          onClick={() => onChange(o.id)}
+        <button key={o.id} onClick={() => onChange(o.id)}
           className="px-2.5 py-1 text-[11.5px] transition-colors"
           style={{
             background: value === o.id ? "var(--ink)" : "transparent",
             color: value === o.id ? "var(--bg)" : "var(--ink-2)",
             borderLeft: i === 0 ? "none" : "1px solid var(--line-2)",
-          }}
-        >
+          }}>
           {o.label}
         </button>
       ))}

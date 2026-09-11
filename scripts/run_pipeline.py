@@ -88,7 +88,8 @@ def main() -> int:
     # ---- 3. score --------------------------------------------------------- #
     rule("3  SCORE  --  criticality, duration, cancellation risk")
     cm = CriticalityModel().fit(ds.history_defects)
-    cm.score(ds.pending, assets_by_id, traffic, ds.repeat_failures)
+    breakdowns = cm.score(ds.pending, assets_by_id, traffic, ds.repeat_failures)
+    bd_by_task = {b.task_id: b for b in breakdowns}
     crit_check = cm.evaluate_against_truth(ds.pending)
 
     dm = DurationModel().fit(ds.history_blocks)
@@ -214,6 +215,12 @@ def main() -> int:
         "corridors": [[sec_index[c.section_id], c.day, c.start_min, c.end_min]
                       for c in corridors],
         "trainClasses": ["PREMIER", "MAIL_EXP", "PASSENGER", "GOODS"],
+        # Client-side re-pricing must use exactly these, or the what-if numbers
+        # diverge from the ones the solver optimised against.
+        "detentionWeights": [4.0, 2.5, 1.5, 1.0],
+        "regulationOverheadMin": 10,
+        "maxBlocksPerDeptPerDay": weights.max_blocks_per_dept_per_day,
+        "machinePositioningMin": 90,
         # Compact: [section, line(0=UP,1=DN), class, enter, exit, prob]
         "paths": [
             [sec_index[pp.section_id], 0 if pp.line is Line.UP else 1,
@@ -233,6 +240,12 @@ def main() -> int:
                 "demanded": t.demanded_duration_min,
                 "cancellation_risk": t.cancellation_risk,
                 "attribution": t.attribution,
+                "machine": t.machine.value,
+                "night_work_allowed": t.night_work_allowed,
+                "e_days": round(bd_by_task[t.id].expected_days_to_failure, 2)
+                if t.id in bd_by_task else None,
+                "p_fail": round(bd_by_task[t.id].p_failure, 4)
+                if t.id in bd_by_task else None,
             }
             for t in ds.pending
         ],
