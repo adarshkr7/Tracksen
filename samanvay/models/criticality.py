@@ -1,6 +1,6 @@
 """The Criticality Index: how much it matters that this task happens soon.
 
-    Criticality = P(failure before the next realistic opportunity) x Consequence
+    Criticality = P(failure within H) x Urgency(E[time to failure]) x Consequence
 
 Two models sit behind the first term, because "will it fail" and "when will it fail"
 are different questions and scheduling needs both:
@@ -258,9 +258,17 @@ class CriticalityModel:
         for i, t in enumerate(tasks):
             consequence = traffic.consequence(t.section_id, t.line)
 
+            # Probability alone saturates: on a backlog of genuine defects most tasks
+            # carry p_fail near 1.0, and a queue where the top forty rows all read 100
+            # ranks nothing. The Cox expectation supplies the missing dimension --
+            # *when* -- so a rail flaw due to go in eight days outranks one due in sixty
+            # even though both are certain to fail eventually.
+            horizon = float(self.risk_horizon_days)
+            urgency = horizon / (horizon + max(0.0, float(expected_days[i])))
+
             # Consequence never zeroes a score -- a defect on a quiet line still has
             # to be attended. It scales it between a floor and full weight.
-            score = 100.0 * float(p_fail[i]) * (0.35 + 0.65 * consequence)
+            score = 100.0 * float(p_fail[i]) * urgency * (0.35 + 0.65 * consequence)
             t.criticality = round(float(score), 2)
 
             contribs = sorted(

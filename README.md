@@ -50,17 +50,17 @@ Ahmedabad–Vadodara corridor, against an FCFS baseline on the identical task po
 
 | Measure | Baseline | SAMANVAY | |
 |---|---:|---:|---|
-| **Risk retired per block-hour** | 32.5 | **47.1** | **+45%** |
-| Blocks used | 101 | 76 | −25% |
-| Block hours consumed | 250.2 | 196.5 | −21% |
-| Clubbing ratio (depts per block) | 1.00 | 1.35 | +35% |
-| Line closures saved | 0 | 27 | — |
-| Traffic cost (wtd detention min) | 15,598 | 13,306 | −15% |
-| Corridor adherence | 22% | 49% | +123% |
-| High-criticality unplanned failures | 36 | 33 | −8% |
-| Overdue task-days | 1,160 | 1,230 | **+6% worse** |
+| **Risk retired per block-hour** | 20.0 | **29.4** | **+47%** |
+| Blocks used | 101 | 77 | −24% |
+| Block hours consumed | 250.2 | 194.5 | −22% |
+| Clubbing ratio (depts per block) | 1.00 | 1.29 | +29% |
+| Line closures saved | 0 | 22 | — |
+| Traffic cost (wtd detention min) | 15,598 | 12,037 | −23% |
+| Corridor adherence | 22% | 53% | +141% |
+| High-criticality unplanned failures | 23 | 21 | −9% |
+| Overdue task-days | 1,160 | 1,240 | **+7% worse** |
 
-Both plans complete about the same number of tasks (101 vs 103). The gain is not in
+Both plans complete about the same number of tasks (101 vs 99). The gain is not in
 doing more — it is in doing the *right* work, in *fewer* closures, at *cheaper* hours.
 
 **The overdue regression is real and is not a bug.** The optimiser ranks by criticality,
@@ -81,7 +81,8 @@ samanvay/
   generator.py       Synthetic TMS / SMMS / TDMS feeds + historical blocks and defects
   models/
     traffic.py       Traffic cost surface; per-section consequence weighting
-    criticality.py   LightGBM failure risk + Cox PH time-to-failure + SHAP attribution
+    criticality.py   P(fail within H) x Urgency(E[time to failure]) x Consequence
+                     LightGBM classifier + Cox PH + SHAP attribution
     duration.py      Quantile GBM — P50 reported, P90 reserved against
     cancellation.py  Will this block, if sanctioned, actually run?
   optimizer/
@@ -153,8 +154,30 @@ starts work.
 
 ---
 
+## Web interface
+
+```bash
+cd web
+npm install
+npm run sync      # copies ../out/plan.json into public/
+npm run dev       # http://localhost:3000
+```
+
+Next.js 16, React 19, Tailwind 4. The chart is hand-rolled SVG — no charting library,
+because nothing off the shelf draws a train graph.
+
+- **Time–distance chart.** Time across, chainage down, stations on the left gutter.
+  Train paths are the diagonals, blocks are rectangles, the mandated corridor is the
+  shaded band. `Both` overlays UP and DN on half-bands; `SAMANVAY / Baseline` swaps the
+  plan underneath the same traffic, which is the comparison worth showing.
+- **Unified priority queue.** All three departments in one ranking, each row carrying
+  its SHAP attribution and its demanded-vs-P90 duration.
+- Click any block for its member tasks and the reasons it was placed where it was.
+
+The page reads `out/plan.json`; re-run the pipeline and `npm run sync` to refresh.
+
 ## Not built yet
 
-Web interface — time–distance chart, ranked queue with SHAP chips, what-if simulator.
+What-if simulator (drag a block, recompute traffic cost and carried-forward risk).
 Rolling-horizon re-solve with warm start (the hook exists in `BlockOptimiser.solve`,
 untested). Monthly corridor-slot horizon. FastAPI service. Held-out model validation.

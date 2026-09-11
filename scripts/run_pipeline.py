@@ -25,7 +25,12 @@ from samanvay.models.cancellation import CancellationModel  # noqa: E402
 from samanvay.models.criticality import CriticalityModel  # noqa: E402
 from samanvay.models.duration import DurationModel  # noqa: E402
 from samanvay.models.traffic import TrafficModel  # noqa: E402
-from samanvay.network import SECTIONS, generate_corridors, generate_timetable  # noqa: E402
+from samanvay.network import (  # noqa: E402
+    SECTIONS,
+    STATIONS,
+    generate_corridors,
+    generate_timetable,
+)
 from samanvay.optimizer.baseline import schedule_fcfs  # noqa: E402
 from samanvay.optimizer.cpsat import (  # noqa: E402
     BlockOptimiser,
@@ -166,6 +171,28 @@ def main() -> int:
     # ---- 9. persist ------------------------------------------------------- #
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # The chart needs topology, traffic and BOTH plans -- the comparison view is the
+    # same time-distance chart with the other plan's blocks in it.
+    sec_index = {s.id: i for i, s in enumerate(SECTIONS)}
+    class_index = {"PREMIER": 0, "MAIL_EXP": 1, "PASSENGER": 2, "GOODS": 3}
+
+    def dump_blocks(pl):
+        return [
+            {
+                "id": b.id, "sec": sec_index[b.section_id], "line": b.line.value,
+                "day": b.day, "s": b.start_min, "e": b.end_min,
+                "tasks": b.task_ids,
+                "depts": [d.value for d in b.departments],
+                "types": [t.value for t in b.block_types],
+                "corridor": b.inside_corridor,
+                "traffic": round(b.traffic_cost, 1),
+                "crit": b.criticality_retired,
+                "why": b.reasons,
+            }
+            for b in pl.blocks
+        ]
+
     payload = {
         "meta": {
             "horizon_days": args.days,
@@ -180,19 +207,22 @@ def main() -> int:
             "cancellation": cx.training_report,
         },
         "metrics": {"baseline": bm.__dict__, "optimised": om.__dict__},
-        "blocks": [
-            {
-                "id": b.id, "section": b.section_id, "line": b.line.value,
-                "day": b.day, "start_min": b.start_min, "end_min": b.end_min,
-                "tasks": b.task_ids,
-                "departments": [d.value for d in b.departments],
-                "inside_corridor": b.inside_corridor,
-                "traffic_cost": b.traffic_cost,
-                "criticality_retired": b.criticality_retired,
-                "reasons": b.reasons,
-            }
-            for b in plan.blocks
+        "stations": [{"code": st.code, "name": st.name, "km": st.km}
+                     for st in STATIONS],
+        "sections": [{"id": sc.id, "a": sc.from_station, "b": sc.to_station,
+                      "km0": sc.km_start, "km1": sc.km_end} for sc in SECTIONS],
+        "corridors": [[sec_index[c.section_id], c.day, c.start_min, c.end_min]
+                      for c in corridors],
+        "trainClasses": ["PREMIER", "MAIL_EXP", "PASSENGER", "GOODS"],
+        # Compact: [section, line(0=UP,1=DN), class, enter, exit, prob]
+        "paths": [
+            [sec_index[pp.section_id], 0 if pp.line is Line.UP else 1,
+             class_index[pp.train_class.value], pp.enter_min, pp.exit_min,
+             round(pp.probability, 2)]
+            for pp in paths
         ],
+        "baselineBlocks": dump_blocks(base_plan),
+        "blocks": dump_blocks(plan),
         "tasks": [
             {
                 "id": t.id, "dept": t.department.value, "type": t.task_type,

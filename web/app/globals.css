@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+/* Warm, low-contrast surface. Restraint is the point: the chart carries the page,
+   and everything around it should recede. */
+:root {
+  --bg:        #faf9f5;
+  --surface:   #ffffff;
+  --surface-2: #f4f2ec;
+  --ink:       #1f1e1d;
+  --ink-2:     #56544e;
+  --ink-3:     #8b8980;
+  --line:      #e6e4dc;
+  --line-2:    #d6d3c9;
+  --accent:    #c96442;
+  --accent-2:  #a44f31;
+  --accent-bg: #f6ebe5;
+
+  /* Departments. Muted and warm-leaning so three of them can sit in one chart
+     without shouting at each other. */
+  --engg: #c96442;
+  --snt:  #4f6d7a;
+  --trd:  #8a7343;
+  --club: #2f2e2b;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #262624;
+    --surface:   #30302e;
+    --surface-2: #393937;
+    --ink:       #f5f4ef;
+    --ink-2:     #b9b7ae;
+    --ink-3:     #8b8980;
+    --line:      #3e3e3b;
+    --line-2:    #4d4c48;
+    --accent:    #d97757;
+    --accent-2:  #e08e72;
+    --accent-bg: #3a2f2a;
+
+    --engg: #d97757;
+    --snt:  #7fa3b3;
+    --trd:  #bfa366;
+    --club: #cfcdc4;
+
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-accent: var(--accent);
+  --color-accent-bg: var(--accent-bg);
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+.serif {
+  font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+}
+
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* Quiet scrollbars -- visible enough to grab, invisible enough to ignore. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: none; }
+}
+.fade-in { animation: fade-in 180ms ease-out; }
+
+/* Chart weights differ by theme: a 6% wash reads on cream and vanishes on charcoal. */
+.corridor-band { fill: var(--accent); opacity: 0.07; }
+.train-paths   { opacity: 0.5; }
+.block-fill    { fill-opacity: 0.22; }
+.block-fill.clubbed { fill-opacity: 0.3; }
+.block-fill.active  { fill-opacity: 0.42; }
+
+@media (prefers-color-scheme: dark) {
+  .corridor-band { opacity: 0.16; }
+  .train-paths   { opacity: 0.72; }
+  .block-fill    { fill-opacity: 0.3; }
+  .block-fill.clubbed { fill-opacity: 0.42; }
+  .block-fill.active  { fill-opacity: 0.58; }
+}
