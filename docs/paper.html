@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SAMANVAY: AI-Powered Automatic Block Planning</title>
+<style>
+  @page {
+    size: A4;
+    margin: 19mm 17mm 20mm 17mm;
+    @bottom-center { content: counter(page); }
+  }
+
+  html { font-size: 10pt; }
+
+  body {
+    font-family: "Latin Modern Roman", "CMU Serif", "Palatino Linotype", "Book Antiqua",
+                 Cambria, "Times New Roman", serif;
+    font-size: 9.4pt;
+    line-height: 1.30;
+    color: #000;
+    margin: 0;
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+
+  /* ---------- full-width front matter ---------- */
+  .frontmatter { margin-bottom: 6pt; }
+
+  h1.title {
+    font-size: 15.4pt;
+    font-weight: normal;
+    line-height: 1.18;
+    text-align: center;
+    margin: 0 0 3pt 0;
+    letter-spacing: -0.1pt;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 10.5pt;
+    font-style: italic;
+    margin: 0 0 11pt 0;
+  }
+  .authors {
+    text-align: center;
+    font-size: 10pt;
+    line-height: 1.45;
+    margin: 0 0 2pt 0;
+  }
+  .affil {
+    text-align: center;
+    font-size: 8.8pt;
+    line-height: 1.42;
+    margin: 0 0 13pt 0;
+  }
+  .datestamp {
+    text-align: center;
+    font-size: 8.8pt;
+    margin: 0 0 15pt 0;
+  }
+
+  .abstract {
+    margin: 0 8% 4pt 8%;
+    font-size: 9pt;
+    line-height: 1.32;
+  }
+  .abstract h2 {
+    text-align: center;
+    font-size: 9.8pt;
+    font-weight: bold;
+    margin: 0 0 4pt 0;
+    letter-spacing: 0.3pt;
+  }
+  .abstract p { margin: 0 0 5pt 0; }
+  .keywords { margin: 6pt 8% 0 8%; font-size: 8.6pt; }
+
+  hr.rule { border: 0; border-top: 0.5pt solid #000; margin: 13pt 0 11pt 0; }
+
+  /* ---------- two-column body ---------- */
+  .body {
+    column-count: 2;
+    column-gap: 7mm;
+    column-fill: auto;
+  }
+
+  h2.sec {
+    font-size: 10.2pt;
+    font-weight: bold;
+    margin: 11pt 0 4pt 0;
+    line-height: 1.22;
+    break-after: avoid;
+    text-align: left;
+  }
+  h2.sec:first-child { margin-top: 0; }
+  h3.sub {
+    font-size: 9.5pt;
+    font-weight: bold;
+    font-style: italic;
+    margin: 8pt 0 3pt 0;
+    break-after: avoid;
+    text-align: left;
+  }
+  h4.subsub {
+    font-size: 9.2pt;
+    font-weight: normal;
+    font-style: italic;
+    margin: 6pt 0 2pt 0;
+    break-after: avoid;
+    text-align: left;
+  }
+
+  p { margin: 0 0 5pt 0; }
+  p.noindent { text-indent: 0; }
+
+  ul, ol { margin: 0 0 5pt 0; padding-left: 13pt; }
+  li { margin-bottom: 2.2pt; }
+  ul.tight li, ol.tight li { margin-bottom: 1.2pt; }
+
+  b, strong { font-weight: bold; }
+  em, i { font-style: italic; }
+
+  code, .mono {
+    font-family: Consolas, "Cascadia Mono", "DejaVu Sans Mono", monospace;
+    font-size: 8.1pt;
+  }
+
+  .sc { font-variant: small-caps; letter-spacing: 0.3pt; }
+
+  /* ---------- full-width floats ---------- */
+  .fullwidth {
+    column-span: all;
+    -webkit-column-span: all;
+    margin: 8pt 0 9pt 0;
+    break-inside: avoid;
+  }
+
+  .caption {
+    font-size: 8.3pt;
+    line-height: 1.28;
+    text-align: left;
+    margin: 0 0 3.5pt 0;
+  }
+  .caption-below {
+    font-size: 8.3pt;
+    line-height: 1.28;
+    text-align: left;
+    margin: 4pt 0 0 0;
+  }
+  .caption b, .caption-below b { font-weight: bold; }
+
+  /* ---------- booktabs-style tables ---------- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.2pt;
+    line-height: 1.26;
+  }
+  table.incol { font-size: 7.9pt; }
+  th {
+    text-align: left;
+    font-weight: bold;
+    padding: 3pt 9pt 3pt 0;
+    border-top: 1pt solid #000;
+    border-bottom: 0.5pt solid #000;
+    vertical-align: bottom;
+  }
+  td {
+    text-align: left;
+    padding: 2.6pt 9pt 2.6pt 0;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: 1pt solid #000; }
+  td:last-child, th:last-child { padding-right: 0; }
+
+  /* ---------- code / diagram blocks ---------- */
+  pre {
+    font-family: Consolas, "Cascadia Mono", "DejaVu Sans Mono", monospace;
+    font-size: 6.4pt;
+    line-height: 1.16;
+    margin: 0;
+    padding: 6pt 7pt;
+    border: 0.5pt solid #000;
+    white-space: pre;
+    overflow: visible;
+    text-align: left;
+    hyphens: none;
+  }
+  pre.eq {
+    font-size: 8.3pt;
+    line-height: 1.5;
+    border: none;
+    padding: 3pt 0 3pt 0;
+    text-align: center;
+  }
+  pre.tree {
+    font-size: 7.4pt;
+    line-height: 1.22;
+    border: none;
+    padding: 2pt 0;
+  }
+  pre.incol {
+    font-size: 6.9pt;
+    line-height: 1.2;
+    border: 0.4pt solid #000;
+    padding: 4pt 5pt;
+  }
+
+  .eqbox {
+    margin: 6pt 0 7pt 0;
+    break-inside: avoid;
+  }
+  .eqline {
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 8.4pt;
+    text-align: center;
+    line-height: 1.55;
+  }
+
+  .devanagari { font-family: "Nirmala UI", "Mangal", serif; }
+
+  .refs { font-size: 8.4pt; line-height: 1.3; }
+  .refs ol { padding-left: 15pt; }
+  .refs li { margin-bottom: 3.2pt; }
+
+  .note {
+    font-size: 8.6pt;
+    line-height: 1.3;
+    border-left: 1.6pt solid #000;
+    padding: 1pt 0 1pt 7pt;
+    margin: 6pt 0 7pt 0;
+    break-inside: avoid;
+  }
+
+  .appendix-head {
+    column-span: all;
+    -webkit-column-span: all;
+    text-align: center;
+    font-size: 10pt;
+    font-weight: bold;
+    letter-spacing: 0.6pt;
+    margin: 13pt 0 2pt 0;
+    border-top: 0.5pt solid #000;
+    padding-top: 9pt;
+  }
+</style>
+</head>
+<body>
+
+<div class="frontmatter">
+
+  <h1 class="title">SAMANVAY: AI-Powered Automatic Block Planning to Maximise<br>Asset Availability for Train Operations on Indian Railways</h1>
+
+  <p class="subtitle">A Unified, Explainable Decision-Support System for Multi-Department Maintenance Block Scheduling</p>
+
+  <p class="authors">&#10216;Team Name&#10217; &nbsp;&middot;&nbsp; Team ID &#10216;ID&#10217;</p>
+
+  <p class="affil">
+    Smart India Hackathon 2026 &nbsp;&middot;&nbsp; Problem Statement 26027<br>
+    Ministry of Railways &nbsp;&middot;&nbsp; Category: Software &nbsp;&middot;&nbsp; Theme: Transportation &amp; Logistics
+  </p>
+
+  <p class="datestamp">8 September 2026</p>
+
+  <div class="abstract">
+    <h2>Abstract</h2>
+    <p>Maintenance of fixed railway infrastructure requires a <em>block</em> &mdash; a sanctioned window in which a section of line is withdrawn from traffic. On Indian Railways, three departments plan these windows independently: Engineering through the Track Management System (TMS), Signal &amp; Telecommunications through the Signalling Maintenance and Management System (SMMS), and Traction Distribution through the Traction Distribution Management System (TDMS). Each raises demands into the Block Demand Management System (BDMS), while the Control Office Application (COA) separately holds the traffic picture. Because no layer optimises across the three, blocks are fragmented, placed on scarce paths, and prioritised by arrival order rather than by risk. We present <span class="sc">Samanvay</span>, a decision-support system that unifies defect and overdue-maintenance data from TMS, SMMS and TDMS with corridor windows, timetable paths and a goods-traffic forecast from COA. Every pending task receives a <em>Criticality Index</em> derived from gradient-boosted failure-risk estimation and survival analysis, with per-task attributions from SHAP. A constraint-programming model (OR-Tools CP-SAT) then places blocks to maximise <em>risk retired per block-hour</em> subject to line exclusivity, disconnection nesting, resource availability and corridor policy, emitting weekly plans at 15-minute granularity and monthly plans at corridor-slot granularity. The system is advisory by construction: it recommends, and the competent authority sanctions. We describe the architecture, the learning and optimisation components, the evaluation methodology against a first-come-first-served baseline, and the deployment constraints imposed by the existing legacy estate.</p>
+  </div>
+
+  <p class="keywords"><b>Keywords:</b> railway maintenance scheduling &middot; possession planning &middot; constraint programming &middot; survival analysis &middot; explainable AI &middot; asset availability &middot; Indian Railways</p>
+
+  <hr class="rule">
+</div>
+
+<div class="body">
+
+<h2 class="sec">1&nbsp;&nbsp;Introduction</h2>
+
+<p class="noindent">Trains cannot run on a line while that line is being maintained. Every act of maintenance on fixed infrastructure therefore consumes a <em>block</em>: a formally sanctioned interval during which a block section is handed over from operations to a maintenance department. Blocks are scarce, and their placement determines both the health of the asset and the cost borne by train operations.</p>
+
+<p>On Indian Railways this scarce resource is currently allocated by three departments acting independently. Each maintains its own system of record, each raises demands into BDMS on its own schedule, and each competes for the same physical section without visibility of the others' intentions. Table 1 summarises the division.</p>
+
+<p>The consequences are structural rather than incidental. Three separate blocks may be sanctioned on one section within a single week where one combined block would have sufficed. Demands are served broadly in order of arrival, so a routine task can consume a corridor while a high-criticality defect waits. Blocks are demanded in round figures &mdash; two hours, three hours &mdash; that bear little relation to the work actually to be done, producing both over-runs that disrupt traffic and under-runs that waste a withdrawn line. Placement takes little account of the traffic cost of the chosen hour, so asset downtime converts avoidably into train downtime.</p>
+
+<p>The gap is therefore not a shortage of data but an absence of coordination, prioritisation and traffic-aware placement across departmental boundaries. Stated formally, this is a constrained scheduling problem over a shared exclusive resource, coupled to a risk-ranking problem over a heterogeneous task population. Both halves are tractable with established methods.</p>
+
+<p><b>Contributions.</b> This work sets out: (i) a normalisation layer that reconciles three departmental schemas and the operational timetable into a single task model; (ii) a criticality formulation that combines predicted failure risk with operational consequence and is explainable at the level of an individual task; (iii) a CP-SAT scheduling model whose objective is risk retired per block-hour rather than task count; and (iv) an evaluation methodology that measures the resulting plan against a first-come-first-served baseline on a simulated division.</p>
+
+<div class="fullwidth">
+  <p class="caption"><b>Table 1:</b> Departmental division of maintenance planning on Indian Railways. Each column represents an independent planning process; all three contend for the same physical block sections, and all three raise demands into BDMS without visibility of one another.</p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:16%">Department</th>
+        <th style="width:22%">System of record</th>
+        <th style="width:40%">Representative work</th>
+        <th style="width:22%">Block type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Engineering (P.&nbsp;Way)</td>
+        <td><b>TMS</b> &mdash; Track Management System</td>
+        <td>Rail and weld renewal, tamping, deep screening, USFD-flagged defects, level-crossing work</td>
+        <td>Traffic block &mdash; line handed over</td>
+      </tr>
+      <tr>
+        <td>Signal &amp; Telecom</td>
+        <td><b>SMMS</b> &mdash; Signalling Maintenance and Management System</td>
+        <td>Point machines, track circuits, axle counters, integrated power supply, non-interlocking work</td>
+        <td>Disconnection &mdash; signalling withdrawn from service</td>
+      </tr>
+      <tr>
+        <td>Traction Distribution</td>
+        <td><b>TDMS</b> &mdash; Traction Distribution Management System</td>
+        <td>OHE masts, contact wire, insulators, isolators, sectioning and sub-sectioning posts</td>
+        <td>Power block &mdash; OHE de-energised</td>
+      </tr>
+      <tr>
+        <td>Operations</td>
+        <td><b>COA</b> &mdash; Control Office Application</td>
+        <td>Train running, master chart and working timetable paths, mandated corridor windows, goods forecast</td>
+        <td>Grants and regulates all of the above</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 class="sec">2&nbsp;&nbsp;System Architecture</h2>
+
+<p class="noindent">The system is organised as five layers, shown in Figure 1. The design constraint that dominates every other is that the existing estate must not be disturbed: TMS, SMMS, TDMS, COA and BDMS remain the systems of record, and <span class="sc">Samanvay</span> reads from them rather than replacing any part of them.</p>
+
+<h3 class="sub">2.1&nbsp;&nbsp;Ingestion and normalisation</h3>
+
+<p class="noindent">One adapter per source maps departmental records into a Unified Task Model keyed by section, line and chainage. Adapters are specified to degrade gracefully across three integration modes &mdash; a REST endpoint where one exists, a read-only database view where it does not, and a scheduled SFTP CSV drop as the floor. This is not a hedge but a deployment requirement: parts of the legacy estate expose no programmable interface, and a design that presumes otherwise cannot be commissioned.</p>
+
+<h3 class="sub">2.2&nbsp;&nbsp;Data platform</h3>
+
+<p class="noindent">PostgreSQL with PostGIS holds the asset master, task queue and block records, with chainage represented geospatially so that proximity between departments' work sites is a query rather than a manual comparison. Inspection and measurement series are held in TimescaleDB; attachments and USFD traces in object storage.</p>
+
+<h3 class="sub">2.3&nbsp;&nbsp;Learning and optimisation</h3>
+
+<p class="noindent">Four model services and one explainer feed a constraint-programming engine. These are the substance of the system and are described in Sections 3 and 4.</p>
+
+<h3 class="sub">2.4&nbsp;&nbsp;Application and authority</h3>
+
+<p class="noindent">The application layer presents the plan, accepts planner intervention, routes concurrence through departmental heads, and pushes the sanctioned plan to BDMS. Sanction authority is never delegated to the solver. The system recommends; the competent authority sanctions. This is a design commitment rather than a limitation: block granting is a safety-critical act governed by established procedure, and a system that appeared to automate it would be neither approvable nor deployable.</p>
+
+
+<h2 class="sec">3&nbsp;&nbsp;Learning Components</h2>
+
+<h3 class="sub">3.1&nbsp;&nbsp;Criticality and failure risk</h3>
+
+<p class="noindent">The Criticality Index of a task is the product of the probability that the underlying asset fails before the next realistic maintenance opportunity and the operational consequence of that failure. The first term is estimated by gradient-boosted trees over defect class and severity, asset age, accumulated tonnage, curvature and gradient, weld and joint history, time since last attention, days overdue against the statutory schedule, repeat-failure count at the same kilometre, and seasonal indicators for monsoon and fog. Because scheduling requires not merely whether an asset will fail but <em>when</em>, this is paired with survival analysis &mdash; Cox proportional hazards [3] and random survival forests &mdash; producing a time-to-failure distribution rather than a point estimate.</p>
+
+<p>The consequence term weights that risk by what failure would cost: traffic density on the affected line, route classification, the presence of premier paths, and whether the failure mode imposes a complete line block or merely a temporary or permanent speed restriction.</p>
+
+<p>The result is a bounded index on [0, 100] accompanied by Shapley attributions [1] naming the factors that produced it &mdash; for example, <em>overdue by 41 days</em>, <em>repeat flaw at the same kilometre</em>, <em>premier path density</em>. Explainability here is not decoration. A divisional officer asked to defer one department's work in favour of another's will require the reason, and a score that cannot be defended will not be adopted.</p>
+
+<div class="fullwidth">
+  <p class="caption"><b>Figure 1:</b> Layered architecture. Source systems are read through degradable adapters (L1) into a normalised task model, scored by the learning services (L3), scheduled by the constraint-programming engine (L4), and returned to BDMS through an application layer (L5) in which the sanction decision remains human. Realised block outcomes feed back into L3 to retrain the duration and cancellation models.</p>
+<pre>
++------------------------------------------------------------------------------------------------------------+
+|  SOURCE SYSTEMS   (read-only adapters -- no intrusion on legacy systems)                                    |
+|     TMS            SMMS            TDMS            COA (WTT / master chart, running)            BDMS       |
++-----+--------------+---------------+----------------+-------------------------------------------+----------+
+      |  REST  /  read-only DB view  /  SFTP CSV  + CDC                                            | two-way
++-----v--------------v---------------v----------------v-------------------------------------------v----------+
+|  L1   INGESTION AND NORMALISATION                                                                          |
+|       adapter per source  ->  schema mapping  ->  de-duplication  ->  Unified Task Model (UTM)              |
+|       asset master keyed by (section, line, chainage/km, asset_id)                                          |
++------------------------------------------+-----------------------------------------------------------------+
+                                           |
++------------------------------------------v-----------------------------------------------------------------+
+|  L2   DATA PLATFORM                                                                                        |
+|       PostgreSQL + PostGIS (assets, tasks, blocks)   |   TimescaleDB (inspection series)                    |
+|       Redis (cache)                                  |   MinIO / S3 (attachments, USFD traces)              |
++------------------------------------------+-----------------------------------------------------------------+
+                                           |
++------------------------------------------v-----------------------------------------------------------------+
+|  L3   LEARNING SERVICES   (FastAPI microservices, MLflow-tracked)                                          |
+|       (1) Criticality and failure-risk scorer        (2) Block duration predictor  (P50 / P90)              |
+|       (3) Traffic-load / path-availability forecast  (4) Cancellation-risk model                            |
+|       (5) SHAP explainer -- every score defensible to a divisional officer                                   |
++------------------------------------------+-----------------------------------------------------------------+
+                                           |
++------------------------------------------v-----------------------------------------------------------------+
+|  L4   OPTIMISATION ENGINE                                                                                  |
+|       OR-Tools CP-SAT -- multi-objective, rolling horizon                                                   |
+|       weekly plan @ 15-min granularity    |    monthly plan @ corridor-slot granularity                     |
+|       ALNS / greedy fallback at scale     |    warm-start from the sanctioned plan (stability)              |
++------------------------------------------+-----------------------------------------------------------------+
+                                           |
++------------------------------------------v-----------------------------------------------------------------+
+|  L5   APPLICATION LAYER   (FastAPI + React / TypeScript)                                                   |
+|       time-distance chart  .  section map  .  clubbing suggestions  .  what-if simulator                    |
+|       role workflow:  JE  ->  Sr.DEN / DSTE / Sr.DEE  ->  Sr.DOM  ->  DRM   .   full audit trail            |
+|       sanctioned plan  ->  BDMS          realised outcomes  ->  back to L3 for retraining                   |
++------------------------------------------------------------------------------------------------------------+
+</pre>
+</div>
+<h3 class="sub">3.2&nbsp;&nbsp;Block duration</h3>
+
+<p class="noindent">Departments demand round durations while actual occupancy varies widely with work type, quantity, gang strength, machine deployment, site access, and whether the work falls by day or by night. The resulting mismatch is among the largest single sources of block over-run and consequent path loss. We fit a quantile gradient-boosting model over historical block records to predict both the median and the 90th percentile of occupancy. The scheduler reserves the line against the P90 estimate while the plan reports the P50, so that the common case is communicated honestly and the tail case does not disrupt traffic.</p>
+
+<h3 class="sub">3.3&nbsp;&nbsp;Traffic load and path availability</h3>
+
+<p class="noindent">Coaching traffic is largely deterministic and can be read directly from the working timetable. Goods traffic is not, and it is precisely on goods paths that the marginal cost of a block is felt. A seasonal time-series model, refined by a gradient-boosting model over calendar features, forecasts freight path demand per section per hour. The output is an hourly <em>traffic cost surface</em>: the price, in paths and detention minutes, of withdrawing a given section at a given hour.</p>
+
+<h3 class="sub">3.4&nbsp;&nbsp;Cancellation risk</h3>
+
+<p class="noindent">A sanctioned block that is later cancelled or curtailed consumes planning capacity and returns nothing. A classifier over late running, machine availability, staff position and weather estimates the probability of cancellation for each candidate placement. This is used both to avoid scheduling critical work into fragile slots and to maintain a standby queue, so that a block released at short notice is filled rather than lost.</p>
+
+<h2 class="sec">4&nbsp;&nbsp;The Optimisation Model</h2>
+
+<p class="noindent">Let <span class="mono">x[t, s, w] &isin; {0, 1}</span> indicate that task <em>t</em> is scheduled on block section <em>s</em> within time window <em>w</em>. The planner maximises</p>
+
+<div class="eqbox">
+<pre class="eq">  &Sigma;<sub>t</sub>  Criticality(t) &middot; Completed(t)
++ &beta; &middot; &Sigma;<sub>b</sub>  ClubbingBonus(b)
+&minus; &lambda; &middot; &Sigma;<sub>w</sub>  TrafficCost(s, w)
+&minus; &mu; &middot; &Sigma;<sub>t</sub>  OverdueBreach(t)</pre>
+</div>
+
+<p class="noindent">The four terms correspond respectively to risk retired, to the reward for combining several departments' work into a single line closure, to the operational price of the chosen window, and to the penalty for breaching a statutory maintenance schedule. The weights <span class="mono">&beta;</span>, <span class="mono">&lambda;</span> and <span class="mono">&mu;</span> are exposed to the planner as adjustable controls rather than fixed constants. Different divisions weigh freight path loss against maintenance backlog differently, and a system that conceals this trade-off inside a hard-coded constant will be trusted less than one that surfaces it.</p>
+
+<p>The formulation is subject to seven families of constraint:</p>
+
+<ol class="tight">
+  <li><b>Line exclusivity.</b> No two blocks may overlap on the same block section and line unless explicitly declared compatible.</li>
+  <li><b>Precedence and nesting.</b> A signalling disconnection must nest within the traffic block; work in proximity to the overhead equipment requires a concurrent power block; non-interlocking work follows its own prescribed sequence.</li>
+  <li><b>Corridor policy.</b> Blocks placed within the pre-defined maintenance corridor of the master chart are preferred; placement outside it is permitted but carries an elevated traffic cost.</li>
+  <li><b>Resources.</b> Gangs, supervisory staff and machines &mdash; tampers, ballast cleaning machines, utility vehicles, tower wagons &mdash; are cumulative resources, with positioning and travel time between consecutive sites modelled explicitly.</li>
+  <li><b>Duration.</b> The P90 predicted occupancy must fit within the sanctioned window, with a minimum separation between successive blocks.</li>
+  <li><b>Regulatory and safety limits.</b> Maximum block duration, restrictions on night working, declared fog and monsoon restrictions, special and VIP movements, and festival-period embargoes.</li>
+  <li><b>Statutory schedule.</b> Periodic maintenance &mdash; tamping, ultrasonic flaw detection, OHE inspection &mdash; must fall within its due date plus the permitted tolerance.</li>
+</ol>
+
+<p>The model is expressed in OR-Tools CP-SAT [2] using interval variables, <span class="mono">NoOverlap</span> over section resources and cumulative constraints over gangs and machines. Planning proceeds on a rolling horizon: the current week is solved at 15-minute granularity, the following four weeks at corridor-slot granularity, and the whole is re-solved nightly against realised outcomes. Each re-solve is warm-started from the previously sanctioned plan, with a stability penalty on moving blocks that have already been approved. Plan stability is a genuine operational requirement; a scheduler that reshuffles the whole week on every run imposes more coordination cost than it removes, however good its objective value.</p>
+
+<div class="note">
+We deliberately do not employ reinforcement learning in the scheduling core. The problem is well specified, the constraints are hard and safety-bearing, and a constraint-programming formulation is both auditable and provably feasible. Adaptive re-planning under live disruption is the natural place for a learned policy, and is identified in Section 8 as future work rather than claimed here.
+</div>
+
+<h2 class="sec">5&nbsp;&nbsp;Application Layer</h2>
+
+<p class="noindent">The interface is built around the artefact that railway operating staff already read daily. The <em>time&ndash;distance chart</em> plots time on the horizontal axis and chainage along the section on the vertical, rendering train paths as diagonals and proposed blocks as rectangles against a shaded corridor window. Placing the plan in this representation makes conflicts and opportunities immediately legible to the people who must approve them.</p>
+
+<p>Around it sit four further views. A <em>unified priority queue</em> presents pending tasks from all three departments in a single ranking, each row carrying its Shapley attribution. A <em>clubbing panel</em> surfaces the specific opportunities the system exists to find &mdash; several demands on one section within a short span that a single closure could serve. A <em>what-if simulator</em> allows a planner to move a block and see the recomputed traffic cost and carried-forward risk immediately, which is what converts a recommendation into a decision the planner owns. A <em>monthly view</em> presents section against day as a load surface for longer-horizon planning. Above all of them sits a fixed indicator strip carrying the measures defined in Section 7.</p>
+
+<h2 class="sec">6&nbsp;&nbsp;Implementation</h2>
+
+<p class="noindent">Table 2 lists the implementation stack. Two choices merit comment. First, the entire system is specified to run on premises, on RailTel or NIC infrastructure: operational railway data is not a candidate for public cloud, and a design that assumes otherwise is not deployable regardless of technical merit. Second, the optimisation core uses a freely licensed solver, which removes a procurement question that would otherwise sit between a working prototype and a pilot.</p>
+
+
+<h3 class="sub">6.1&nbsp;&nbsp;Data strategy</h3>
+
+<p class="noindent">We hold no live railway operational data, and the prototype does not claim otherwise. Public sources supply what they can: timetable data, station and section codes, route structure, published maintenance intervals and the corridor-block policy. The remainder is generated synthetically but faithfully &mdash; defect arrivals as a Poisson process modulated by accumulated tonnage and season, ultrasonic flaw classes, overhead-equipment fault types, point-machine failure rates, and, critically, demanded-versus-actual block durations with realistic over-run. The generator is anchored to one real double-line electrified section of approximately 120 km with eight to ten stations, so that distances, timings and traffic densities are plausible rather than arbitrary.</p>
+
+<p>On deployment, each synthetic feed is replaced by its corresponding adapter with no change to the layers above.</p>
+
+<div class="fullwidth">
+  <p class="caption"><b>Table 2:</b> Implementation stack. Selections favour on-premises deployability, absence of licence encumbrance, and the availability of explanation tooling over raw modelling capacity.</p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:15%">Layer</th>
+        <th style="width:44%">Selection</th>
+        <th style="width:41%">Rationale</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Backend</td><td>Python 3.11, FastAPI</td><td>Shares a runtime with the learning and optimisation components</td></tr>
+      <tr><td>Optimisation</td><td>Google OR-Tools CP-SAT</td><td>Industrial-grade, freely licensed, expresses interval and cumulative constraints natively</td></tr>
+      <tr><td>Learning</td><td>scikit-learn, LightGBM / XGBoost, lifelines, SHAP</td><td>Attribution available without additional modelling effort</td></tr>
+      <tr><td>Forecasting</td><td>SARIMAX baseline, LightGBM with calendar features</td><td>Adequate for hourly path-demand forecasting at section granularity</td></tr>
+      <tr><td>Data</td><td>PostgreSQL 16 with PostGIS, TimescaleDB, Redis</td><td>Geospatial chainage and inspection time series in one engine</td></tr>
+      <tr><td>Interface</td><td>React, TypeScript, D3, Leaflet</td><td>The time&ndash;distance chart has no off-the-shelf equivalent and must be drawn directly</td></tr>
+      <tr><td>Access control</td><td>Keycloak or direct LDAP binding; roles by department and designation</td><td>Reuses the existing railway directory rather than creating a parallel one</td></tr>
+      <tr><td>Deployment</td><td>Docker Compose for demonstration; Kubernetes on RailTel / NIC for production</td><td>Data sovereignty; no dependence on public cloud</td></tr>
+      <tr><td>Operations</td><td>MLflow, Prometheus, Grafana, structured audit log</td><td>Model governance and a defensible record of every recommendation</td></tr>
+    </tbody>
+  </table>
+</div>
+<h2 class="sec">7&nbsp;&nbsp;Evaluation Methodology</h2>
+
+<p class="noindent">Table 3 defines the measures. The headline measure is <em>risk retired per block-hour</em>, which is deliberately not task throughput: completing many low-consequence tasks inside a scarce corridor is precisely the failure mode the system exists to correct.</p>
+
+<p>Evaluation compares the optimised plan against a first-come-first-served baseline reproducing current practice, over an identical task population and horizon on the simulated section. Reported figures are therefore differences between two runs of the same simulator, and are stated as such. We do not extrapolate to network-wide monetary savings: the assumptions required for such a figure are not available to us, and a quantity that cannot be defended in questioning is worth less than no quantity at all.</p>
+
+<div class="fullwidth">
+  <p class="caption"><b>Table 3:</b> Evaluation measures. All are computed identically for the optimised plan and the first-come-first-served baseline; comparison is between the two runs, not against any published railway figure.</p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:26%">Measure</th>
+        <th style="width:74%">Definition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><b>Risk retired per block-hour</b></td><td>Sum of the Criticality Index of completed tasks divided by block hours consumed &mdash; the headline measure</td></tr>
+      <tr><td>Asset availability</td><td>Time for which the asset is fit for its design speed, as a proportion of total time across the section</td></tr>
+      <tr><td>Block utilisation</td><td>Productive working minutes as a proportion of the sanctioned block minutes</td></tr>
+      <tr><td>Corridor adherence</td><td>Proportion of blocks taken within the mandated corridor window</td></tr>
+      <tr><td>Clubbing ratio</td><td>Departments served per sanctioned block; a value above unity indicates genuine coordination</td></tr>
+      <tr><td>Overdue backlog</td><td>Count and age-weighted sum of tasks past their statutory due date</td></tr>
+      <tr><td>Traffic cost</td><td>Detention minutes and paths foregone, attributed per block</td></tr>
+      <tr><td>Cancellation rate</td><td>Proportion of sanctioned blocks subsequently cancelled or curtailed</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 class="sec">8&nbsp;&nbsp;Scope, Risks and Future Work</h2>
+
+<h3 class="sub">8.1&nbsp;&nbsp;Prototype scope</h3>
+
+<p class="noindent">The prototype covers one division, three to four block sections, all three departments, approximately 200 pending tasks and a 30-day horizon. It implements the criticality and duration models, the weekly and monthly optimisation, the interface described in Section 5, and the baseline comparison of Section 7.</p>
+
+<h3 class="sub">8.2&nbsp;&nbsp;Deployment risks</h3>
+
+<p class="noindent">Table 4 states the principal risks and the mitigations designed for them. Three deserve emphasis. Legacy integration is addressed by the degradable adapter rather than by assuming an API that may not exist. Departmental trust is addressed by explanation, adjustable weights and advisory-only output, because a system that cannot articulate why one department's work was deferred will not survive contact with the organisation. And the safety envelope is addressed by expressing nesting, precedence and regulatory limits as hard constraints while leaving sanction with the officer who holds it today.</p>
+
+<div class="fullwidth">
+  <p class="caption"><b>Table 4:</b> Principal deployment risks and the corresponding design responses.</p>
+  <table>
+    <thead>
+      <tr><th style="width:30%">Risk</th><th style="width:70%">Mitigation</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Source systems expose no API</td><td>Three-mode adapter: REST endpoint, read-only database view, or scheduled SFTP CSV</td></tr>
+      <tr><td>Incomplete or inconsistent defect records</td><td>Confidence-weighted scoring; low-confidence tasks are flagged for manual review rather than silently mis-ranked</td></tr>
+      <tr><td>Departmental resistance to a shared queue</td><td>Per-task Shapley attribution, planner-adjustable objective weights, advisory-only output, departmental concurrence retained in the workflow</td></tr>
+      <tr><td>Plan instability across re-solves</td><td>Warm-start from the sanctioned plan with a stability penalty on moving approved blocks</td></tr>
+      <tr><td>Live disruption invalidating the plan</td><td>Nightly re-solve against realised outcomes; standby task queue absorbs blocks released at short notice</td></tr>
+      <tr><td>Safety sensitivity of disconnections and power blocks</td><td>Nesting, precedence and regulatory limits expressed as hard constraints; sanction authority unchanged</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 class="sub">8.3&nbsp;&nbsp;Future work</h3>
+
+<p class="noindent">Four extensions are identified but not claimed: a learned policy for adaptive re-planning under live disruption; ingestion of condition-monitoring telemetry from track-geometry cars and instrumented overhead equipment; direct integration with the live train-running feed rather than the forecast; and multi-divisional operation with resource pooling across divisional boundaries. Certified write-back to BDMS and the associated safety audit also remain outside the present scope.</p>
+
+<h2 class="sec">9&nbsp;&nbsp;Development Schedule</h2>
+
+<p class="noindent">Development to the idea-submission deadline of 10 September 2026 proceeds in three stages. The first establishes the synthetic data generator, a first criticality model, a CP-SAT formulation producing any feasible weekly plan, and an interface skeleton; its completion criterion is that the solver emits a plan. The second adds the baseline comparison and its measured figures, the clubbing logic, and presentation-quality rendering of the time&ndash;distance chart. The third is reserved for verification and submission, which is scheduled for the morning of the deadline rather than the evening.</p>
+
+<h2 class="sec">10&nbsp;&nbsp;Conclusion</h2>
+
+<p class="noindent">Block planning on Indian Railways is not short of data; it is short of a layer that reconciles what three departments already know with what operations already knows, and then chooses. We have described such a layer: normalisation into a single task model, a criticality formulation that is explainable at the level of an individual defect, a constraint-programming model whose objective is risk retired per block-hour, and an evaluation that compares against current practice rather than against an assumed ideal. The system changes what planners see and what they are advised to do. It does not change who decides.</p>
+
+<h2 class="sec">References</h2>
+
+<div class="refs">
+<ol>
+  <li>S. M. Lundberg and S.-I. Lee. A unified approach to interpreting model predictions. <em>Advances in Neural Information Processing Systems</em>, 2017.</li>
+  <li>Google. <em>OR-Tools CP-SAT solver documentation</em>. developers.google.com/optimization/cp</li>
+  <li>D. R. Cox. Regression models and life-tables. <em>Journal of the Royal Statistical Society, Series B</em>, 34(2), 1972.</li>
+  <li>T. Chen and C. Guestrin. XGBoost: a scalable tree boosting system. <em>Proceedings of KDD</em>, 2016.</li>
+  <li>Indian Railways. <em>Indian Railways Permanent Way Manual</em> (IRPWM) &mdash; periodic maintenance schedules, ultrasonic flaw detection and tamping intervals.</li>
+  <li>Indian Railways. <em>Signal Engineering Manual</em> (IRSEM) &mdash; disconnection procedure.</li>
+  <li>Indian Railways. <em>AC Traction Manual</em> &mdash; overhead equipment power-block procedure.</li>
+  <li>Railway Board. Circular on pre-defined maintenance corridor blocks in the master chart.</li>
+  <li>CRIS. Public documentation for the Track Management System, Control Office Application and Block Demand Management System.</li>
+  <li>Indian Railways. <em>Annual Statistical Statements</em> &mdash; source for any cited failure or punctuality figure.</li>
+</ol>
+<p style="margin-top:5pt; font-size:8pt;"><em>Entries 5&ndash;10 are institutional sources to be cited with their exact circular numbers and editions in the final submission; each must be verified before inclusion.</em></p>
+</div>
+
+<div class="appendix-head">Appendix</div>
+
+<h2 class="sec">A&nbsp;&nbsp;Presentation Guidance and Common Pitfalls</h2>
+
+<p class="noindent">The following notes concern the communication of this work rather than its construction, and are recorded here for the team's use.</p>
+
+<h4 class="subsub">Points of emphasis</h4>
+<ul class="tight">
+  <li>Use the operational vocabulary precisely &mdash; block section, corridor block, disconnection, power block, master chart, working timetable, path, detention, speed restriction, non-interlocking work, sanction, and the divisional designations.</li>
+  <li>Lead with the time&ndash;distance chart. No other single artefact demonstrates familiarity with block planning as quickly.</li>
+  <li>Lead the argument with cross-departmental clubbing; it is the problem statement's actual pain and is visually self-evident.</li>
+  <li>Quantify from the simulator, with the governing assumption stated beside each figure.</li>
+  <li>State the human sanction boundary explicitly and early.</li>
+</ul>
+
+<h4 class="subsub">Failure modes to avoid</h4>
+<ul class="tight">
+  <li>Any suggestion of autonomous block granting; this forfeits credibility on safety grounds immediately.</li>
+  <li>Invoking deep learning or reinforcement learning without a formulation to defend under questioning.</li>
+  <li>Generic dashboard imagery in place of a train graph.</li>
+  <li>Network-wide monetary savings figures that cannot be derived from the work actually done.</li>
+  <li>Presenting integration as solved when the source systems may expose no interface.</li>
+</ul>
+
+<div class="fullwidth">
+<h2 class="sec">B&nbsp;&nbsp;Repository Structure</h2>
+
+<pre class="tree">
+SIH/
+  PLAN.md                        this document, in source form
+  SLIDES.md                      submission deck specification
+  docs/
+    architecture.drawio
+    domain-notes.md              vocabulary and policy references
+    kpi-definitions.md
+  data/
+    generator.py                 synthetic TMS / SMMS / TDMS / COA feeds
+    seed/                        section master, station list, timetable extract
+  services/
+    ingestion/                   adapters and the Unified Task Model
+    ml/                          criticality, duration, forecast, attribution
+    optimizer/                   CP-SAT model, weights, FCFS baseline
+    api/                         FastAPI application
+  web/                           React, TypeScript, D3 time-distance chart
+  eval/
+    baseline_vs_optimized.py     produces the reported comparison figures
+</pre>
+</div>
+
+</div>
+
+</body>
+</html>
