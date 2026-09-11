@@ -53,17 +53,18 @@ Ahmedabad–Vadodara corridor, against an FCFS baseline on the identical task po
 
 | Measure | Baseline | SAMANVAY | |
 |---|---:|---:|---|
-| **Risk retired per block-hour** | 20.0 | **29.4** | **+47%** |
-| Blocks used | 101 | 77 | −24% |
-| Block hours consumed | 250.2 | 194.5 | −22% |
-| Clubbing ratio (depts per block) | 1.00 | 1.29 | +29% |
-| Line closures saved | 0 | 22 | — |
-| Traffic cost (wtd detention min) | 15,598 | 12,037 | −23% |
-| Corridor adherence | 22% | 53% | +141% |
-| High-criticality unplanned failures | 23 | 21 | −9% |
-| Overdue task-days | 1,160 | 1,240 | **+7% worse** |
+| **Risk retired per block-hour** | 15.49 | **28.52** | **+84%** |
+| Blocks used | 105 | 77 | −27% |
+| Block hours consumed | 282.5 | 197.75 | −30% |
+| Clubbing ratio (depts per block) | 1.00 | 1.364 | +36% |
+| Line closures saved | 0 | 28 | — |
+| Traffic cost (wtd detention min) | 17,014 | 13,382 | −21% |
+| Corridor adherence | 20% | 52% | +160% |
+| Unplanned failures | 42 | 35 | −17% |
+| High-criticality unplanned failures | 24 | 21 | −13% |
+| Overdue task-days | 1,230 | 1,280 | **+4% worse** |
 
-Both plans complete about the same number of tasks (101 vs 99). The gain is not in
+Both plans complete the same number of tasks (105 each). The gain is not in
 doing more — it is in doing the *right* work, in *fewer* closures, at *cheaper* hours.
 
 **The overdue regression is real and is not a bug.** The optimiser ranks by criticality,
@@ -71,6 +72,29 @@ not by age, so it will pass over a long-overdue low-consequence job in favour of
 defect about to fail under a premier path. Raise `--overdue` to buy that back; it costs
 risk-retired-per-block-hour. The trade-off is the planner's to make, which is why it is
 a slider and not a constant.
+
+### The monthly horizon
+
+```bash
+python scripts/run_pipeline.py --days 7 --tasks 200 --monthly
+```
+
+A monthly plan answers a different question, so it uses a different model. Nobody commits
+a tamping machine to 11:15 on the 24th four weeks out — they commit it to *a corridor on
+the 24th*. The monthly solve therefore drops the fine time grid and allocates the mandated
+corridor itself, one slot per section, line and day.
+
+Over 30 days on this section: **95 of 420 corridor slots**
+allocated, **108 tasks placed**, backlog burning down
+**190 → 92**.
+
+**80 tasks cannot fit a corridor at all** — their P90 exceeds
+180 minutes. On the real railway these go up as extended or mega blocks
+negotiated separately with operations, and the monthly plan names them rather than quietly
+leaving them unscheduled. That list is itself an output: it is the division's extended-block
+demand for the month.
+
+In the UI, **Week / Month** switches horizons; `?view=month` links straight to it.
 
 ---
 

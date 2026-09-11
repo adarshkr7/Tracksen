@@ -89,6 +89,7 @@ def plan_payload(
     horizon_days: int,
     seed: int,
     pinned: list[dict] | None = None,
+    monthly: Any = None,
 ) -> dict[str, Any]:
     return {
         "meta": {
@@ -125,4 +126,20 @@ def plan_payload(
         "blocks": dump_blocks(plan),
         "baselineBlocks": dump_blocks(baseline),
         "tasks": dump_tasks(tasks, breakdowns),
+        "monthly": dump_monthly(monthly) if monthly is not None else None,
+    }
+
+
+def dump_monthly(r: Any) -> dict[str, Any]:
+    """The long-horizon view: corridor slots allocated across the month."""
+    return {
+        "days": len(r.backlog_by_day),
+        "corridorMinutes": r.corridor_minutes,
+        "slotsTotal": r.slots_total,
+        "slotsUsed": r.slots_used,
+        "blocks": dump_blocks(r.plan),
+        "metrics": r.metrics.__dict__,
+        "extendedTasks": r.extended_tasks,
+        "backlogByDay": r.backlog_by_day,
+        "solver": r.report.__dict__,
     }

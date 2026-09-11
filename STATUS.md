@@ -1,6 +1,6 @@
 # SAMANVAY — Build Status
 
-*Audited 11 September 2026 against the repository, not from memory.*
+*Audited 11 September 2026 against the repository, not from memory. Monthly horizon added same day.*
 Code in place: **~3,270 lines Python, ~1,910 lines TypeScript/CSS. Zero tests.**
 
 ---
@@ -12,10 +12,10 @@ A single percentage would be misleading, so here are the three that matter.
 | Denominator | Complete | What it means |
 |---|---:|---|
 | **Demo / prototype for the finals** | **~85%** | Runs end to end, produces measured results, has a UI a judge can drive |
-| **The problem statement's four stated requirements** | **~65%** | Two fully met, one partly, one barely started |
+| **The problem statement's four stated requirements** | **~75%** | Three met, one partly (integration) |
 | **A system that could be piloted on a division** | **~20%** | No real integration, no persistence, no auth, no audit, no tests |
 
-**If someone asks one number, say ~65%** — that is the honest answer against what
+**If someone asks one number, say ~75%** — that is the honest answer against what
 PS 26027 actually asked for, and it is the number you can defend line by line below.
 
 ---
@@ -83,16 +83,18 @@ The PS lists four things the solution "should include". Scored individually:
   in the paper and does not exist
 - No sensitivity analysis across weight settings
 
-### 4. Weekly *and* monthly horizons — **35%**
+### 4. Weekly *and* monthly horizons — **85%**
 
 > *"Provides block plans over multiple time horizons—weekly and monthly—to support both
 > short-term and long-term maintenance."*
 
-**This is the biggest gap against the PS.** The weekly plan at 15-minute granularity is
-built and working. The monthly plan at corridor-slot granularity **does not exist** —
-a single comment in `models/traffic.py` mentions it and nothing implements it. The
-architecture accommodates it (the solver is horizon-parameterised), but no one has run
-it, and there is no monthly view in the UI.
+**Built.** Weekly at 15-minute granularity; monthly at corridor-slot granularity via
+`build_monthly_candidates` + `PlanningSession.solve_monthly`, with a section × day
+allocation grid and backlog burn-down in the UI. Work too long for a corridor is
+surfaced as an extended-block demand list rather than silently dropped.
+
+Outstanding: the two horizons are solved independently. A proper rolling scheme would
+nest the week inside the month's allocation and re-solve nightly.
 
 ### Implicit requirement: decentralised & manual → coordinated & data-driven — **25%**
 
@@ -124,7 +126,7 @@ user accounts. The system currently advises one anonymous operator.
 | What-if simulator | ✅ | `web/.../WhatIfPanel.tsx` (286), `lib/whatif.ts` (284) |
 | Priority queue | ✅ | `web/.../TaskQueue.tsx` (141) |
 | KPI strip | ✅ | `web/.../KpiStrip.tsx` (104) |
-| **Monthly horizon** | ❌ | — |
+| Monthly horizon | ✅ | `optimizer/cpsat.py`, `session.py`, `web/.../MonthView.tsx` (216) |
 | **Ingestion adapters** | ❌ | — |
 | **Persistence** | ❌ | — |
 | **Approval workflow / RBAC / audit** | ❌ | — |
@@ -140,12 +142,10 @@ user accounts. The system currently advises one anonymous operator.
 1. **Held-out validation** for all four models. Train/test split with fixed seed, report
    out-of-sample AUC, P90 coverage and Spearman ρ. Every diagnostic on the page today is
    in-sample and a judge who asks will find it in thirty seconds. *~half a day.*
-2. **Monthly horizon.** 30-day plan at corridor-slot granularity, plus a section × day
-   load view in the UI. This is an explicit PS requirement currently unmet. *~1 day.*
-3. **A test suite.** At minimum: the optimiser never emits overlapping blocks on one
+2. **A test suite.** At minimum: the optimiser never emits overlapping blocks on one
    section/line; pins are always honoured or refused; baseline and optimised see
    identical constraints; the payload shape is stable. Zero tests today, on a codebase
-   where I have already found three real bugs by hand. *~1 day.*
+   where I have already found four real bugs by hand. *~1 day.*
 
 ### Tier 2 — makes it a system rather than a study
 

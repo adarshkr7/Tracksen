@@ -175,6 +175,68 @@ def build_candidates(
     return out
 
 
+def build_monthly_candidates(
+    section_ids: list[str],
+    horizon_days: int,
+    traffic: TrafficModel,
+    corridors: list[CorridorWindow],
+) -> tuple[list[Candidate], list[str]]:
+    """Corridor-slot granularity: one candidate per section, line and day.
+
+    A monthly plan answers a different question from a weekly one. Nobody commits a
+    tamping machine to 11:15 on the 24th four weeks out; they commit it to *a corridor
+    on the 24th*. So the monthly model drops the fine time grid entirely and allocates
+    the mandated corridor itself -- which is the unit a division actually plans plant,
+    material and staff against.
+
+    Returns the candidates and the ids of sections with no corridor, so a caller can
+    report the gap rather than silently planning nothing there.
+    """
+    by_key = {(c.section_id, c.day): c for c in corridors}
+    out: list[Candidate] = []
+    missing: list[str] = []
+    cid = 0
+
+    for sid in section_ids:
+        for day in range(horizon_days):
+            corr = by_key.get((sid, day))
+            if corr is None:
+                missing.append(f"{sid} day {day}")
+                continue
+            capacity = corr.end_min - corr.start_min
+            for line in (Line.UP, Line.DN):
+                cid += 1
+                out.append(
+                    Candidate(
+                        id=cid,
+                        section_id=sid,
+                        line=line,
+                        day=day,
+                        start_min=corr.start_min,
+                        capacity_min=capacity,
+                        traffic_cost=traffic.cost_of_block(
+                            sid, line, corr.start_min, corr.end_min
+                        ),
+                        inside_corridor=True,
+                        trains_affected=traffic.trains_affected(
+                            sid, line, corr.start_min, corr.end_min
+                        ),
+                    )
+                )
+    return out, missing
+
+
+def needs_extended_block(task: MaintenanceTask, corridor_min: int) -> bool:
+    """Work too long for the mandated corridor.
+
+    Deep screening and rail renewal routinely outrun a three-hour corridor. On the
+    real railway these go up as a separate extended or mega block negotiated with
+    operations. The monthly plan cannot absorb them, so it names them instead of
+    quietly leaving them unscheduled.
+    """
+    return (task.p90_duration_min or task.demanded_duration_min) > corridor_min
+
+
 def _eligible(task: MaintenanceTask, cand: Candidate) -> bool:
     """Can this task go in this window at all? Hard rules only."""
     if task.section_id != cand.section_id or task.line != cand.line:

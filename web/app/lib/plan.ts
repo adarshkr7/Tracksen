@@ -70,6 +70,18 @@ export type PathRow = [number, number, number, number, number, number];
 /** [sectionIdx, day, startMin, endMin] */
 export type CorridorRow = [number, number, number, number];
 
+export interface MonthlyPlan {
+  days: number;
+  corridorMinutes: number;
+  slotsTotal: number;
+  slotsUsed: number;
+  blocks: Block[];
+  metrics: Metrics;
+  extendedTasks: string[];
+  backlogByDay: number[];
+  solver: Record<string, number | string>;
+}
+
 export interface PlanData {
   meta: {
     horizon_days: number;
@@ -97,6 +109,8 @@ export interface PlanData {
   regulationOverheadMin: number;
   maxBlocksPerDeptPerDay: number;
   machinePositioningMin: number;
+  /** Present when the pipeline was run with --monthly. */
+  monthly: MonthlyPlan | null;
 }
 
 export const DEPT_COLOR: Record<Dept, string> = {

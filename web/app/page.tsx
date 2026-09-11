@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import KpiStrip from "./components/KpiStrip";
 import TaskQueue from "./components/TaskQueue";
+import MonthView from "./components/MonthView";
 import TimeDistanceChart from "./components/TimeDistanceChart";
 import WhatIfPanel from "./components/WhatIfPanel";
 import {
@@ -32,9 +33,16 @@ export default function Page() {
   const [which, setWhich] = useState<Which>("optimised");
   const [selected, setSelected] = useState<Block | null>(null);
   const [moves, setMoves] = useState<Map<string, number>>(new Map());
+  const [horizon, setHorizon] = useState<"week" | "month">("week");
   const [apiUp, setApiUp] = useState(false);
   const [solving, setSolving] = useState(false);
   const [resolveNote, setResolveNote] = useState<string | null>(null);
+
+  // Horizon is linkable: ?view=month opens straight on the monthly allocation.
+  useEffect(() => {
+    const v = new URLSearchParams(window.location.search).get("view");
+    if (v === "month" || v === "week") setHorizon(v);
+  }, []);
 
   useEffect(() => {
     fetch("/plan.json")
@@ -200,7 +208,10 @@ npm run sync
             SAMANVAY
           </h1>
           <span className="text-[12.5px]" style={{ color: "var(--ink-3)" }}>
-            Unified block plan · Ahmedabad–Vadodara · {data.meta.horizon_days}-day horizon
+            Unified block plan · Ahmedabad–Vadodara ·{" "}
+            {horizon === "month" && data.monthly
+              ? `${data.monthly.days}-day horizon`
+              : `${data.meta.horizon_days}-day horizon`}
           </span>
         </div>
         <p className="mt-2 text-[12.5px] max-w-2xl" style={{ color: "var(--ink-2)" }}>
@@ -214,7 +225,7 @@ npm run sync
       </section>
 
       {/* ---------- what-if totals ---------- */}
-      {moves.size > 0 && (
+      {moves.size > 0 && horizon === "week" && (
         <section className="mb-4 rounded-xl border px-4 py-2.5 flex items-center
                             gap-x-6 gap-y-2 flex-wrap fade-in"
           style={{
@@ -295,24 +306,36 @@ npm run sync
           style={{ borderColor: "var(--line)" }}>
           <Segmented
             options={[
-              { id: "optimised", label: "SAMANVAY" },
-              { id: "baseline", label: "Baseline" },
+              { id: "week", label: "Week" },
+              { id: "month", label: "Month" },
             ]}
-            value={which}
-            onChange={(v) => { setWhich(v as Which); setSelected(null); }}
+            value={horizon}
+            onChange={(v) => { setHorizon(v as "week" | "month"); setSelected(null); }}
           />
-          <Segmented
-            options={[
-              { id: "BOTH", label: "Both" },
-              { id: "DN", label: "DN" },
-              { id: "UP", label: "UP" },
-            ]}
-            value={line}
-            onChange={(v) => { setLine(v as LineName | "BOTH"); setSelected(null); }}
-          />
+          {horizon === "week" && (
+            <Segmented
+              options={[
+                { id: "optimised", label: "SAMANVAY" },
+                { id: "baseline", label: "Baseline" },
+              ]}
+              value={which}
+              onChange={(v) => { setWhich(v as Which); setSelected(null); }}
+            />
+          )}
+          {horizon === "week" && (
+            <Segmented
+              options={[
+                { id: "BOTH", label: "Both" },
+                { id: "DN", label: "DN" },
+                { id: "UP", label: "UP" },
+              ]}
+              value={line}
+              onChange={(v) => { setLine(v as LineName | "BOTH"); setSelected(null); }}
+            />
+          )}
 
           <div className="flex items-center gap-1 ml-auto">
-            {Array.from({ length: data.meta.horizon_days }, (_, d) => (
+            {horizon === "week" && Array.from({ length: data.meta.horizon_days }, (_, d) => (
               <button key={d} onClick={() => setDay(d)}
                 className="rounded-md px-2 py-1 text-[11.5px] tnum transition-colors"
                 style={{
@@ -323,9 +346,33 @@ npm run sync
                 {dayLabel(d)}
               </button>
             ))}
+            {horizon === "month" && (
+              <span className="text-[11.5px] tnum" style={{ color: "var(--ink-3)" }}>
+                {data.monthly
+                  ? `${data.monthly.days}-day corridor-slot allocation`
+                  : "not generated"}
+              </span>
+            )}
           </div>
         </div>
 
+        {horizon === "month" ? (
+          <div className="px-3 pt-3 pb-3">
+            {data.monthly ? (
+              <MonthView monthly={data.monthly} sections={data.sections}
+                taskById={taskById} />
+            ) : (
+              <div className="text-[12px] px-1 py-6" style={{ color: "var(--ink-2)" }}>
+                No monthly plan in this file. Generate one with{" "}
+                <code className="tnum">--monthly</code>:
+                <pre className="mt-2 rounded-lg p-3 text-[11.5px] overflow-x-auto"
+                  style={{ background: "var(--surface-2)" }}>
+                  {"python scripts/run_pipeline.py --days 7 --tasks 200 --monthly\ncd web && npm run sync"}
+                </pre>
+              </div>
+            )}
+          </div>
+        ) : (
         <div className="px-3 pt-3 pb-1">
           <TimeDistanceChart
             sections={data.sections}
@@ -343,7 +390,9 @@ npm run sync
             draggable={editable}
           />
         </div>
+        )}
 
+        {horizon === "week" && (
         <div className="flex items-center gap-x-5 gap-y-2 flex-wrap px-4 pb-3.5 pt-1
                         text-[11px]" style={{ color: "var(--ink-3)" }}>
           {(["ENGG", "S&T", "TRD"] as Dept[]).map((d) => (
@@ -372,9 +421,10 @@ npm run sync
             {editable && " · drag a block to test a move"}
           </span>
         </div>
+        )}
       </section>
 
-      {selected && (
+      {selected && horizon === "week" && (
         <section className="mb-6">
           <WhatIfPanel
             block={selected}

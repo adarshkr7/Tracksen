@@ -31,6 +31,8 @@ from .optimizer.cpsat import (
     OptimiserWeights,
     _eligible,
     build_candidates,
+    build_monthly_candidates,
+    needs_extended_block,
 )
 from .serialize import plan_payload
 
@@ -49,6 +51,19 @@ class Pin:
 
 
 @dataclass
+class MonthlyResult:
+    plan: Plan
+    metrics: PlanMetrics
+    report: object
+    extended_tasks: list[str]
+    corridor_minutes: int
+    slots_total: int
+    slots_used: int
+    backlog_by_day: list[int]
+    missing_corridors: list[str]
+
+
+@dataclass
 class SolveResult:
     plan: Plan
     baseline: Plan
@@ -60,8 +75,10 @@ class SolveResult:
 class PlanningSession:
     """Holds everything expensive; solves cheaply and repeatedly."""
 
-    def __init__(self, horizon_days: int = 7, n_tasks: int = 200, seed: int = 42):
+    def __init__(self, horizon_days: int = 7, n_tasks: int = 200, seed: int = 42,
+                 monthly_days: int = 30):
         self.horizon_days = horizon_days
+        self.monthly_days = monthly_days
         self.seed = seed
 
         with warnings.catch_warnings():
@@ -103,6 +120,7 @@ class PlanningSession:
         }
 
         self._baseline: Plan | None = None
+        self._monthly_ctx: tuple | None = None
 
     # ------------------------------------------------------------------ #
 
@@ -182,6 +200,77 @@ class PlanningSession:
         return extra, pin_cid, rejected
 
     # ------------------------------------------------------------------ #
+
+
+    # ------------------------------------------------------------------ #
+    # Monthly horizon
+    # ------------------------------------------------------------------ #
+
+    def monthly_context(self):
+        """Traffic, corridors and corridor-slot candidates over the long horizon.
+
+        Built on first use: thirty days of timetable is an order of magnitude more
+        paths than seven, and most sessions never ask for it.
+        """
+        if self._monthly_ctx is None:
+            days = self.monthly_days
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                paths = generate_timetable(days)
+                traffic = TrafficModel(paths, days)
+                corridors = generate_corridors(days)
+                cands, missing = build_monthly_candidates(
+                    [s.id for s in SECTIONS], days, traffic, corridors
+                )
+            self._monthly_ctx = (paths, traffic, corridors, cands, missing)
+        return self._monthly_ctx
+
+    def solve_monthly(
+        self,
+        weights: OptimiserWeights | None = None,
+        time_limit_s: float = 30.0,
+    ) -> "MonthlyResult":
+        """Allocate mandated corridor slots across the month.
+
+        Deliberately coarser than the weekly solve: the decision is which department's
+        work occupies which section-day corridor, not which quarter-hour. Work that
+        cannot fit inside a corridor is named rather than silently dropped -- it needs
+        an extended block negotiated with operations, which is a different conversation.
+        """
+        weights = weights or OptimiserWeights()
+        paths, traffic, corridors, candidates, missing = self.monthly_context()
+
+        corridor_min = candidates[0].capacity_min if candidates else 0
+        extended = [t for t in self.tasks if needs_extended_block(t, corridor_min)]
+        fits = [t for t in self.tasks if not needs_extended_block(t, corridor_min)]
+
+        opt = BlockOptimiser(weights=weights, time_limit_s=time_limit_s)
+        plan = opt.solve(fits, candidates, traffic, self.monthly_days)
+        plan.label = "SAMANVAY monthly (corridor-slot)"
+
+        metrics = evaluate(plan, self.tasks)
+
+        # How fast the backlog actually clears, day by day.
+        burn: list[int] = []
+        remaining = len(self.tasks)
+        done_by_day: dict[int, int] = {}
+        for b in plan.blocks:
+            done_by_day[b.day] = done_by_day.get(b.day, 0) + len(b.task_ids)
+        for d in range(self.monthly_days):
+            remaining -= done_by_day.get(d, 0)
+            burn.append(remaining)
+
+        return MonthlyResult(
+            plan=plan,
+            metrics=metrics,
+            report=opt.report,
+            extended_tasks=[t.id for t in extended],
+            corridor_minutes=corridor_min,
+            slots_total=len(candidates),
+            slots_used=len(plan.blocks),
+            backlog_by_day=burn,
+            missing_corridors=missing,
+        )
 
     def solve(
         self,

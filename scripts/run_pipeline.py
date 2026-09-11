@@ -59,6 +59,9 @@ def main() -> int:
     ap.add_argument("--overdue", type=float, default=1.5, help="mu: overdue penalty")
     ap.add_argument("--corridor", type=float, default=40.0, help="corridor adherence bonus")
     ap.add_argument("--out", type=str, default="out/plan.json")
+    ap.add_argument("--monthly", action="store_true",
+                    help="also solve the 30-day corridor-slot horizon")
+    ap.add_argument("--monthly-days", type=int, default=30)
     args = ap.parse_args()
 
     t_start = time.time()
@@ -170,6 +173,29 @@ def main() -> int:
     if shown == 0:
         print("  (no clubbed blocks -- try raising --clubbing)")
 
+    # ---- 8b. monthly horizon ---------------------------------------------- #
+    monthly = None
+    if args.monthly:
+        rule("8b  MONTHLY HORIZON  --  corridor-slot granularity")
+        from samanvay.session import PlanningSession  # noqa: E402
+
+        msession = PlanningSession(
+            horizon_days=args.days, n_tasks=args.tasks, seed=args.seed,
+            monthly_days=args.monthly_days,
+        )
+        monthly = msession.solve_monthly(weights=weights, time_limit_s=args.time_limit)
+        mm = monthly.metrics
+        print(f"  corridor slots used {monthly.slots_used}/{monthly.slots_total} "
+              f"({monthly.corridor_minutes} min each)  status {monthly.report.status} "
+              f"gap {monthly.report.gap_pct:.1f}%")
+        print(f"  scheduled {mm.tasks_scheduled}  deferred {mm.tasks_unscheduled}  "
+              f"clubbing {mm.clubbing_ratio:.2f}  closures saved {mm.line_closures_saved}")
+        print(f"  needs an extended block (P90 > corridor): "
+              f"{len(monthly.extended_tasks)} tasks")
+        burn = monthly.backlog_by_day
+        print(f"  backlog {burn[0]} -> {burn[-1]} over {len(burn)} days "
+              f"(day 7: {burn[6] if len(burn) > 6 else '-'})")
+
     # ---- 9. persist ------------------------------------------------------- #
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -191,6 +217,7 @@ def main() -> int:
         },
         horizon_days=args.days,
         seed=args.seed,
+        monthly=monthly,
     )
 
     out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")

@@ -44,7 +44,10 @@ class WorkSpec:
     asset_class: AssetClass
     block_type: BlockType
     base_min: int            # fixed set-up + clearance time
-    per_unit_min: float      # marginal minutes per unit of quantity
+    # Marginal minutes per unit. Calibrated so one task is one block's worth of work,
+    # not a whole campaign: a tamper makes roughly 500 m/h, a BCM 200 m/h. Getting
+    # this wrong by an order of magnitude makes every job look like a mega block.
+    per_unit_min: float
     qty_range: tuple[float, float]
     gang_range: tuple[int, int]
     machine: MachineType
@@ -59,11 +62,11 @@ WORK_CATALOGUE: list[WorkSpec] = [
     WorkSpec("Weld renewal", AssetClass.WELD, BlockType.TRAFFIC,
              40, 22.0, (1, 3), (6, 10), MachineType.NONE, True),
     WorkSpec("Rail renewal (short stretch)", AssetClass.RAIL, BlockType.TRAFFIC,
-             60, 3.2, (20, 130), (12, 22), MachineType.RAIL_CUM_ROAD, False),
+             60, 1.2, (20, 130), (12, 22), MachineType.RAIL_CUM_ROAD, False),
     WorkSpec("Through packing / tamping", AssetClass.RAIL, BlockType.TRAFFIC,
-             55, 0.55, (300, 1400), (4, 8), MachineType.TAMPER, False, night_allowed=False),
+             55, 0.12, (300, 1200), (4, 8), MachineType.TAMPER, False, night_allowed=False),
     WorkSpec("Deep screening", AssetClass.RAIL, BlockType.TRAFFIC,
-             90, 1.35, (120, 420), (10, 18), MachineType.BCM, False, night_allowed=False),
+             90, 0.30, (120, 420), (10, 18), MachineType.BCM, False, night_allowed=False),
     WorkSpec("Turnout overhaul", AssetClass.TURNOUT, BlockType.TRAFFIC,
              70, 34.0, (1, 3), (8, 14), MachineType.UTV, False),
 
@@ -75,13 +78,13 @@ WORK_CATALOGUE: list[WorkSpec] = [
     WorkSpec("Axle counter replacement", AssetClass.AXLE_COUNTER, BlockType.DISCONNECTION,
              40, 38.0, (1, 3), (2, 5), MachineType.NONE, True),
     WorkSpec("Signalling cable attention", AssetClass.TRACK_CIRCUIT, BlockType.DISCONNECTION,
-             45, 1.7, (40, 260), (4, 8), MachineType.NONE, False),
+             45, 0.45, (40, 260), (4, 8), MachineType.NONE, False),
 
     # ---- Traction Distribution (TDMS) ----
     WorkSpec("OHE mast / bracket attention", AssetClass.OHE_MAST, BlockType.POWER,
              45, 30.0, (1, 4), (4, 8), MachineType.TOWER_WAGON, True),
     WorkSpec("Contact wire renewal", AssetClass.CONTACT_WIRE, BlockType.POWER,
-             65, 2.4, (60, 380), (6, 12), MachineType.TOWER_WAGON, False),
+             65, 0.50, (60, 380), (6, 12), MachineType.TOWER_WAGON, False),
     WorkSpec("Insulator replacement", AssetClass.INSULATOR, BlockType.POWER,
              35, 19.0, (1, 6), (3, 6), MachineType.TOWER_WAGON, True),
     WorkSpec("Isolator servicing", AssetClass.ISOLATOR, BlockType.POWER,
