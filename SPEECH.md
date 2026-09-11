@@ -1,5 +1,5 @@
 # SAMANVAY — Implementation Deep-Dive Speech
-
+Hello
 **Length:** ~1,150 words ≈ **6½–7 minutes** at a deliberate technical pace.
 **Position:** follows the high-level pitch. Assumes the audience already knows *what* SAMANVAY does.
 **To cut to 4 minutes:** drop movement 4 (stability/learning) and compress movement 6 to its last two sentences.
