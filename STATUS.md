@@ -1,6 +1,7 @@
 # SAMANVAY — Build Status
 
-*Audited against the repository, not from memory. Last updated 11 September 2026.*
+*Audited against the repository, not from memory. Every figure below is reproducible —
+see "Check these claims yourself". Last updated 11 September 2026.*
 **~5,408 lines Python · ~2,228 lines TypeScript/CSS · ~1,375 lines of tests · 118 tests passing.**
 
 ---
@@ -136,12 +137,18 @@ per block, plant positioning, staff caps, night-work rules, horizon bounds), pin
 (honoured exactly or refused by name), payload shape from both producers, model behaviour
 including a **ground-truth leakage guard**, and generator calibration.
 
-`scripts/mutation_check.py` re-applies five defects this project actually shipped and
-confirms a test goes red for each — **11/11 caught**, including the two silent
-ingestion corruptions that raise no exception and a chain verifier rigged to always pass. Writing it found a sixth problem: the
-plant-positioning test read the same constant it was validating, so zeroing the constant
-relaxed the test too and the mutation walked straight through. It now asserts an
-independent floor.
+`scripts/mutation_check.py` re-applies **eleven** defects this project actually shipped
+and confirms a test goes red for each — **11/11 caught**. Among them: the clubbing
+constraint that made the model INFEASIBLE, the disabled conformal offset, ground truth in
+a feature set, the 10× duration calibration error, the two silent ingestion corruptions
+that raise no exception (metres read as kilometres, the un-inverted priority scale), an
+authority check removed so anyone could sanction, and a chain verifier rigged to always
+pass.
+
+A suite that passes proves nothing on its own; it may simply be unable to fail. Writing
+this check found exactly that: the plant-positioning test read the same constant it was
+validating, so zeroing the constant relaxed the assertion too and the mutation walked
+straight through. It now asserts an independent floor.
 
 ---
 
@@ -149,25 +156,48 @@ independent floor.
 
 ### Tier 1 — makes it a system rather than a study
 
-1. **Persistence.** PostgreSQL + PostGIS; stop regenerating the estate every run. Also
+1. **An approvals UI.** The route is enforced and exposed over HTTP, but a Sr.DEN cannot
+   use it without curl — so the governance layer is currently describable rather than
+   demonstrable. A queue view with concur / withhold / return, and the audit trail beside
+   the plan it belongs to. *~1 day, and the highest-value day left.*
+2. **Persistence.** PostgreSQL + PostGIS; stop regenerating the estate every run. Also
    removes the fixed `seed=42` limitation — the service always plans the same world. *~1–2 days.*
-2. **Approval workflow + audit trail.** Plan → departmental concurrence → sanction, with an
-   immutable record of what was recommended, what changed and by whom. This is what makes
-   the human-in-the-loop claim real rather than rhetorical. *~2 days.*
-3. **Point an adapter at something real.** The transport and translation work; only the
+3. **Bind identity to the divisional directory.** The workflow rules are enforced; *who you
+   are* is currently whatever you claim. LDAP or SSO behind `_actor()` closes it, and until
+   it does, the authority model is a convention rather than a control. *~1 day.*
+4. **Point an adapter at something real.** The transport and translation work; only the
    data behind them is mocked. A single live read-only view or SFTP drop from an actual
    departmental system would close the last of requirement 1. *~1 day, mostly access.*
 
 ### Tier 2 — depth
 
-4. Rolling nightly re-solve against realised outcomes, closing the learning loop
-5. Nest the weekly plan inside the monthly allocation instead of solving them independently
-6. Solver tuning: shrink the gap at short time limits; ALNS fallback for division scale
-7. RBAC against IR LDAP; multi-division; resource pooling
+5. Rolling nightly re-solve against realised outcomes, closing the learning loop
+6. Nest the weekly plan inside the monthly allocation instead of solving them independently
+7. Solver tuning: shrink the gap at short time limits; ALNS fallback for division scale
+8. Multi-division; resource pooling across divisional boundaries
 
 ### Tier 3 — pitch scope
 
-8. BDMS write-back; condition-monitoring telemetry; live COA feed
+9. BDMS write-back; condition-monitoring telemetry; live COA feed
+
+---
+
+## Check these claims yourself
+
+Nothing above should be taken on trust. Every number in this document comes from one of:
+
+```bash
+python -m pytest                    # 118 tests, ~80 s
+python scripts/mutation_check.py    # 11/11 — proves the tests can fail
+python scripts/validate.py          # held-out model performance, 5-fold
+python scripts/run_pipeline.py --days 7 --tasks 200 --time-limit 90 --monthly --validate
+python scripts/ingest.py            # native schemas -> UTM -> plan
+python scripts/serve.py             # then POST the approval route
+```
+
+The pipeline writes `out/plan.json`; the weekly, monthly and validation figures quoted
+here are read straight out of it. If a number here disagrees with a fresh run, the run is
+right and this file is stale.
 
 ---
 
@@ -186,10 +216,20 @@ independent floor.
 
 ## Bottom line
 
-The hard part is built, validated and tested: the data model, four models that beat a
-baseline on held-out data, a solver that finds cross-departmental clubbing over two
-horizons, and a UI a planner can argue with. What remains is storage, a real identity binding, and pointing the
-connectors — which exist and are tested — at something other than a mock.
+The hard part is built, validated and tested: the data model, adapters over three native
+schemas, four models that beat a baseline on held-out data, a solver that finds
+cross-departmental clubbing across two horizons, an approval route that refuses anyone
+reaching past their authority, and a UI a planner can argue with.
+
+What remains is narrower than it was and mostly unglamorous: storage, a real identity
+binding, an approvals screen, and pointing the connectors — which exist and are tested —
+at something other than a mock.
+
+**The honest framing for a judge.** Every mechanism the problem statement asks for exists
+and is tested. Three of them are wired to stand-ins rather than the real thing: the source
+data is generated, the identities are asserted, and the estate lives in memory. Those are
+deployment work, not research risk — but they are the difference between a system that
+demonstrates and a system that runs.
 
 For a hackathon prototype this is comfortably past where it needs to be. For a divisional
 pilot it is roughly halfway.
