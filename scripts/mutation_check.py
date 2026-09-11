@@ -53,6 +53,20 @@ MUTANTS = [
         "MACHINE_POSITIONING_MIN = 0",
         "tests/test_optimizer.py::test_positioning_buffer_is_meaningful",
     ),
+    (
+        "SMMS chainage read as km instead of metres",
+        "samanvay/ingestion/adapters.py",
+        "km=float(raw[\"chainage_m\"]) / 1000.0,",
+        "km=float(raw[\"chainage_m\"]),",
+        "tests/test_ingestion.py::test_smms_chainage_is_converted_from_metres",
+    ),
+    (
+        "SMMS priority scale not inverted",
+        "samanvay/ingestion/sources.py",
+        "SMMS_PRIORITY = {f\"P{i}\": 6 - i for i in range(1, 6)}",
+        "SMMS_PRIORITY = {f\"P{i}\": i for i in range(1, 6)}",
+        "tests/test_ingestion.py::test_smms_priority_scale_is_inverted_relative_to_tms",
+    ),
 ]
 
 results = []

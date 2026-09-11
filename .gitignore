@@ -6,3 +6,4 @@ venv/
 .idea/
 .vscode/
 *.egg-info/
+out/sources/

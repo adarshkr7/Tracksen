@@ -1,7 +1,7 @@
 # SAMANVAY — Build Status
 
 *Audited against the repository, not from memory. Last updated 11 September 2026.*
-**~3,946 lines Python · ~2,228 lines TypeScript/CSS · ~830 lines of tests · 70 tests passing.**
+**~4,700 lines Python · ~2,230 lines TypeScript/CSS · ~1,100 lines of tests · 87 tests passing.**
 
 ---
 
@@ -12,17 +12,17 @@ A single percentage would be misleading, so here are the three that matter.
 | Denominator | Complete | What it means |
 |---|---:|---|
 | **Demo / prototype for the finals** | **~95%** | Runs end to end, validated, tested, UI a judge can drive |
-| **The problem statement's four stated requirements** | **~80%** | Three met in full, integration partly |
-| **A system that could be piloted on a division** | **~30%** | No real connectors, no persistence, no auth, no audit trail |
+| **The problem statement's four stated requirements** | **~90%** | All four met; persistence and workflow remain |
+| **A system that could be piloted on a division** | **~40%** | Connectors exist; no persistence, no auth, no audit trail |
 
-**If someone asks one number, say ~80%** — that is the honest answer against what
+**If someone asks one number, say ~90%** — that is the honest answer against what
 PS 26027 actually asked for, and it is defensible line by line below.
 
 ---
 
 ## Against the problem statement
 
-### 1. Integration of maintenance data with corridor and traffic data — **40%**
+### 1. Integration of maintenance data with corridor and traffic data — **80%**
 
 > *"Integration of maintenance data (defects, overdue maintenance) from TMS, SMMS, and TDMS
 > with corridor block and block availability as per the Train Time Table and the goods
@@ -33,10 +33,16 @@ schemas with correct block types (traffic / disconnection / power); working time
 goods forecast with per-path probability, mandated corridor windows; historical block and
 defect records shaped as the real systems would expose them.
 
-**Not done** — **this is the remaining gap.**
-- **No adapters.** `services/ingestion/` was in the plan and does not exist. Every feed is
-  synthetic. The three-mode degradation (REST → read-only DB view → SFTP CSV) is a design,
-  not code.
+- **Adapter layer built** (`samanvay/ingestion/`). Three-mode degradation — REST →
+  read-only DB view → CSV drop — against mock TMS/SMMS/TDMS in genuinely different native
+  schemas (differing names, units, date formats and severity scales). Read-only by
+  construction: the DB adapter refuses anything but a view. Records that cannot be mapped
+  are rejected by name with a reason; degradation is reported, not hidden.
+  `scripts/ingest.py` plans end to end from ingested records.
+
+**Not done**
+- The sources are mocks written by `export_all()`, not live departmental systems. The
+  transport, schema translation and failure handling are real; the data behind them is not.
 - No persistence — no PostgreSQL, no PostGIS, no TimescaleDB. In-memory, regenerated per run.
 - No BDMS write-back.
 
@@ -94,6 +100,7 @@ accounts. The system currently advises one anonymous operator.
 | Area | Status | Where |
 |---|---|---|
 | Domain model, topology, timetable | ✅ | `domain.py`, `network.py` |
+| **Ingestion adapters (3-mode)** | ✅ | `ingestion/sources.py`, `ingestion/adapters.py` |
 | Synthetic TMS/SMMS/TDMS feeds | ✅ | `generator.py` |
 | Traffic cost surface | ✅ | `models/traffic.py` |
 | Criticality + Cox + SHAP | ✅ | `models/criticality.py` |
@@ -104,22 +111,24 @@ accounts. The system currently advises one anonymous operator.
 | KPI evaluation | ✅ | `evaluate.py` |
 | Session, pinning, re-solve | ✅ | `session.py`, `scripts/serve.py` |
 | Held-out validation | ✅ | `validation.py`, `scripts/validate.py` |
-| **Test suite (70 tests)** | ✅ | `tests/`, `scripts/mutation_check.py` |
+| **Test suite (87 tests)** | ✅ | `tests/`, `scripts/mutation_check.py` |
 | Time–distance chart, month view | ✅ | `web/app/components/` |
 | What-if simulator | ✅ | `web/app/components/WhatIfPanel.tsx`, `lib/whatif.ts` |
-| **Ingestion adapters** | ❌ | — |
 | **Persistence** | ❌ | — |
 | **Approval workflow / RBAC / audit** | ❌ | — |
 
 ### On the tests
 
-70 tests, ~80 s. They cover solver invariants (line exclusivity, one gang per department
+87 tests, ~80 s. They cover ingestion (round-trip fidelity, metres→km conversion,
+the inverted SMMS priority scale, degradation, read-only discipline, rejection by name),
+solver invariants (line exclusivity, one gang per department
 per block, plant positioning, staff caps, night-work rules, horizon bounds), pinning
 (honoured exactly or refused by name), payload shape from both producers, model behaviour
 including a **ground-truth leakage guard**, and generator calibration.
 
 `scripts/mutation_check.py` re-applies five defects this project actually shipped and
-confirms a test goes red for each — **5/5 caught**. Writing it found a sixth problem: the
+confirms a test goes red for each — **7/7 caught**, including the two silent ingestion
+corruptions that raise no exception. Writing it found a sixth problem: the
 plant-positioning test read the same constant it was validating, so zeroing the constant
 relaxed the test too and the mutation walked straight through. It now asserts an
 independent floor.
@@ -130,14 +139,14 @@ independent floor.
 
 ### Tier 1 — makes it a system rather than a study
 
-1. **Ingestion adapters** with three-mode degradation against a mock TMS/SMMS/TDMS. Even one
-   real adapter against a CSV drop converts "we designed for integration" into "we
-   integrated". This is the single biggest remaining gap against the PS. *~1–2 days.*
-2. **Persistence.** PostgreSQL + PostGIS; stop regenerating the estate every run. Also
+1. **Persistence.** PostgreSQL + PostGIS; stop regenerating the estate every run. Also
    removes the fixed `seed=42` limitation — the service always plans the same world. *~1–2 days.*
-3. **Approval workflow + audit trail.** Plan → departmental concurrence → sanction, with an
+2. **Approval workflow + audit trail.** Plan → departmental concurrence → sanction, with an
    immutable record of what was recommended, what changed and by whom. This is what makes
    the human-in-the-loop claim real rather than rhetorical. *~2 days.*
+3. **Point an adapter at something real.** The transport and translation work; only the
+   data behind them is mocked. A single live read-only view or SFTP drop from an actual
+   departmental system would close the last of requirement 1. *~1 day, mostly access.*
 
 ### Tier 2 — depth
 
@@ -169,8 +178,8 @@ independent floor.
 
 The hard part is built, validated and tested: the data model, four models that beat a
 baseline on held-out data, a solver that finds cross-departmental clubbing over two
-horizons, and a UI a planner can argue with. What remains is mostly the unglamorous half —
-real connectors, storage, workflow.
+horizons, and a UI a planner can argue with. What remains is storage and workflow — and pointing
+the connectors, which exist and are tested, at something other than a mock.
 
 For a hackathon prototype this is comfortably past where it needs to be. For a divisional
-pilot it is roughly a third of the way.
+pilot it is roughly two fifths of the way.

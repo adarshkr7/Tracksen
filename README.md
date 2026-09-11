@@ -12,8 +12,8 @@ SAMANVAY is a decision-support layer over those existing systems. It does not re
 any of them and it **never grants a block** — it produces a recommended plan, and the
 competent authority sanctions.
 
-**Build status:** see [STATUS.md](STATUS.md) — ~80% against the problem statement's four
-stated requirements, ~95% as a prototype, ~30% as something pilotable.
+**Build status:** see [STATUS.md](STATUS.md) — ~90% against the problem statement's four
+stated requirements, ~95% as a prototype, ~40% as something pilotable.
 
 ---
 
@@ -112,6 +112,9 @@ samanvay/
                      LightGBM classifier + Cox PH + SHAP attribution
     duration.py      Quantile GBM — P50 reported, P90 reserved against
     cancellation.py  Will this block, if sanctioned, actually run?
+  ingestion/
+    sources.py       Mock TMS / SMMS / TDMS in their native schemas
+    adapters.py      REST -> read-only DB view -> CSV, and normalisation into the UTM
   optimizer/
     cpsat.py         OR-Tools CP-SAT: the scheduling model, with pinned placements
     baseline.py      First-come-first-served — current practice, reproduced
@@ -182,23 +185,65 @@ One number was never in-sample and is worth saying so: the Spearman check of cri
 against true time-to-failure runs on the *pending* tasks, a different population from the
 historical defects the model trains on.
 
+## Ingestion
+
+```bash
+python scripts/ingest.py
+```
+
+Writes mock TMS / SMMS / TDMS in their **native** formats, pulls them through the adapter
+ladder into one Unified Task Model, then scores and schedules the result. Nothing above
+the adapter layer knows where the tasks came from — the same models and the same solver
+run on ingested records as on generated ones.
+
+The three systems deliberately disagree, because real ones do:
+
+| | Transport | Naming | Units | Dates | Severity |
+|---|---|---|---|---|---|
+| **TMS** | CSV drop | `UPPER_SNAKE` | km | `DD-MM-YYYY` | `S1..S5`, S5 worst |
+| **SMMS** | read-only DB view | `lower_snake` | **metres** | ISO | `P1..P5`, **P1 worst** |
+| **TDMS** | REST / JSON | `camelCase` | nested km | ISO-8601 Z | integer 1–5 |
+
+Each source is tried in descending order of fidelity — **REST → read-only DB view → CSV
+drop** — and falls back. A design that presumes an API cannot be commissioned; parts of
+the estate will give you nothing but a nightly file.
+
+**Two rules the layer is built on.**
+
+*Nothing is ever written to a source system.* The SQLite adapter opens with `mode=ro` and
+**refuses to run against anything but a view** — point it at a base table and it raises.
+A DBA grants a view, not a table, and the code should make the weaker grant sufficient.
+
+*A record that cannot be mapped is rejected by name, with a reason.* Silently dropping
+malformed rows is how a division discovers six months later that its worst defects were
+never scheduled because a date format changed. Degradation is reported too — the run log
+says which mode each source used and why the better ones were skipped.
+
+**The two failures worth testing for are the ones that don't throw.** SMMS publishes
+chainage in metres; read it as kilometres and every signalling job lands a thousand times
+further down the road. SMMS priority P1 is the *most* urgent, the reverse of TMS severity;
+map both straight onto an integer and the plan attends the least urgent faults first.
+Neither raises an exception. Both are covered by tests and by the mutation check.
+
 ## Tests
 
 ```bash
-python -m pytest              # 70 tests, ~80 s
+python -m pytest              # 87 tests, ~80 s
 python scripts/mutation_check.py
 ```
 
-Solver invariants (line exclusivity, one gang per department per block, plant positioning,
+Ingestion behaviour (round-trip fidelity, unit conversion, severity inversion,
+degradation, read-only discipline, rejection by name), solver invariants (line exclusivity, one gang per department per block, plant positioning,
 staff caps, night-work rules, horizon bounds), pinning behaviour, payload shape from both
 producers, model behaviour including a **ground-truth leakage guard**, and generator
 calibration. Physical constraints are asserted against the baseline too — if the baseline
 were allowed to break rules the optimiser obeys, the comparison above would be rigged.
 
-`mutation_check.py` re-applies five defects this project actually shipped — the INFEASIBLE
+`mutation_check.py` re-applies seven defects this project actually shipped — the INFEASIBLE
 clubbing constraint, the disabled conformal offset, ground truth in a feature set, the 10×
-duration calibration error, the removed positioning buffer — and confirms a test goes red
-for each. **5/5 caught.** A suite that passes proves nothing on its own; it may simply be
+duration calibration error, the removed positioning buffer, the metres/kilometres
+confusion, the un-inverted priority scale — and confirms a test goes red for each.
+**7/7 caught.** A suite that passes proves nothing on its own; it may simply be
 unable to fail.
 
 Writing that check found a sixth problem: the plant-positioning test read the same constant
