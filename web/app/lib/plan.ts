@@ -70,6 +70,22 @@ export type PathRow = [number, number, number, number, number, number];
 /** [sectionIdx, day, startMin, endMin] */
 export type CorridorRow = [number, number, number, number];
 
+export interface FoldScore {
+  metric: string;
+  mean: number;
+  std: number;
+  folds: number[];
+  note: string;
+}
+
+export interface Validation {
+  folds: number;
+  seed: number;
+  criticality: FoldScore[];
+  duration: FoldScore[];
+  cancellation: FoldScore[];
+}
+
 export interface MonthlyPlan {
   days: number;
   corridorMinutes: number;
@@ -95,6 +111,8 @@ export interface PlanData {
     rejectedPins?: string[];
   };
   model_checks: Record<string, Record<string, number>>;
+  /** Present when the pipeline was run with --validate. All held-out. */
+  validation: Validation | null;
   metrics: { baseline: Metrics; optimised: Metrics };
   stations: Station[];
   sections: Section[];

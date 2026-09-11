@@ -59,6 +59,8 @@ def main() -> int:
     ap.add_argument("--overdue", type=float, default=1.5, help="mu: overdue penalty")
     ap.add_argument("--corridor", type=float, default=40.0, help="corridor adherence bonus")
     ap.add_argument("--out", type=str, default="out/plan.json")
+    ap.add_argument("--validate", action="store_true",
+                    help="run k-fold held-out validation and include it in the output")
     ap.add_argument("--monthly", action="store_true",
                     help="also solve the 30-day corridor-slot horizon")
     ap.add_argument("--monthly-days", type=int, default=30)
@@ -196,6 +198,17 @@ def main() -> int:
         print(f"  backlog {burn[0]} -> {burn[-1]} over {len(burn)} days "
               f"(day 7: {burn[6] if len(burn) > 6 else '-'})")
 
+    # ---- 8c. held-out validation ------------------------------------------ #
+    validation = None
+    if args.validate:
+        rule("8c  HELD-OUT VALIDATION  --  5-fold cross-validation")
+        from samanvay.validation import validate_all  # noqa: E402
+
+        validation = validate_all(ds, k=5, seed=0)
+        for section in ("criticality", "duration", "cancellation"):
+            for row in validation[section]:
+                print(f"  {row['metric']:<46}{row['mean']:>7.3f} +/- {row['std']:.3f}")
+
     # ---- 9. persist ------------------------------------------------------- #
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -218,6 +231,7 @@ def main() -> int:
         horizon_days=args.days,
         seed=args.seed,
         monthly=monthly,
+        validation=validation,
     )
 
     out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")

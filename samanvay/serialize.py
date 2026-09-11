@@ -90,6 +90,7 @@ def plan_payload(
     seed: int,
     pinned: list[dict] | None = None,
     monthly: Any = None,
+    validation: dict | None = None,
 ) -> dict[str, Any]:
     return {
         "meta": {
@@ -101,6 +102,7 @@ def plan_payload(
             "pinned": pinned or [],
         },
         "model_checks": model_checks,
+        "validation": validation,
         "metrics": {k: v.__dict__ for k, v in metrics.items()},
         "stations": [{"code": s.code, "name": s.name, "km": s.km} for s in STATIONS],
         "sections": [

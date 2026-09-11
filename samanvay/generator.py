@@ -209,6 +209,27 @@ def _demanded_duration(rng: random.Random, true_min: int) -> int:
     return max(30, min(rounded, 8 * 60))
 
 
+def cancellation_probability(inside_corridor: bool, night: bool, monsoon: bool,
+                             needs_machine: bool) -> float:
+    """Ground-truth chance a sanctioned block is cancelled or curtailed.
+
+    Exported so `validation.py` can score an oracle against it: if a fitted model sits
+    close to the AUC this achieves, the remaining error is irreducible and a larger
+    model would only overfit. Keeping one definition means the oracle cannot drift away
+    from the process it is meant to bound.
+    """
+    p = 0.06
+    if not inside_corridor:
+        p += 0.11
+    if night:
+        p += 0.05
+    if monsoon:
+        p += 0.07
+    if needs_machine:
+        p += 0.06
+    return min(0.6, p)
+
+
 def _is_monsoon(day_index: int, start_month: int = 9) -> bool:
     """Crude seasonal flag: June-September."""
     month = ((start_month - 1) + day_index // 30) % 12 + 1
@@ -404,16 +425,9 @@ def generate_dataset(
         # Cancellation is driven by things the planner can see in advance: traffic
         # pressure outside the corridor, night working, monsoon, and machine-hungry
         # jobs whose plant may not turn up.
-        p_cancel = 0.06
-        if not inside_corridor:
-            p_cancel += 0.11
-        if night:
-            p_cancel += 0.05
-        if monsoon:
-            p_cancel += 0.07
-        if spec.machine is not MachineType.NONE:
-            p_cancel += 0.06
-        cancelled = rng.random() < min(0.6, p_cancel)
+        cancelled = rng.random() < cancellation_probability(
+            inside_corridor, night, monsoon, spec.machine is not MachineType.NONE
+        )
 
         history_blocks.append(
             HistoricalBlock(

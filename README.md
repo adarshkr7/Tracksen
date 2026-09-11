@@ -53,16 +53,16 @@ Ahmedabad–Vadodara corridor, against an FCFS baseline on the identical task po
 
 | Measure | Baseline | SAMANVAY | |
 |---|---:|---:|---|
-| **Risk retired per block-hour** | 15.49 | **28.52** | **+84%** |
-| Blocks used | 105 | 77 | −27% |
-| Block hours consumed | 282.5 | 197.75 | −30% |
-| Clubbing ratio (depts per block) | 1.00 | 1.364 | +36% |
-| Line closures saved | 0 | 28 | — |
-| Traffic cost (wtd detention min) | 17,014 | 13,382 | −21% |
-| Corridor adherence | 20% | 52% | +160% |
-| Unplanned failures | 42 | 35 | −17% |
-| High-criticality unplanned failures | 24 | 21 | −13% |
-| Overdue task-days | 1,230 | 1,280 | **+4% worse** |
+| **Risk retired per block-hour** | 15.13 | **28.12** | **+86%** |
+| Blocks used | 102 | 80 | -22% |
+| Block hours consumed | 279.5 | 210.5 | -25% |
+| Clubbing ratio (depts per block) | 1.00 | 1.35 | +35% |
+| Line closures saved | 0 | 28 | - |
+| Traffic cost (wtd detention min) | 18,228 | 13,734 | -25% |
+| Corridor adherence | 20% | 61% | +205% |
+| Unplanned failures | 41 | 36 | -12% |
+| High-criticality unplanned failures | 24 | 20 | -17% |
+| Overdue task-days | 1,239 | 1,264 | **+2% worse** |
 
 Both plans complete the same number of tasks (105 each). The gain is not in
 doing more — it is in doing the *right* work, in *fewer* closures, at *cheaper* hours.
@@ -143,6 +143,45 @@ department per day, night-working restrictions, and corridor capacity.
 
 ---
 
+## Held-out validation
+
+```bash
+python scripts/validate.py --folds 5
+```
+
+Every model is refitted on k-1 folds and scored on the fold it never saw. In-sample
+numbers on boosted trees are close to meaningless, and running this found two real
+defects that in-sample diagnostics had hidden completely.
+
+| Model | Held-out | Note |
+|---|---:|---|
+| Criticality classifier AUC | **0.826 +/- 0.017** | against 0.665 majority-class |
+| Cox concordance | **0.765 +/- 0.035** | ordering of time-to-failure |
+| Duration P90 coverage | **0.924 +/- 0.023** | target 0.90, conformalised |
+| Duration P50 MAE | **15.5 min** | vs 48.0 for a median baseline |
+| Cancellation AUC | **0.663 +/- 0.057** | oracle ceiling 0.662 |
+
+**What it caught, and what changed as a result.**
+
+*The P90 reservation did not hold.* In-sample coverage read 0.92; held-out it was
+**0.81** - roughly one block in five would have over-run the window reserved for it,
+quietly falsifying the central duration argument. The P90 is now **conformalised**: a
+calibration split the quantile model never fits on supplies an empirical offset
+(~10 min here) that restores the guarantee.
+Held-out coverage is now 0.924.
+
+*The cancellation model was memorising noise.* In-sample AUC 0.92, held-out **0.57** -
+barely better than a coin flip. It is now a **logistic regression**, reaching
+0.663 against an oracle scored on the data generator's
+own cancellation probabilities of 0.662. The simple model is within 0.002 of
+the information ceiling: whether a given block gets cancelled is mostly irreducible, and
+no amount of capacity recovers it. Treat that output as a weak prior - by nature, not by
+neglect.
+
+One number was never in-sample and is worth saying so: the Spearman check of criticality
+against true time-to-failure runs on the *pending* tasks, a different population from the
+historical defects the model trains on.
+
 ## Honest notes
 
 - **There is no live railway data here.** `generator.py` produces synthetic feeds whose
@@ -158,14 +197,15 @@ department per day, night-working restrictions, and corridor capacity.
   those rows are excluded rather than labelled zero. That biases the sample toward
   assets left alone longer, and is documented in `_label_within_horizon`. Cox uses the
   full sample, censoring included — which is why it is there.
-- **The solver stops at a ~17% optimality gap** in 45 seconds on this instance. The
-  reported figures are therefore a floor, not a ceiling, on what the formulation
-  achieves. The gap is printed on every run.
+- **The optimality gap is time-limit dependent**, and the figures above come from a 90 s
+  solve. Measured on this instance: 20 s -> 25.1% gap, 90 s -> 7.4%. Reported results are
+  a floor, not a ceiling. The gap prints on every run, so check it before quoting.
 - **Consequence weighting is weak on this topology** (0.87–0.98 across sections). Most
   traffic on a single trunk corridor runs through, so exposure genuinely is similar
   section to section. The term will discriminate properly across a division with branch
   lines and mixed route classifications.
-- Model diagnostics are in-sample. Held-out validation is outstanding.
+- Cancellation risk is near-irreducible on this data (see above). It ranks fragile
+  slots against robust ones and must not be read as a per-block prediction.
 
 ---
 

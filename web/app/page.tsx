@@ -25,6 +25,9 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
 type Which = "optimised" | "baseline";
 
+/** The held-out numbers worth putting in front of a reader. */
+const KEY_METRICS = /AUC \(held-out\)|P90 coverage|Cox concordance|ORACLE/;
+
 export default function Page() {
   const [data, setData] = useState<PlanData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -471,6 +474,30 @@ npm run sync
           an exponential hazard around the Cox expectation — an order of magnitude while
           dragging, not a substitute for the nightly re-solve.
         </p>
+        {data.validation && (
+          <p className="mt-1.5">
+            <b style={{ color: "var(--ink-2)" }}>Model performance is held-out</b> —{" "}
+            {data.validation.folds}-fold cross-validation, scored on data the models
+            never saw:{" "}
+            {[
+              ...data.validation.criticality,
+              ...data.validation.duration,
+              ...data.validation.cancellation,
+            ]
+              .filter((r) => KEY_METRICS.test(r.metric))
+              .map(
+                (r) =>
+                  `${r.metric
+                    .replace(" (held-out, conformalised)", "")
+                    .replace(" (held-out)", "")} ${r.mean.toFixed(3)}±${r.std.toFixed(3)}`,
+              )
+              .join(" · ")}
+            . The P90 reservation is conformalised against a calibration split the model
+            never fits on; without it, held-out coverage was 0.81 against a 0.90 target.
+            Cancellation sits within 0.002 of the information ceiling, so it is a weak
+            prior by nature rather than by neglect.
+          </p>
+        )}
       </footer>
     </Shell>
   );

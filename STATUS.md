@@ -13,7 +13,7 @@ A single percentage would be misleading, so here are the three that matter.
 |---|---:|---|
 | **Demo / prototype for the finals** | **~85%** | Runs end to end, produces measured results, has a UI a judge can drive |
 | **The problem statement's four stated requirements** | **~75%** | Three met, one partly (integration) |
-| **A system that could be piloted on a division** | **~20%** | No real integration, no persistence, no auth, no audit, no tests |
+| **A system that could be piloted on a division** | **~25%** | No real integration, no persistence, no auth, no audit, no tests |
 
 **If someone asks one number, say ~75%** — that is the honest answer against what
 PS 26027 actually asked for, and it is the number you can defend line by line below.
@@ -45,7 +45,7 @@ The PS lists four things the solution "should include". Scored individually:
   in-memory and regenerated per run.
 - No BDMS write-back.
 
-### 2. AI/ML to prioritise and schedule — **90%**
+### 2. AI/ML to prioritise and schedule — **95%**
 
 > *"Uses AI/ML algorithms to prioritize and schedule maintenance tasks based on
 > criticality, urgency, and impact on asset availability."*
@@ -59,9 +59,13 @@ The PS lists four things the solution "should include". Scored individually:
 - Cancellation-risk classifier
 - SHAP attribution on every task, surfaced in the UI
 
+- **Held-out validation** - 5-fold CV on every model (`scripts/validate.py`). Caught two
+  real defects: P90 coverage was 0.81 out-of-sample (now conformalised to
+  0.92), and the cancellation model was overfitting at 0.57 (now logistic
+  regression at 0.66, against a 0.66
+  oracle ceiling).
+
 **Not done**
-- **Held-out validation.** All diagnostics are in-sample. This is the single most
-  quotable weakness and the first thing to fix.
 - No MLflow / model registry / drift monitoring.
 
 ### 3. Optimise block scheduling, coordinate departments — **85%**
@@ -78,7 +82,7 @@ The PS lists four things the solution "should include". Scored individually:
 - Measured: risk retired per block-hour **+84%** (15.49→28.52), blocks **−27%**, corridor **20%→52%**
 
 **Not done**
-- Solver stops at a **~57% optimality gap**; not tuned, no ALNS fallback
+- Optimality gap is time-dependent: **25.1% at 20 s, 7.4% at 90 s**; not tuned, no ALNS fallback
 - Rolling nightly re-solve against realised outcomes — the feedback loop is described
   in the paper and does not exist
 - No sensitivity analysis across weight settings
@@ -131,7 +135,7 @@ user accounts. The system currently advises one anonymous operator.
 | **Persistence** | ❌ | — |
 | **Approval workflow / RBAC / audit** | ❌ | — |
 | **Tests** | ❌ | — |
-| **Held-out validation** | ❌ | — |
+| Held-out validation | ✅ | `validation.py`, `scripts/validate.py` |
 
 ---
 
@@ -139,10 +143,7 @@ user accounts. The system currently advises one anonymous operator.
 
 ### Tier 1 — before anyone quotes a number at you
 
-1. **Held-out validation** for all four models. Train/test split with fixed seed, report
-   out-of-sample AUC, P90 coverage and Spearman ρ. Every diagnostic on the page today is
-   in-sample and a judge who asks will find it in thirty seconds. *~half a day.*
-2. **A test suite.** At minimum: the optimiser never emits overlapping blocks on one
+1. **A test suite.** At minimum: the optimiser never emits overlapping blocks on one
    section/line; pins are always honoured or refused; baseline and optimised see
    identical constraints; the payload shape is stable. Zero tests today, on a codebase
    where I have already found four real bugs by hand. *~1 day.*
@@ -174,8 +175,8 @@ These are all documented in the README and most are visible in the UI. Saying th
 first reads as rigour; being caught on them does not.
 
 - **No live railway data.** Everything is synthetic, modelled on published intervals.
-- **In-sample diagnostics only.**
-- **~57% optimality gap** — reported figures are a floor.
+- **Cancellation risk is near the information ceiling** - a weak prior, not a prediction.
+- **Optimality gap depends on solver time** (25% at 20 s, 7% at 90 s) - figures are a floor.
 - **Overdue task-days get ~4% worse**, because criticality outranks age. A tunable
   trade-off, not a defect.
 - **Consequence weighting barely discriminates** (0.87–0.98) on a single trunk corridor.

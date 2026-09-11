@@ -7,67 +7,83 @@ retired. Two uses:
   * avoid placing the most critical work into the most fragile slots, and
   * keep a standby queue, so a block released at short notice is filled, not lost.
 
+**This is a logistic regression, not a gradient-boosted model, and that is deliberate.**
+Held-out validation showed the boosted version scoring 0.92 AUC in-sample and 0.57 out
+of sample -- it was memorising noise. Logistic regression reaches 0.66 held-out, and an
+oracle scored on the data generator's own cancellation probabilities reaches 0.664. In
+other words the simple model is within 0.002 of the information ceiling: whether a
+particular block gets cancelled is mostly irreducible, and no amount of model capacity
+will recover it.
+
+Treat the output as a weak prior, not a prediction. It is good enough to rank fragile
+slots against robust ones and no better, which is all the scheduler asks of it.
+
 Note that `inside_corridor` is a feature, and it is a *decision*, not an observation.
-That means the same task carries a different cancellation risk depending on where the
-optimiser puts it -- which is exactly the coupling we want to expose to the planner.
+The same task therefore carries a different cancellation risk depending on where the
+optimiser puts it -- which is the coupling we want to expose to the planner.
 """
 
 from __future__ import annotations
 
-import lightgbm as lgb
+import numpy as np
 import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 from ..domain import MaintenanceTask
 from ..generator import HistoricalBlock, _is_monsoon
 
-NUMERIC = ["night_work", "monsoon", "inside_corridor", "demanded_duration_min",
-           "gang_size"]
-CATEGORICAL = ["task_type", "machine"]
-FEATURES = NUMERIC + CATEGORICAL
+FEATURES = ["night_work", "monsoon", "inside_corridor", "has_machine",
+            "demanded_duration_min", "gang_size"]
+
+FEATURE_LABEL = {
+    "night_work": "night working",
+    "monsoon": "monsoon season",
+    "inside_corridor": "inside the corridor",
+    "has_machine": "needs plant",
+    "demanded_duration_min": "demanded duration",
+    "gang_size": "gang size",
+}
+
+
+def _row(night: bool, monsoon: bool, inside: bool, machine: str,
+         demanded: int, gang: int) -> dict:
+    return {
+        "night_work": int(night),
+        "monsoon": int(monsoon),
+        "inside_corridor": int(inside),
+        "has_machine": int(machine != "NONE"),
+        "demanded_duration_min": demanded,
+        "gang_size": gang,
+    }
 
 
 def _frame(history: list[HistoricalBlock]) -> pd.DataFrame:
-    rows = [
-        {
-            "night_work": int(h.night_work),
-            "monsoon": int(h.monsoon),
-            "inside_corridor": int(h.inside_corridor),
-            "demanded_duration_min": h.demanded_duration_min,
-            "gang_size": h.gang_size,
-            "task_type": h.task_type,
-            "machine": h.machine.value,
-            "cancelled": int(h.was_cancelled),
-        }
-        for h in history
-    ]
-    df = pd.DataFrame(rows)
-    for c in CATEGORICAL:
-        df[c] = df[c].astype("category")
-    return df
+    rows = []
+    for h in history:
+        r = _row(h.night_work, h.monsoon, h.inside_corridor, h.machine.value,
+                 h.demanded_duration_min, h.gang_size)
+        r["cancelled"] = int(h.was_cancelled)
+        rows.append(r)
+    return pd.DataFrame(rows)
 
 
 class CancellationModel:
     def __init__(self, random_state: int = 0):
         self.random_state = random_state
-        self.model: lgb.LGBMClassifier | None = None
-        self._categories: dict[str, pd.Index] = {}
+        self.model: Pipeline | None = None
         self.training_report: dict[str, float] = {}
 
     def fit(self, history: list[HistoricalBlock]) -> "CancellationModel":
         df = _frame(history)
-        for c in CATEGORICAL:
-            self._categories[c] = df[c].cat.categories
-
         X, y = df[FEATURES], df["cancelled"]
-        self.model = lgb.LGBMClassifier(
-            n_estimators=220,
-            learning_rate=0.05,
-            num_leaves=16,
-            min_child_samples=30,
-            random_state=self.random_state,
-            verbose=-1,
-        )
-        self.model.fit(X, y, categorical_feature=CATEGORICAL)
+
+        self.model = Pipeline([
+            ("scale", StandardScaler()),
+            ("lr", LogisticRegression(max_iter=1000, random_state=self.random_state)),
+        ])
+        self.model.fit(X, y)
 
         from sklearn.metrics import roc_auc_score
         self.training_report = {
@@ -77,28 +93,28 @@ class CancellationModel:
         }
         return self
 
+    def coefficients(self) -> dict[str, float]:
+        """Readable drivers, which is half the reason for choosing this model."""
+        if self.model is None:
+            return {}
+        lr: LogisticRegression = self.model.named_steps["lr"]
+        return {
+            FEATURE_LABEL.get(f, f): round(float(c), 3)
+            for f, c in zip(FEATURES, lr.coef_[0])
+        }
+
     def predict(self, tasks: list[MaintenanceTask], inside_corridor: bool = True) -> None:
         """Write cancellation risk onto each task for a given placement assumption."""
         if self.model is None:
             raise RuntimeError("CancellationModel.fit must be called before predict")
 
-        rows = [
-            {
-                "night_work": int(t.night_work_allowed),
-                "monsoon": int(_is_monsoon(max(0, t.raised_day))),
-                "inside_corridor": int(inside_corridor),
-                "demanded_duration_min": t.demanded_duration_min,
-                "gang_size": t.gang_size,
-                "task_type": t.task_type,
-                "machine": t.machine.value,
-            }
+        X = pd.DataFrame([
+            _row(t.night_work_allowed, _is_monsoon(max(0, t.raised_day)),
+                 inside_corridor, t.machine.value, t.demanded_duration_min, t.gang_size)
             for t in tasks
-        ]
-        X = pd.DataFrame(rows)
-        for c in CATEGORICAL:
-            X[c] = pd.Categorical(X[c], categories=self._categories[c])
+        ])[FEATURES]
 
-        p = self.model.predict_proba(X[FEATURES])[:, 1]
+        p = self.model.predict_proba(X)[:, 1]
         for i, t in enumerate(tasks):
             t.cancellation_risk = round(float(p[i]), 4)
 
@@ -111,9 +127,9 @@ class CancellationModel:
         if self.model is None:
             return 0.0
         self.predict(tasks, inside_corridor=True)
-        inside = [t.cancellation_risk or 0.0 for t in tasks]
+        inside = np.array([t.cancellation_risk or 0.0 for t in tasks])
         self.predict(tasks, inside_corridor=False)
-        outside = [t.cancellation_risk or 0.0 for t in tasks]
+        outside = np.array([t.cancellation_risk or 0.0 for t in tasks])
         # Leave the tasks carrying the in-corridor figure, which is the default plan.
         self.predict(tasks, inside_corridor=True)
-        return float(sum(o - i for o, i in zip(outside, inside)) / max(1, len(tasks)))
+        return float(np.mean(outside - inside))

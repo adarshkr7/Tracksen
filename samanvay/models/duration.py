@@ -11,6 +11,14 @@ So we fit two quantile models rather than one mean regressor:
     P90 -- the tail the line must actually be reserved against
 
 Scheduling against P50 would guarantee that roughly half of all blocks over-run.
+
+A quantile model fitted at alpha=0.9 does *not* reliably cover 90% of unseen data --
+held-out coverage on this estate came out at 0.81, because the fitted quantile is
+optimised on the training sample and the tail is exactly where trees extrapolate worst.
+So the P90 is conformalised: a calibration split the model never fits on supplies an
+empirical offset that restores the guarantee. Without it the scheduler reserves windows
+that fail roughly one time in five instead of one in ten, and the whole "reserve against
+P90" argument collapses.
 """
 
 from __future__ import annotations
@@ -52,10 +60,14 @@ def _history_frame(history: list[HistoricalBlock]) -> pd.DataFrame:
 
 
 class DurationModel:
-    def __init__(self, random_state: int = 0):
+    def __init__(self, random_state: int = 0, calibration_frac: float = 0.25,
+                 target_coverage: float = 0.90):
         self.random_state = random_state
+        self.calibration_frac = calibration_frac
+        self.target_coverage = target_coverage
         self.p50: lgb.LGBMRegressor | None = None
         self.p90: lgb.LGBMRegressor | None = None
+        self.p90_offset: float = 0.0
         self._categories: dict[str, pd.Index] = {}
         self.training_report: dict[str, float] = {}
 
@@ -76,19 +88,49 @@ class DurationModel:
         for c in CATEGORICAL:
             self._categories[c] = df[c].cat.categories
 
-        X, y = df[FEATURES], df["actual_duration_min"]
+        rng = np.random.default_rng(self.random_state)
+        idx = rng.permutation(len(df))
+        n_cal = max(30, int(len(df) * self.calibration_frac))
+        cal_idx, fit_idx = idx[:n_cal], idx[n_cal:]
+        fit_df, cal_df = df.iloc[fit_idx], df.iloc[cal_idx]
+
+        X, y = fit_df[FEATURES], fit_df["actual_duration_min"]
         self.p50 = self._make(0.5).fit(X, y, categorical_feature=CATEGORICAL)
         self.p90 = self._make(0.9).fit(X, y, categorical_feature=CATEGORICAL)
 
-        pred50 = self.p50.predict(X)
-        pred90 = self.p90.predict(X)
+        # One-sided split-conformal calibration. The offset is the
+        # ceil((n+1)*target)-th smallest residual on data the quantile never saw, which
+        # is what makes the coverage claim hold out of sample rather than in it.
+        cal_y = cal_df["actual_duration_min"].to_numpy()
+        cal_p90 = self.p90.predict(cal_df[FEATURES])
+        residuals = np.sort(cal_y - cal_p90)
+        rank = int(np.ceil((len(residuals) + 1) * self.target_coverage)) - 1
+        rank = min(max(rank, 0), len(residuals) - 1)
+        self.p90_offset = float(max(0.0, residuals[rank]))
+
+        pred50 = self.p50.predict(fit_df[FEATURES])
         self.training_report = {
-            "blocks_trained_on": float(len(df)),
+            "blocks_trained_on": float(len(fit_df)),
+            "calibration_blocks": float(len(cal_df)),
+            "p90_conformal_offset_min": round(self.p90_offset, 1),
             "in_sample_p50_coverage": float((y <= pred50).mean()),
-            "in_sample_p90_coverage": float((y <= pred90).mean()),
-            "median_actual_min": float(y.median()),
+            "calibrated_p90_coverage_on_calibration_set": float(
+                (cal_y <= cal_p90 + self.p90_offset).mean()
+            ),
+            "median_actual_min": float(df["actual_duration_min"].median()),
         }
         return self
+
+    def predict_arrays(self, X: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+        """P50 and conformalised P90 for a prepared feature frame.
+
+        Shared with `validation.py` so the validated model is literally the shipped one.
+        """
+        if self.p50 is None or self.p90 is None:
+            raise RuntimeError("DurationModel.fit must be called first")
+        p50 = np.maximum(20.0, self.p50.predict(X))
+        p90 = np.maximum(p50 + 5.0, self.p90.predict(X) + self.p90_offset)
+        return p50, p90
 
     def _task_frame(self, tasks: list[MaintenanceTask]) -> pd.DataFrame:
         rows = [
@@ -111,13 +153,10 @@ class DurationModel:
         return df
 
     def predict(self, tasks: list[MaintenanceTask], slot_min: int = 15) -> None:
-        """Write P50 and P90 onto each task, rounded up to whole planning slots."""
-        if self.p50 is None or self.p90 is None:
-            raise RuntimeError("DurationModel.fit must be called before predict")
+        """Write P50 and conformalised P90 onto each task, rounded up to whole slots."""
 
         X = self._task_frame(tasks)
-        p50 = np.maximum(20.0, self.p50.predict(X))
-        p90 = np.maximum(p50 + 5.0, self.p90.predict(X))
+        p50, p90 = self.predict_arrays(X)
 
         for i, t in enumerate(tasks):
             t.p50_duration_min = int(round(p50[i]))
