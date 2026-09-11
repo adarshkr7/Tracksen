@@ -12,8 +12,8 @@ SAMANVAY is a decision-support layer over those existing systems. It does not re
 any of them and it **never grants a block** — it produces a recommended plan, and the
 competent authority sanctions.
 
-**Build status:** see [STATUS.md](STATUS.md) — ~90% against the problem statement's four
-stated requirements, ~95% as a prototype, ~40% as something pilotable.
+**Build status:** see [STATUS.md](STATUS.md) — ~95% against the problem statement's four
+stated requirements, ~95% as a prototype, ~55% as something pilotable.
 
 ---
 
@@ -112,6 +112,9 @@ samanvay/
                      LightGBM classifier + Cox PH + SHAP attribution
     duration.py      Quantile GBM — P50 reported, P90 reserved against
     cancellation.py  Will this block, if sanctioned, actually run?
+  governance/
+    workflow.py      Who may approve what, and in what order
+    audit.py         Hash-chained, append-only, tamper-evident trail
   ingestion/
     sources.py       Mock TMS / SMMS / TDMS in their native schemas
     adapters.py      REST -> read-only DB view -> CSV, and normalisation into the UTM
@@ -225,25 +228,81 @@ further down the road. SMMS priority P1 is the *most* urgent, the reverse of TMS
 map both straight onto an integer and the plan attends the least urgent faults first.
 Neither raises an exception. Both are covered by tests and by the mutation check.
 
+## Approval workflow and audit trail
+
+SAMANVAY produces the plan. It does not sanction it — and `samanvay/governance/` is where
+that stops being a sentence in a README and becomes a rule the code enforces.
+
+The route a block demand actually travels:
+
+```
+JE / SSE raises
+  -> Sr.DEN / Sr.DSTE / Sr.DEE concur, each for their own department only
+      -> Sr.DOM clears the traffic impact
+          -> DRM sanctions
+```
+
+Four rules, all enforced and all tested:
+
+- **Only the DRM can sanction.** Every other role is refused — over HTTP, a `403`.
+- **A department head concurs for their own department and no other.** Sr.DSTE cannot
+  sign off Engineering's work; that is someone else's accountability.
+- **Sanction requires every department present to have concurred and operations to have
+  cleared.** Skipping the order gives a `409` listing exactly what is outstanding.
+- **A sanctioned plan cannot be edited.** Changing sanctioned work means superseding it
+  with a new plan that travels the route again. Modifying a *draft* silently invalidates
+  concurrences already given — they were granted to a different plan, and carrying them
+  forward would launder the change through approvals nobody gave for it.
+
+### The trail
+
+Every transition is appended to a **hash-chained** log: each entry carries the SHA-256 of
+the one before it. Edit any historical record — change a name, soften a remark, move a
+sanction time — and every subsequent hash stops matching. `GET /api/audit/verify` walks
+the chain and names the first broken link.
+
+A block plan is a safety document. When something goes wrong on the ground, the question
+asked afterwards is what was recommended, what was changed, by whom, and on whose
+authority. A log that can be quietly rewritten answers none of it.
+
+**Refused attempts are recorded too.** Someone reaching past their authority leaves a
+`DENIED` entry naming what they tried and why it was refused, rather than vanishing
+because the code said no.
+
+```bash
+POST /api/plans/{id}/submit     JE puts a plan into the route
+POST /api/plans/{id}/concur     departmental head, own department only
+POST /api/plans/{id}/clear      Sr.DOM, after concurrence
+POST /api/plans/{id}/sanction   DRM only, gate fully satisfied
+GET  /api/plans/{id}/audit      the trail for one plan, with chain status
+GET  /api/audit/verify          has the log been rewritten?
+```
+
+Identity is a stand-in: `_actor(name, role)` in `scripts/serve.py` is the seam a real
+deployment binds to the divisional directory. The workflow rules are the same either way,
+and leaving the seam visible is better than implying an identity system that is not there.
+
 ## Tests
 
 ```bash
-python -m pytest              # 87 tests, ~80 s
+python -m pytest              # 118 tests, ~80 s
 python scripts/mutation_check.py
 ```
 
-Ingestion behaviour (round-trip fidelity, unit conversion, severity inversion,
+Governance (authority, the sanction gate, tamper detection), ingestion behaviour
+(round-trip fidelity, unit conversion, severity inversion,
 degradation, read-only discipline, rejection by name), solver invariants (line exclusivity, one gang per department per block, plant positioning,
 staff caps, night-work rules, horizon bounds), pinning behaviour, payload shape from both
 producers, model behaviour including a **ground-truth leakage guard**, and generator
 calibration. Physical constraints are asserted against the baseline too — if the baseline
 were allowed to break rules the optimiser obeys, the comparison above would be rigged.
 
-`mutation_check.py` re-applies seven defects this project actually shipped — the INFEASIBLE
+`mutation_check.py` re-applies eleven defects this project actually shipped — the INFEASIBLE
 clubbing constraint, the disabled conformal offset, ground truth in a feature set, the 10×
 duration calibration error, the removed positioning buffer, the metres/kilometres
-confusion, the un-inverted priority scale — and confirms a test goes red for each.
-**7/7 caught.** A suite that passes proves nothing on its own; it may simply be
+confusion, the un-inverted priority scale, four governance failures including an
+authority check removed and a chain verifier that always passes — and confirms a test
+goes red for each. **11/11 caught.** A suite that passes proves nothing on its own; it may simply be
 unable to fail.
 
 Writing that check found a sixth problem: the plant-positioning test read the same constant

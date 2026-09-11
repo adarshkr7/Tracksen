@@ -7,3 +7,4 @@ venv/
 .vscode/
 *.egg-info/
 out/sources/
+out/audit.jsonl

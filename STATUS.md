@@ -1,7 +1,7 @@
 # SAMANVAY — Build Status
 
 *Audited against the repository, not from memory. Last updated 11 September 2026.*
-**~4,700 lines Python · ~2,230 lines TypeScript/CSS · ~1,100 lines of tests · 87 tests passing.**
+**~5,408 lines Python · ~2,228 lines TypeScript/CSS · ~1,375 lines of tests · 118 tests passing.**
 
 ---
 
@@ -12,10 +12,10 @@ A single percentage would be misleading, so here are the three that matter.
 | Denominator | Complete | What it means |
 |---|---:|---|
 | **Demo / prototype for the finals** | **~95%** | Runs end to end, validated, tested, UI a judge can drive |
-| **The problem statement's four stated requirements** | **~90%** | All four met; persistence and workflow remain |
-| **A system that could be piloted on a division** | **~40%** | Connectors exist; no persistence, no auth, no audit trail |
+| **The problem statement's four stated requirements** | **~95%** | All four met, plus the governance the PS implies |
+| **A system that could be piloted on a division** | **~55%** | Connectors, approvals and audit exist; no persistence, no real identity |
 
-**If someone asks one number, say ~90%** — that is the honest answer against what
+**If someone asks one number, say ~95%** — that is the honest answer against what
 PS 26027 actually asked for, and it is defensible line by line below.
 
 ---
@@ -87,11 +87,17 @@ silently dropped.
 **Not done** — the two horizons are solved independently. A proper rolling scheme would nest
 the week inside the month's allocation and re-solve nightly.
 
-### Implicit: decentralised & manual → coordinated & data-driven — **25%**
+### Implicit: decentralised & manual → coordinated & data-driven — **80%**
 
-The analysis layer is there; the *process* layer is not. No approval workflow
-(JE → Sr.DEN/DSTE/Sr.DEE → Sr.DOM → DRM), no role-based access, no audit trail, no user
-accounts. The system currently advises one anonymous operator.
+**Built** (`samanvay/governance/`). The full route — JE → departmental concurrence →
+Sr.DOM traffic clearance → DRM sanction — with authority enforced at every step, exposed
+over HTTP (403 for authority, 409 for state). Every transition, **including refused
+attempts**, lands in a hash-chained append-only audit log that detects any retroactive
+edit and names the first broken link.
+
+**Not done** — identity is a stand-in: roles are supplied by the caller rather than
+authenticated. `_actor()` in `scripts/serve.py` is the seam a real deployment binds to
+the divisional directory. And there is no approvals UI; the workflow is API-only.
 
 ---
 
@@ -111,15 +117,19 @@ accounts. The system currently advises one anonymous operator.
 | KPI evaluation | ✅ | `evaluate.py` |
 | Session, pinning, re-solve | ✅ | `session.py`, `scripts/serve.py` |
 | Held-out validation | ✅ | `validation.py`, `scripts/validate.py` |
-| **Test suite (87 tests)** | ✅ | `tests/`, `scripts/mutation_check.py` |
+| **Approval workflow + audit trail** | ✅ | `governance/workflow.py`, `governance/audit.py` |
+| **Test suite (118 tests)** | ✅ | `tests/`, `scripts/mutation_check.py` |
 | Time–distance chart, month view | ✅ | `web/app/components/` |
 | What-if simulator | ✅ | `web/app/components/WhatIfPanel.tsx`, `lib/whatif.ts` |
 | **Persistence** | ❌ | — |
-| **Approval workflow / RBAC / audit** | ❌ | — |
+| **Real identity / RBAC binding** | ❌ | roles are caller-supplied |
+| **Approvals UI** | ❌ | workflow is API-only |
 
 ### On the tests
 
-87 tests, ~80 s. They cover ingestion (round-trip fidelity, metres→km conversion,
+118 tests, ~80 s. They cover governance (only the DRM sanctions, heads concur only
+for their own department, the sanction gate, tamper detection on the audit chain),
+ingestion (round-trip fidelity, metres→km conversion,
 the inverted SMMS priority scale, degradation, read-only discipline, rejection by name),
 solver invariants (line exclusivity, one gang per department
 per block, plant positioning, staff caps, night-work rules, horizon bounds), pinning
@@ -127,8 +137,8 @@ per block, plant positioning, staff caps, night-work rules, horizon bounds), pin
 including a **ground-truth leakage guard**, and generator calibration.
 
 `scripts/mutation_check.py` re-applies five defects this project actually shipped and
-confirms a test goes red for each — **7/7 caught**, including the two silent ingestion
-corruptions that raise no exception. Writing it found a sixth problem: the
+confirms a test goes red for each — **11/11 caught**, including the two silent
+ingestion corruptions that raise no exception and a chain verifier rigged to always pass. Writing it found a sixth problem: the
 plant-positioning test read the same constant it was validating, so zeroing the constant
 relaxed the test too and the mutation walked straight through. It now asserts an
 independent floor.
@@ -178,8 +188,8 @@ independent floor.
 
 The hard part is built, validated and tested: the data model, four models that beat a
 baseline on held-out data, a solver that finds cross-departmental clubbing over two
-horizons, and a UI a planner can argue with. What remains is storage and workflow — and pointing
-the connectors, which exist and are tested, at something other than a mock.
+horizons, and a UI a planner can argue with. What remains is storage, a real identity binding, and pointing the
+connectors — which exist and are tested — at something other than a mock.
 
 For a hackathon prototype this is comfortably past where it needs to be. For a divisional
-pilot it is roughly two fifths of the way.
+pilot it is roughly halfway.

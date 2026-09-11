@@ -67,6 +67,34 @@ MUTANTS = [
         "SMMS_PRIORITY = {f\"P{i}\": i for i in range(1, 6)}",
         "tests/test_ingestion.py::test_smms_priority_scale_is_inverted_relative_to_tms",
     ),
+    (
+        "anyone may sanction (authority check removed)",
+        "samanvay/governance/workflow.py",
+        "if actor.role is not Role.DRM:",
+        "if False:",
+        "tests/test_governance.py::test_only_the_drm_can_sanction",
+    ),
+    (
+        "heads may concur for other departments",
+        "samanvay/governance/workflow.py",
+        "if not actor.may_concur_for(department):",
+        "if False:",
+        "tests/test_governance.py::test_a_head_cannot_concur_for_another_department",
+    ),
+    (
+        "audit chain verification always passes",
+        "samanvay/governance/audit.py",
+        "if e.compute_hash() != e.entry_hash:",
+        "if False:",
+        "tests/test_governance.py::test_editing_a_past_entry_breaks_the_chain",
+    ),
+    (
+        "sanctioned plans become editable again",
+        "samanvay/governance/workflow.py",
+        "if a.state is PlanState.SANCTIONED:\n            self._deny(actor, Action.MODIFY",
+        "if False:\n            self._deny(actor, Action.MODIFY",
+        "tests/test_governance.py::test_a_sanctioned_plan_cannot_be_modified",
+    ),
 ]
 
 results = []
