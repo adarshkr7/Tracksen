@@ -12,6 +12,9 @@ SAMANVAY is a decision-support layer over those existing systems. It does not re
 any of them and it **never grants a block** — it produces a recommended plan, and the
 competent authority sanctions.
 
+**Build status:** see [STATUS.md](STATUS.md) — ~65% against the problem statement's four
+stated requirements, ~85% as a prototype, ~20% as something pilotable.
+
 ---
 
 ## Running it
