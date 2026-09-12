@@ -2,7 +2,7 @@
 
 *Audited against the repository, not from memory. Every figure below is reproducible —
 see "Check these claims yourself". Last updated 12 September 2026.*
-**~6,800 lines Python · ~6,100 lines TypeScript/CSS · ~1,830 lines of tests · 211 tests passing.**
+**8,181 lines Python · 6,411 lines TypeScript/CSS · 2,544 lines of tests across 11 files · 211 tests passing.**
 
 > This document says what is **built**. [AUDIT.md](AUDIT.md) says what is **broken or
 > unfinished**, with severities. Read that one before quoting a number off a screen.
@@ -11,16 +11,31 @@ see "Check these claims yourself". Last updated 12 September 2026.*
 
 ## The headline number depends on what you are measuring against
 
-A single percentage would be misleading, so here are the three that matter.
+A single percentage would be misleading, so here are the three that matter. They are
+*judgement* with a number attached, not a measurement — what is measurable is the line-by-
+line breakdown below and the open list in [AUDIT.md](AUDIT.md).
 
 | Denominator | Complete | What it means |
 |---|---:|---|
-| **Demo / prototype for the finals** | **~95%** | Runs end to end, validated, tested, UI a judge can drive |
-| **The problem statement's four stated requirements** | **~95%** | All four met, plus the governance the PS implies |
-| **A system that could be piloted on a division** | **~55%** | Connectors, approvals, audit, authentication and approved-plan storage exist; the estate is still regenerated, no directory binding |
+| **Demo / prototype for the finals** | **~95%** | Runs end to end on published timetable data, held-out validated, 211 tests, ten screens a judge can drive |
+| **The problem statement's four stated requirements** | **~90%** | All four met, plus the governance the PS implies. Held back by requirement 1: the defect feeds are still mocks |
+| **A system that could be piloted on a division** | **~65%** | Adapters, approvals, tamper-evident audit, authentication and hash-verified plan storage all exist. The estate still regenerates from a fixed seed, identity is not bound to a directory, and nothing ingests what actually happened |
 
-**If someone asks one number, say ~95%** — that is the honest answer against what
-PS 26027 actually asked for, and it is defensible line by line below.
+**If someone asks one number, say ~90%** against what PS 26027 asked for — defensible line
+by line below. The pilotable figure moved 55% → 65% this pass: authentication and plan
+storage were the two things most obviously missing from it.
+
+### What changed since the last update
+
+| | Before | Now |
+|---|---|---|
+| Timetable | 212 services, times written by hand | **543 services, published times and running days** |
+| Network | main line only | **41 sections, 8 converging branches, 8 junction throats** |
+| Premier paths | priced at 4× | **fenced off — a block is never granted across one** |
+| Block types | emitted, constrained nothing | **withdrawal setup/restoration enforced** |
+| Identity | `{"role": "DRM"}` in the body, believed | **bearer token resolved server-side** |
+| Approved plan | hash recorded, content lost | **stored and hash-verified across restart** |
+| Tests | 118 | **211** |
 
 ---
 
@@ -44,21 +59,29 @@ defect records shaped as the real systems would expose them.
   are rejected by name with a reason; degradation is reported, not hidden.
   `scripts/ingest.py` plans end to end from ingested records.
 
+- **The timetable is published data**, not invented: 543 services over this division,
+  stops and times from IRCTC merged with running days from an NTES crawl
+  (`scripts/import_opendata.py`). An approximate hand-written file ships as the fallback,
+  and the Data Sources screen says which is in force.
+
 **Not done**
-- The sources are mocks written by `export_all()`, not live departmental systems. The
-  transport, schema translation and failure handling are real; the data behind them is not.
-- No persistence — no PostgreSQL, no PostGIS, no TimescaleDB. In-memory, regenerated per run.
+- The *maintenance* sources are mocks written by `export_all()`, not live departmental
+  systems. The transport, schema translation and failure handling are real; the defect
+  and asset data behind them is not.
+- The estate is regenerated from `seed=42` every start — no PostgreSQL, no PostGIS.
+  Approved *plans* persist and are hash-verified; the world they refer to does not.
 - No BDMS write-back.
 
 ### 2. AI/ML to prioritise and schedule — **95%**
 
 **Done**
 - Criticality = P(fail within H) × Urgency(Cox expectation) × Consequence
-- **Held-out validated** (5-fold): classifier AUC **0.826 ± 0.017**
-  against 0.665 majority-class; Cox concordance
-  **0.765 ± 0.035**
-- Duration P50/P90, **conformalised** — held-out coverage **0.924** against a 0.90 target
-- Cancellation risk at **0.663** against a **0.662** oracle ceiling
+- **Held-out validated** (5-fold): classifier AUC **0.898 ± 0.019** against 0.615
+  majority-class; Cox concordance **0.785 ± 0.015**
+- Duration P50/P90, **conformalised** — held-out P90 coverage **0.907 ± 0.028** against a
+  0.90 target; P50 absolute error **14.1 min** against a 46.0 min median baseline
+- Cancellation risk **0.627 ± 0.038** against an oracle ceiling of **0.651** — close to
+  the information limit of the process, which is the honest ceiling, not 1.0
 - Goods path-demand forecast → hourly traffic cost surface
 - SHAP attribution on every task, surfaced in the UI
 
@@ -84,8 +107,11 @@ traffic cost **−50%**, high-criticality unplanned failures **18→13**.
 
 ### 4. Weekly *and* monthly horizons — **85%**
 
-**Done** — weekly at 15-minute granularity; monthly at corridor-slot granularity
-(over 30 days, solved to proven optimality). Work too long for a corridor is surfaced as an extended-block demand list rather than silently dropped.
+**Done** — weekly at 15-minute granularity; monthly at corridor-slot granularity over
+30 days, solved to **proven optimality** (134 of 895 slots allocated). Work too long for a
+corridor — **311 tasks**, whose P90 plus the setup and restoration their withdrawal needs
+exceeds 180 minutes — is surfaced as an extended-block demand list rather than silently
+dropped. That list is itself an output: it is the division's extended-block demand.
 
 **Not done** — the two horizons are solved independently. A proper rolling scheme would nest
 the week inside the month's allocation and re-solve nightly.
@@ -98,10 +124,14 @@ over HTTP (403 for authority, 409 for state). Every transition, **including refu
 attempts**, lands in a hash-chained append-only audit log that detects any retroactive
 edit and names the first broken link.
 
-**Not done** — the identity *store* is a stand-in: bearer tokens in a file rather than
-the divisional directory, with no expiry and no per-token revocation. The identity
-*check* is real — `caller()` in `scripts/serve.py` is the seam a deployment binds to
-the divisional directory. And there is no approvals UI; the workflow is API-only.
+Identity is **authenticated**, not asserted: a bearer token resolves server-side to a name
+and a role, and `actor`/`role` are gone from the request bodies rather than validated.
+What was approved is **stored and hash-verified**, so a sanction can be shown rather than
+merely claimed — and a plan edited on disk after the fact is detected.
+
+**Not done** — the identity *store* is a stand-in: tokens in a file rather than the
+divisional directory, with no expiry and no per-token revocation. `caller()` in
+`scripts/serve.py` is the seam a deployment binds to.
 
 ---
 
@@ -109,7 +139,8 @@ the divisional directory. And there is no approvals UI; the workflow is API-only
 
 | Area | Status | Where |
 |---|---|---|
-| Domain model, topology, timetable | ✅ | `domain.py`, `network.py` |
+| Domain model, topology (41 sections, 8 branches) | ✅ | `domain.py`, `network.py` |
+| Published timetable (543 services) | ✅ | `scripts/import_opendata.py`, `timetable_import.py` |
 | **Ingestion adapters (3-mode)** | ✅ | `ingestion/sources.py`, `ingestion/adapters.py` |
 | Synthetic TMS/SMMS/TDMS feeds | ✅ | `generator.py` |
 | Traffic cost surface | ✅ | `models/traffic.py` |
@@ -122,7 +153,7 @@ the divisional directory. And there is no approvals UI; the workflow is API-only
 | Session, pinning, re-solve | ✅ | `session.py`, `scripts/serve.py` |
 | Held-out validation | ✅ | `validation.py`, `scripts/validate.py` |
 | **Approval workflow + audit trail** | ✅ | `governance/workflow.py`, `governance/audit.py` |
-| **Test suite (152 tests)** | ✅ | `tests/`, `scripts/mutation_check.py` |
+| **Test suite (211 tests, 11 files)** | ✅ | `tests/`, `scripts/mutation_check.py` |
 | Time–distance chart, month view | ✅ | `web/app/components/` |
 | What-if simulator | ✅ | `web/app/components/WhatIfPanel.tsx`, `lib/whatif.ts` |
 | Approved plan content | ✅ | `governance/planstore.py`, hash-verified |
@@ -133,14 +164,19 @@ the divisional directory. And there is no approvals UI; the workflow is API-only
 
 ### On the tests
 
-152 tests, ~40 s. They cover governance (only the DRM sanctions, heads concur only
+211 tests, ~43 s. They cover governance (only the DRM sanctions, heads concur only
 for their own department, the sanction gate, tamper detection on the audit chain),
 ingestion (round-trip fidelity, metres→km conversion,
 the inverted SMMS priority scale, degradation, read-only discipline, rejection by name),
 solver invariants (line exclusivity, one gang per department
-per block, plant positioning, staff caps, night-work rules, horizon bounds), pinning
-(honoured exactly or refused by name), payload shape from both producers, model behaviour
-including a **ground-truth leakage guard**, and generator calibration.
+per block, plant positioning, staff caps, night-work rules, horizon bounds, and that no
+block is placed across a protected premier path), pinning (honoured exactly or refused by
+name), the timetable reader (a malformed row stops the run rather than silently deleting
+a train), **authentication** (an unauthenticated approval action is 401, a role claimed in
+the body grants nothing, the audit records the authenticated name), **plan storage** (a
+plan edited on disk is detected; a plan id that would escape the store is refused),
+payload shape from both producers, model behaviour including a **ground-truth leakage
+guard**, and generator calibration.
 
 `scripts/mutation_check.py` re-applies **eleven** defects this project actually shipped
 and confirms a test goes red for each — **11/11 caught**. Among them: the clubbing
@@ -161,26 +197,31 @@ straight through. It now asserts an independent floor.
 
 ### Tier 1 — makes it a system rather than a study
 
-1. **An approvals UI.** The route is enforced and exposed over HTTP, but a Sr.DEN cannot
-   use it without curl — so the governance layer is currently describable rather than
-   demonstrable. A queue view with concur / withhold / return, and the audit trail beside
-   the plan it belongs to. *~1 day, and the highest-value day left.*
-2. **Persist the estate.** Approved plans are stored and hash-verified already; what is
+1. **Persist the estate.** Approved plans are stored and hash-verified already; what is
    still regenerated every run is the asset population and defect history. PostgreSQL +
    PostGIS removes the fixed `seed=42` limitation — the service always plans the same
    world. *~1–2 days.*
-3. **Bind the identity store to the divisional directory.** Authentication is real —
+2. **Bind the identity store to the divisional directory.** Authentication is real —
    a bearer token resolves to a role server-side and the request body has no say. What is
    missing is LDAP or SSO behind it, plus token expiry and per-token revocation. *~1 day.*
-4. **Point an adapter at something real.** The transport and translation work; only the
+3. **Point an adapter at something real.** The transport and translation work; only the
    data behind them is mocked. A single live read-only view or SFTP drop from an actual
    departmental system would close the last of requirement 1. *~1 day, mostly access.*
 
 ### Tier 2 — depth
 
-5. Rolling nightly re-solve against realised outcomes, closing the learning loop
-6. Nest the weekly plan inside the monthly allocation instead of solving them independently
-7. Solver tuning: shrink the gap at short time limits; ALNS fallback for division scale
+4. **Close the execution loop.** Nothing ingests what actually happened — actual
+   durations, overruns, cancellations, failures — so the models cannot be monitored for
+   drift or retrained against outcomes. The generator produces ground truth for
+   evaluation; the running system has no equivalent.
+5. Nest the weekly plan inside the monthly allocation instead of solving them independently
+6. **Solver tuning.** The weekly gap is 12.9% at 600 s and 76.6% at 240 s on a realistic
+   timetable, because criticality and traffic genuinely contend at that density.
+   Symmetry breaking across interchangeable candidates, or an LNS loop warm-started from
+   the incumbent, would close it with less wall-clock than more search does.
+7. **Branch-to-branch services.** 85 trains work Barauni to Hajipur through the main line;
+   the timetable schema holds one branch plus one main leg, so they are reported and
+   skipped. Real traffic this division sees.
 8. Multi-division; resource pooling across divisional boundaries
 
 ### Tier 3 — pitch scope
@@ -194,12 +235,21 @@ straight through. It now asserts an independent floor.
 Nothing above should be taken on trust. Every number in this document comes from one of:
 
 ```bash
-python -m pytest                    # 152 tests, ~40 s
+python -m pytest                    # 211 tests, ~43 s
 python scripts/mutation_check.py    # 11/11 — proves the tests can fail
 python scripts/validate.py          # held-out model performance, 5-fold
-python scripts/run_pipeline.py --days 7 --tasks 600 --time-limit 240 --monthly --validate
+python scripts/run_pipeline.py --days 7 --tasks 600 --time-limit 600 --monthly --validate
 python scripts/ingest.py            # native schemas -> UTM -> plan
-python scripts/serve.py             # then POST the approval route
+python scripts/serve.py             # prints bearer tokens once, on first run
+curl -H "Authorization: Bearer <token>" http://127.0.0.1:8000/api/me
+```
+
+The published timetable is not in the repository as a source dataset — only the 40 KB
+extract derived from it. To rebuild that extract:
+
+```bash
+python scripts/import_opendata.py --file data/IRCTC_cleaned.csv \
+    --ntes ../railpull/data/out -o data/timetable_danapur.imported.csv
 ```
 
 The pipeline writes `out/plan.json`; the weekly, monthly and validation figures quoted
@@ -237,18 +287,28 @@ schemas, four models that beat a baseline on held-out data, a solver that finds
 cross-departmental clubbing across two horizons, an approval route that refuses anyone
 reaching past their authority, and a UI a planner can argue with.
 
-What remains is narrower than it was and mostly unglamorous: storage, a real identity
-binding, pointing the connectors — which exist and are tested — at something other than a
-mock. [AUDIT.md](AUDIT.md) lists all of it with severities — including the one that
-matters most right now: against a realistically busy timetable the weekly optimality gap
-is wide, because criticality and traffic genuinely contend at that density where
-criticality used to dominate.
+What remains is narrower than it was and mostly unglamorous: persisting the estate,
+binding identity to a directory, pointing the connectors — which exist and are tested — at
+something other than a mock, and closing the loop by ingesting what actually happened.
+[AUDIT.md](AUDIT.md) lists all of it with severities.
 
 **The honest framing for a judge.** Every mechanism the problem statement asks for exists
-and is tested. Three of them are wired to stand-ins rather than the real thing: the source
-data is generated, the identities are asserted, and the estate lives in memory. Those are
-deployment work, not research risk — but they are the difference between a system that
+and is tested, and the traffic it plans around is published data rather than something
+this project made up. Two things are still wired to stand-ins: the *defect* feeds are
+generated, and the estate they describe is rebuilt from a fixed seed on every start. Those
+are deployment work, not research risk — but they are the difference between a system that
 demonstrates and a system that runs.
 
+The two claims most worth challenging, stated plainly:
+
+- **The weekly plan is not proven near-optimal at realistic traffic density.** 12.9% gap
+  at 600 s, 76.6% at 240 s. The comparison against FCFS is unaffected — both plans are
+  built under identical constraints — but "optimal" is not a word to use about the weekly
+  pass on this timetable.
+- **The published timetable is of its own vintage.** Real numbers, real times, real
+  running days; services introduced since the extract was taken are absent, and some it
+  contains have been retimed.
+
 For a hackathon prototype this is comfortably past where it needs to be. For a divisional
-pilot it is roughly halfway.
+pilot it is about two-thirds of the way, and the remaining third is named above rather
+than hand-waved.
