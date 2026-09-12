@@ -7,6 +7,7 @@ import {
   CorridorRow,
   DEPT_COLOR,
   LIVERY_COLOR,
+  LIVERY_GOODS,
   LIVERY_LABEL,
   LIVERY_WIDTH,
   LineName,
@@ -94,9 +95,17 @@ export default function TimeDistanceChart({
   const [dragging, setDragging] = useState<string | null>(null);
   const [trainHover, setTrainHover] =
     useState<{ run: TrainRun; x: number; y: number } | null>(null);
-  // Liveries switched OFF. Held as the exclusion rather than the inclusion so the
-  // resting state is "everything is drawn" and needs no initialisation.
-  const [hiddenLiveries, setHiddenLiveries] = useState<ReadonlySet<number>>(new Set());
+  // Liveries switched OFF, held as the exclusion rather than the inclusion.
+  //
+  // Goods starts hidden. It is 661 of the 945 runs on a Monday -- seven tenths of the
+  // ink -- and it is the one class that is FORECAST rather than booked: each of those
+  // paths carries a probability that it runs at all. Drawing them as 661 crisp lines
+  // is both the reason the chart is unreadable and a claim about certainty the data
+  // does not support. The 284 paths that remain are the ones a block is planned around.
+  //
+  // Hidden, not removed. The count stays on the chip and one click brings them back.
+  const [hiddenLiveries, setHiddenLiveries] =
+    useState<ReadonlySet<number>>(new Set([LIVERY_GOODS]));
   const clipId = useId();
 
   const maxKm = stations.length ? stations[stations.length - 1].km : 100;

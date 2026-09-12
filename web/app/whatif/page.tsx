@@ -36,7 +36,10 @@ function WhatIfBody() {
   const { plan, setPlan, taskById, apiUp } = usePlan();
   const { token } = useRole();
   const [day, setDay] = useState(0);
-  const [line, setLine] = useState<LineName | "BOTH">("BOTH");
+  // One direction at a time. Drawing both overlays UP and DN in the same band, which
+  // doubles the crossings for no information a planner uses -- a block sits on one line,
+  // never both -- and halves the height each block gets drawn at.
+  const [line, setLine] = useState<LineName | "BOTH">("DN");
   const [selected, setSelected] = useState<Block | null>(null);
   const [moves, setMoves] = useState<Map<string, number>>(new Map());
   // Held durations, separate from starts: a planner argues about when a possession
