@@ -335,21 +335,10 @@ class Plan:
         can be recomputed; they are excluded so that re-scoring an unchanged plan does
         not read as a change to it.
         """
-        import hashlib
-
-        body = "\n".join(
-            "|".join((
-                b.section_id,
-                b.line.value,
-                str(b.start_min),
-                str(b.end_min),
-                ",".join(sorted(b.task_ids)),
-            ))
-            for b in sorted(
-                self.blocks, key=lambda b: (b.start_min, b.section_id, b.line.value)
-            )
+        return plan_content_hash(
+            (b.section_id, b.line.value, b.start_min, b.end_min, b.task_ids)
+            for b in self.blocks
         )
-        return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 
 # --------------------------------------------------------------------------- #
@@ -358,6 +347,27 @@ class Plan:
 
 MINUTES_PER_DAY = 24 * 60
 SLOT_MIN = 15  # planning granularity for the weekly horizon
+
+
+def plan_content_hash(rows: Iterable[tuple[str, str, int, int, Iterable[str]]]) -> str:
+    """Fingerprint a plan from its operative rows: (section, line, start, end, tasks).
+
+    Takes rows rather than a `Plan` so that a plan read back from storage can be checked
+    against the hash recorded when it was signed, without first rebuilding the object
+    graph. Both callers go through here on purpose: a second implementation of "what a
+    plan is, canonically" would drift, and the one thing this value must never do is
+    disagree with itself.
+    """
+    import hashlib
+
+    body = "\n".join(
+        "|".join((section, line, str(start), str(end), ",".join(sorted(tasks))))
+        for section, line, start, end, tasks in sorted(
+            ((s, ln, st, en, list(tk)) for s, ln, st, en, tk in rows),
+            key=lambda r: (r[2], r[0], r[1]),
+        )
+    )
+    return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True)
