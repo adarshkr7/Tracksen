@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { DEPT_BLOCK, Dept, Task } from "../lib/plan";
 import { Band, band, BAND_COLOR } from "./PlanProvider";
-import { Badge, Bar, DeptBadge, Empty, PriorityBadge } from "./ui";
+import { Badge, Bar, Chip, DeptBadge, Empty, PriorityBadge } from "./ui";
 
 /**
  * The unified queue — all three departments in one ranking.
@@ -59,7 +59,7 @@ export default function TaskTable({
         style={{ borderBottom: "1px solid var(--line)", background: "var(--surface-2)" }}>
         <Chip active={dept === "ALL"} onClick={() => setDept("ALL")}>All departments</Chip>
         {DEPTS.map((d) => (
-          <Chip key={d} active={dept === d} onClick={() => setDept(d)} color={d}>
+          <Chip key={d} active={dept === d} onClick={() => setDept(d)}>
             {d === "ENGG" ? "Engineering" : d === "S&T" ? "S&T" : "Traction"}
           </Chip>
         ))}
@@ -91,19 +91,19 @@ export default function TaskTable({
 
       {/* ---- table ---- */}
       <div className="overflow-x-auto">
-        <table className="ops" style={{ minWidth: 1080 }}>
+        <table className="ops" style={{ minWidth: 960 }}>
           <thead>
             <tr>
-              <th style={{ width: 92 }}>Priority</th>
-              <th style={{ width: 62 }}>Ref</th>
-              <th>Work / Defect</th>
-              <th style={{ width: 96 }}>Section</th>
-              <th style={{ width: 78 }}>Chainage</th>
-              <th style={{ width: 104 }}>Department</th>
-              <th style={{ width: 110 }}>Block type</th>
-              <th style={{ width: 104 }}>Risk</th>
-              <th style={{ width: 96 }}>Duration</th>
-              <th style={{ width: 88 }}>Status</th>
+              <th style={{ width: 84 }}>Priority</th>
+              <th style={{ width: 58 }}>Ref</th>
+              <th style={{ minWidth: 190 }}>Work / Defect</th>
+              <th style={{ width: 88 }}>Section</th>
+              <th style={{ width: 74 }}>Chainage</th>
+              <th style={{ width: 92 }}>Department</th>
+              <th style={{ width: 100 }}>Block type</th>
+              <th style={{ width: 96 }}>Risk</th>
+              <th style={{ width: 84 }}>Duration</th>
+              <th style={{ width: 80 }}>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -176,19 +176,3 @@ export default function TaskTable({
   );
 }
 
-function Chip({ children, active, onClick, color }: {
-  children: React.ReactNode; active: boolean; onClick: () => void; color?: Dept;
-}) {
-  return (
-    <button onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-[3px] border px-2 py-[4px]
-                 text-[11px] font-medium transition-colors"
-      style={{
-        borderColor: active ? "var(--rail)" : "var(--line-2)",
-        background: active ? "var(--rail-bg)" : "var(--surface)",
-        color: active ? "var(--rail)" : "var(--ink-2)",
-      }}>
-      {children}
-    </button>
-  );
-}

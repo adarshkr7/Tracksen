@@ -106,7 +106,7 @@ function WhatIfBody() {
     <>
       <PageHead
         title="What-If Analysis"
-        subtitle="Move a block and see the traffic cost, the risk carried forward and the constraints it breaks"
+        subtitle="Move a block and see what it costs and what it breaks"
         right={<Lamp state={apiUp ? "ok" : "warn"} live={apiUp}
           label={apiUp ? "Solver reachable" : "Exploration only"} />}
       />

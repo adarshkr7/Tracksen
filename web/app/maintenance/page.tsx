@@ -56,7 +56,7 @@ function MaintenanceBody() {
         </MetricRow>
       </div>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1fr) 400px", alignItems: "start" }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1fr) 340px", alignItems: "start" }}>
         <Card pad={false}>
           <TaskTable
             tasks={plan.tasks} scheduledDay={scheduledDay}

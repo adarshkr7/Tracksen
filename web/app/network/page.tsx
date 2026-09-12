@@ -40,7 +40,7 @@ function NetworkBody() {
     <>
       <PageHead
         title="Railway Network"
-        subtitle="Danapur division, East Central Railway · Buxar (BXR) – Patna – Jhajha (JAJ) main line and eight modelled branches"
+        subtitle="Danapur division, East Central Railway · BXR–PNBE–JAJ main line and eight branches"
       />
       <div className="mb-4"><DemoNote /></div>
 

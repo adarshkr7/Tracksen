@@ -50,13 +50,14 @@ export default function ExpandableCard({
               </p>
             )}
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="head-tools ml-auto flex items-center gap-2">
             {right}
             <button
               onClick={() => setOpen(true)}
               title={`${title} — full screen`}
+              aria-label={`${title}, full screen`}
               className="inline-flex items-center gap-1.5 rounded-[3px] border px-2 py-[4px]
-                         text-[11px] font-medium transition-colors"
+                         text-[11px] font-medium whitespace-nowrap transition-colors"
               style={{ borderColor: "var(--line-2)", background: "var(--surface)",
                        color: "var(--ink-2)" }}
             >
@@ -87,12 +88,13 @@ export default function ExpandableCard({
                   {expandedSubtitle ?? subtitle}
                 </p>
               </div>
-              <div className="ml-auto flex items-center gap-3">
+              <div className="head-tools ml-auto flex items-center gap-3">
                 <span className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>
                   Press Esc to close
                 </span>
                 <button onClick={close}
-                  className="rounded-[3px] border px-2.5 py-[5px] text-[11.5px] font-medium"
+                  className="rounded-[3px] border px-2.5 py-[5px] text-[11.5px]
+                             font-medium whitespace-nowrap"
                   style={{ borderColor: "var(--line-2)", background: "var(--surface)",
                            color: "var(--ink)" }}>
                   Close
