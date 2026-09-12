@@ -25,6 +25,8 @@ parallel across departments, which is what clubbing means operationally.
 
 from __future__ import annotations
 
+import os
+
 from dataclasses import dataclass, field
 from typing import Iterable
 
@@ -351,12 +353,24 @@ def _eligible(task: MaintenanceTask, cand: Candidate) -> bool:
 # The model
 # --------------------------------------------------------------------------- #
 
+def default_workers() -> int:
+    """One search worker per core.
+
+    CP-SAT runs a PORTFOLIO: each worker explores with a different strategy and they
+    share bounds, so the count is not a throughput dial -- it is how many different ways
+    the problem is attacked at once. The fixed 8 this used to carry left half of a
+    sixteen-core machine idle, and measured at 180 seconds that alone was the difference
+    between a 73.1% gap and 18.2%: same plan, far better bound.
+    """
+    return max(1, os.cpu_count() or 8)
+
+
 class BlockOptimiser:
     def __init__(self, weights: OptimiserWeights | None = None,
-                 time_limit_s: float = 30.0, workers: int = 8):
+                 time_limit_s: float = 30.0, workers: int | None = None):
         self.w = weights or OptimiserWeights()
         self.time_limit_s = time_limit_s
-        self.workers = workers
+        self.workers = workers or default_workers()
         self.report: SolveReport | None = None
 
     def solve(
@@ -486,6 +500,16 @@ class BlockOptimiser:
                 for c in group
             ]
             m.AddNoOverlap(intervals)
+
+        # A redundant AddAtMostOne over the candidates sharing a section, a line and a
+        # start -- the five capacity variants -- was tried here and removed. The theory
+        # was that NoOverlap reasons through an interval propagator the linear relaxation
+        # cannot see, so stating the same thing linearly would tighten the bound the gap
+        # was stuck on. Measured at 600s and 16 workers, the bound moved from 8,807 to
+        # 8,809: two units in eight thousand, which is nothing. The 8.0% -> 6.5% that
+        # came with it was a luckier incumbent, and at 180s the same cut measured 39.6%
+        # against 18.2% without it. A constraint whose stated mechanism does not happen
+        # is not worth the presolve.
 
         # ---- plant cannot be in two places at once ---------------------- #
         machine_here: dict[tuple[int, MachineType], cp_model.IntVar] = {}
@@ -620,6 +644,11 @@ class BlockOptimiser:
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = self.time_limit_s
         solver.parameters.num_search_workers = self.workers
+        # linearization_level is deliberately left alone. Raising it to 2 builds a
+        # stronger LP relaxation, which is what the bound is computed from, so it looked
+        # like the obvious lever -- and measured at 180 seconds it made the gap WORSE,
+        # 18.2% to 25.1%. The stronger relaxation costs more per node than the portfolio
+        # recovers. symmetry_level=2 was neutral. Measured, not assumed.
         status = solver.Solve(m)
 
         plan = self._extract(
