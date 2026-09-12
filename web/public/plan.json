@@ -14,16 +14,16 @@
     },
     "solver": {
       "status": "FEASIBLE",
-      "objective": 8235.43,
-      "wall_time_s": 600.8,
+      "objective": 8255.05,
+      "wall_time_s": 603.5,
       "candidates": 5119,
       "assign_vars": 9737,
-      "scheduled": 193,
-      "unscheduled": 407,
+      "scheduled": 191,
+      "unscheduled": 409,
       "conflicts": 0,
-      "branches": 3386,
-      "best_bound": 9296.78,
-      "gap_pct": 12.89,
+      "branches": 0,
+      "best_bound": 8807.87,
+      "gap_pct": 6.7,
       "notes": []
     },
     "pinned": []
@@ -259,23 +259,23 @@
     },
     "optimised": {
       "label": "TRACKSEN (CP-SAT)",
-      "risk_retired_per_block_hour": 20.44,
-      "tasks_scheduled": 193,
-      "tasks_unscheduled": 407,
-      "blocks_used": 123,
-      "block_hours": 398.0,
-      "criticality_retired": 8133.249999999998,
-      "clubbing_ratio": 1.569,
-      "clubbed_blocks": 55,
-      "line_closures_saved": 70,
-      "traffic_cost": 72585.4,
-      "traffic_cost_per_task": 376.1,
-      "corridor_adherence": 0.6341,
-      "block_utilisation": 0.6237,
-      "overdue_task_days": 3998,
-      "expected_cancellations": 19.15,
-      "unplanned_failures": 67,
-      "critical_unplanned_failures": 12,
+      "risk_retired_per_block_hour": 20.36,
+      "tasks_scheduled": 191,
+      "tasks_unscheduled": 409,
+      "blocks_used": 122,
+      "block_hours": 394.0,
+      "criticality_retired": 8022.510000000002,
+      "clubbing_ratio": 1.566,
+      "clubbed_blocks": 54,
+      "line_closures_saved": 69,
+      "traffic_cost": 70208.3,
+      "traffic_cost_per_task": 367.6,
+      "corridor_adherence": 0.6557,
+      "block_utilisation": 0.6272,
+      "overdue_task_days": 3974,
+      "expected_cancellations": 18.98,
+      "unplanned_failures": 60,
+      "critical_unplanned_failures": 10,
       "notes": []
     }
   },
@@ -293198,42 +293198,14 @@
   ],
   "blocks": [
     {
-      "id": "1750",
+      "id": "1671",
       "sec": 10,
-      "line": "DN",
-      "day": 0,
-      "s": 0,
-      "e": 300,
-      "tasks": [
-        "T0366",
-        "T0580"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 908.0,
-      "crit": 118.82,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 908 wtd detention min",
-        "driven by T0580 (criticality 66)"
-      ]
-    },
-    {
-      "id": "2177",
-      "sec": 13,
       "line": "UP",
       "day": 0,
       "s": 0,
-      "e": 300,
+      "e": 240,
       "tasks": [
-        "T0088"
+        "T0187"
       ],
       "depts": [
         "S&T"
@@ -293242,67 +293214,66 @@
         "DISCONN"
       ],
       "corridor": false,
-      "traffic": 257.5,
-      "crit": 45.57,
+      "traffic": 198.7,
+      "crit": 32.62,
       "why": [
-        "outside corridor -- 258 wtd detention min",
-        "driven by T0088 (criticality 46)"
+        "outside corridor -- 199 wtd detention min",
+        "driven by T0187 (criticality 33)"
       ]
     },
     {
-      "id": "1498",
+      "id": "1497",
       "sec": 9,
       "line": "UP",
       "day": 0,
       "s": 0,
-      "e": 300,
+      "e": 240,
       "tasks": [
-        "T0417",
         "T0424"
       ],
       "depts": [
-        "ENGG",
         "S&T"
       ],
       "types": [
-        "DISCONN",
-        "TRAFFIC"
+        "DISCONN"
       ],
       "corridor": false,
-      "traffic": 319.6,
-      "crit": 91.86,
+      "traffic": 177.5,
+      "crit": 54.75,
       "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 320 wtd detention min",
+        "outside corridor -- 178 wtd detention min",
         "driven by T0424 (criticality 55)"
       ]
     },
     {
-      "id": "2332",
+      "id": "2331",
       "sec": 14,
       "line": "UP",
       "day": 0,
       "s": 0,
-      "e": 300,
+      "e": 240,
       "tasks": [
-        "T0257",
-        "T0384"
+        "T0060",
+        "T0143",
+        "T0499"
       ],
       "depts": [
+        "ENGG",
         "S&T",
         "TRD"
       ],
       "types": [
         "DISCONN",
-        "POWER"
+        "POWER",
+        "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 404.9,
-      "crit": 84.57,
+      "traffic": 284.5,
+      "crit": 124.8,
       "why": [
-        "clubbed: S&T, TRD share one closure",
-        "outside corridor -- 405 wtd detention min",
-        "driven by T0257 (criticality 45)"
+        "clubbed: ENGG, S&T, TRD share one closure",
+        "outside corridor -- 284 wtd detention min",
+        "driven by T0143 (criticality 52)"
       ]
     },
     {
@@ -293334,40 +293305,16 @@
       ]
     },
     {
-      "id": "248",
+      "id": "249",
       "sec": 1,
       "line": "DN",
       "day": 0,
       "s": 360,
-      "e": 480,
+      "e": 540,
       "tasks": [
-        "T0075"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 295.6,
-      "crit": 60.66,
-      "why": [
-        "outside corridor -- 296 wtd detention min",
-        "driven by T0075 (criticality 61)"
-      ]
-    },
-    {
-      "id": "2426",
-      "sec": 14,
-      "line": "DN",
-      "day": 0,
-      "s": 420,
-      "e": 720,
-      "tasks": [
-        "T0169",
-        "T0200",
-        "T0391"
+        "T0075",
+        "T0228",
+        "T0408"
       ],
       "depts": [
         "ENGG",
@@ -293380,12 +293327,12 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 1012.3,
-      "crit": 100.04,
+      "traffic": 695.0,
+      "crit": 165.8,
       "why": [
         "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 1012 wtd detention min",
-        "driven by T0391 (criticality 48)"
+        "outside corridor -- 695 wtd detention min",
+        "driven by T0075 (criticality 61)"
       ]
     },
     {
@@ -293413,14 +293360,42 @@
       ]
     },
     {
-      "id": "1999",
+      "id": "2000",
       "sec": 12,
       "line": "UP",
       "day": 0,
       "s": 600,
-      "e": 720,
+      "e": 780,
       "tasks": [
-        "T0114"
+        "T0079",
+        "T0419"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 461.3,
+      "crit": 94.51,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0079 (criticality 50)"
+      ]
+    },
+    {
+      "id": "2086",
+      "sec": 12,
+      "line": "DN",
+      "day": 0,
+      "s": 600,
+      "e": 780,
+      "tasks": [
+        "T0595"
       ],
       "depts": [
         "ENGG"
@@ -293429,11 +293404,35 @@
         "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 369.0,
-      "crit": 64.56,
+      "traffic": 367.9,
+      "crit": 48.17,
       "why": [
         "inside mandated corridor",
-        "driven by T0114 (criticality 65)"
+        "driven by T0595 (criticality 48)"
+      ]
+    },
+    {
+      "id": "987",
+      "sec": 6,
+      "line": "UP",
+      "day": 0,
+      "s": 600,
+      "e": 720,
+      "tasks": [
+        "T0241"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 268.6,
+      "crit": 55.46,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0241 (criticality 55)"
       ]
     },
     {
@@ -293468,7 +293467,7 @@
       "s": 660,
       "e": 780,
       "tasks": [
-        "T0311"
+        "T0405"
       ],
       "depts": [
         "ENGG"
@@ -293478,94 +293477,22 @@
       ],
       "corridor": true,
       "traffic": 245.6,
-      "crit": 32.23,
+      "crit": 53.11,
       "why": [
         "inside mandated corridor",
-        "driven by T0311 (criticality 32)"
+        "driven by T0405 (criticality 53)"
       ]
     },
     {
-      "id": "2172",
-      "sec": 13,
-      "line": "UP",
+      "id": "748",
+      "sec": 4,
+      "line": "DN",
       "day": 0,
       "s": 660,
       "e": 840,
       "tasks": [
-        "T0037"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 467.7,
-      "crit": 17.45,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0037 (criticality 17)"
-      ]
-    },
-    {
-      "id": "2235",
-      "sec": 13,
-      "line": "DN",
-      "day": 0,
-      "s": 660,
-      "e": 780,
-      "tasks": [
-        "T0043"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 179.6,
-      "crit": 47.92,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0043 (criticality 48)"
-      ]
-    },
-    {
-      "id": "900",
-      "sec": 5,
-      "line": "DN",
-      "day": 0,
-      "s": 720,
-      "e": 900,
-      "tasks": [
-        "T0421"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 306.2,
-      "crit": 11.4,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0421 (criticality 11)"
-      ]
-    },
-    {
-      "id": "1321",
-      "sec": 8,
-      "line": "UP",
-      "day": 0,
-      "s": 720,
-      "e": 900,
-      "tasks": [
-        "T0484",
-        "T0530"
+        "T0383",
+        "T0516"
       ],
       "depts": [
         "ENGG",
@@ -293576,12 +293503,91 @@
         "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 637.5,
-      "crit": 96.46,
+      "traffic": 778.8,
+      "crit": 124.02,
       "why": [
         "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0530 (criticality 51)"
+        "driven by T0383 (criticality 66)"
+      ]
+    },
+    {
+      "id": "2236",
+      "sec": 13,
+      "line": "DN",
+      "day": 0,
+      "s": 660,
+      "e": 840,
+      "tasks": [
+        "T0430"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 349.6,
+      "crit": 17.48,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0430 (criticality 17)"
+      ]
+    },
+    {
+      "id": "1151",
+      "sec": 7,
+      "line": "UP",
+      "day": 0,
+      "s": 660,
+      "e": 840,
+      "tasks": [
+        "T0230",
+        "T0481",
+        "T0556"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 635.1,
+      "crit": 144.88,
+      "why": [
+        "clubbed: ENGG, S&T, TRD share one closure",
+        "inside mandated corridor",
+        "driven by T0481 (criticality 67)"
+      ]
+    },
+    {
+      "id": "1321",
+      "sec": 8,
+      "line": "UP",
+      "day": 0,
+      "s": 720,
+      "e": 900,
+      "tasks": [
+        "T0547"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 637.5,
+      "crit": 27.16,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0547 (criticality 27)"
       ]
     },
     {
@@ -293609,34 +293615,27 @@
       ]
     },
     {
-      "id": "178",
-      "sec": 1,
-      "line": "UP",
+      "id": "2416",
+      "sec": 14,
+      "line": "DN",
       "day": 0,
-      "s": 840,
-      "e": 1080,
+      "s": 720,
+      "e": 840,
       "tasks": [
-        "T0219",
-        "T0259",
-        "T0500"
+        "T0306"
       ],
       "depts": [
-        "ENGG",
-        "S&T",
-        "TRD"
+        "ENGG"
       ],
       "types": [
-        "DISCONN",
-        "POWER",
         "TRAFFIC"
       ],
-      "corridor": false,
-      "traffic": 1091.7,
-      "crit": 189.83,
+      "corridor": true,
+      "traffic": 637.7,
+      "crit": 46.85,
       "why": [
-        "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 1092 wtd detention min",
-        "driven by T0259 (criticality 74)"
+        "inside mandated corridor",
+        "driven by T0306 (criticality 47)"
       ]
     },
     {
@@ -293699,51 +293698,59 @@
       ]
     },
     {
-      "id": "428",
-      "sec": 2,
-      "line": "DN",
-      "day": 1,
-      "s": 1680,
-      "e": 1920,
-      "tasks": [
-        "T0193"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": false,
-      "traffic": 278.4,
-      "crit": 34.66,
-      "why": [
-        "outside corridor -- 278 wtd detention min",
-        "driven by T0193 (criticality 35)"
-      ]
-    },
-    {
-      "id": "765",
+      "id": "770",
       "sec": 4,
       "line": "DN",
       "day": 1,
-      "s": 1680,
-      "e": 1920,
+      "s": 1800,
+      "e": 2040,
       "tasks": [
-        "T0110"
+        "T0110",
+        "T0492"
       ],
       "depts": [
+        "ENGG",
         "S&T"
       ],
       "types": [
-        "DISCONN"
+        "DISCONN",
+        "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 525.1,
-      "crit": 41.98,
+      "traffic": 572.6,
+      "crit": 106.72,
       "why": [
-        "outside corridor -- 525 wtd detention min",
-        "driven by T0110 (criticality 42)"
+        "clubbed: ENGG, S&T share one closure",
+        "outside corridor -- 573 wtd detention min",
+        "driven by T0492 (criticality 65)"
+      ]
+    },
+    {
+      "id": "923",
+      "sec": 5,
+      "line": "DN",
+      "day": 1,
+      "s": 1800,
+      "e": 2100,
+      "tasks": [
+        "T0468",
+        "T0506"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 667.3,
+      "crit": 62.67,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "outside corridor -- 667 wtd detention min",
+        "driven by T0468 (criticality 46)"
       ]
     },
     {
@@ -293754,8 +293761,8 @@
       "s": 2040,
       "e": 2220,
       "tasks": [
+        "T0132",
         "T0146",
-        "T0268",
         "T0552"
       ],
       "depts": [
@@ -293770,39 +293777,11 @@
       ],
       "corridor": true,
       "traffic": 1099.6,
-      "crit": 155.89,
+      "crit": 110.64,
       "why": [
         "clubbed: ENGG, S&T, TRD share one closure",
         "inside mandated corridor",
-        "driven by T0268 (criticality 62)"
-      ]
-    },
-    {
-      "id": "99",
-      "sec": 0,
-      "line": "DN",
-      "day": 1,
-      "s": 2040,
-      "e": 2220,
-      "tasks": [
-        "T0290",
-        "T0305"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 643.8,
-      "crit": 36.32,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0305 (criticality 21)"
+        "driven by T0552 (criticality 52)"
       ]
     },
     {
@@ -293830,75 +293809,51 @@
       ]
     },
     {
-      "id": "1000",
-      "sec": 6,
-      "line": "UP",
-      "day": 1,
-      "s": 2040,
-      "e": 2160,
-      "tasks": [
-        "T0241"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 336.2,
-      "crit": 55.46,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0241 (criticality 55)"
-      ]
-    },
-    {
-      "id": "1757",
+      "id": "1758",
       "sec": 10,
       "line": "DN",
       "day": 1,
       "s": 2100,
-      "e": 2220,
+      "e": 2280,
       "tasks": [
-        "T0405"
+        "T0160"
       ],
       "depts": [
-        "ENGG"
+        "S&T"
       ],
       "types": [
-        "TRAFFIC"
+        "DISCONN"
       ],
       "corridor": true,
-      "traffic": 313.2,
-      "crit": 53.11,
+      "traffic": 409.3,
+      "crit": 47.98,
       "why": [
         "inside mandated corridor",
-        "driven by T0405 (criticality 53)"
+        "driven by T0160 (criticality 48)"
       ]
     },
     {
-      "id": "671",
-      "sec": 4,
+      "id": "2185",
+      "sec": 13,
       "line": "UP",
       "day": 1,
       "s": 2100,
-      "e": 2220,
+      "e": 2280,
       "tasks": [
-        "T0265"
+        "T0371"
       ],
       "depts": [
-        "ENGG"
+        "S&T"
       ],
       "types": [
-        "TRAFFIC"
+        "DISCONN"
       ],
       "corridor": true,
-      "traffic": 563.5,
-      "crit": 36.25,
+      "traffic": 463.5,
+      "crit": 44.11,
       "why": [
         "inside mandated corridor",
-        "driven by T0265 (criticality 36)"
+        "driven by T0371 (criticality 44)"
       ]
     },
     {
@@ -293909,20 +293864,44 @@
       "s": 2100,
       "e": 2280,
       "tasks": [
-        "T0392"
+        "T0288"
       ],
       "depts": [
-        "S&T"
+        "ENGG"
       ],
       "types": [
-        "DISCONN"
+        "TRAFFIC"
       ],
       "corridor": true,
       "traffic": 274.3,
-      "crit": 42.81,
+      "crit": 15.4,
       "why": [
         "inside mandated corridor",
-        "driven by T0392 (criticality 43)"
+        "driven by T0288 (criticality 15)"
+      ]
+    },
+    {
+      "id": "1163",
+      "sec": 7,
+      "line": "UP",
+      "day": 1,
+      "s": 2100,
+      "e": 2220,
+      "tasks": [
+        "T0590"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 562.1,
+      "crit": 67.39,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0590 (criticality 67)"
       ]
     },
     {
@@ -293933,63 +293912,7 @@
       "s": 2160,
       "e": 2340,
       "tasks": [
-        "T0123",
-        "T0597"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 591.5,
-      "crit": 62.78,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0123 (criticality 47)"
-      ]
-    },
-    {
-      "id": "339",
-      "sec": 2,
-      "line": "UP",
-      "day": 1,
-      "s": 2160,
-      "e": 2340,
-      "tasks": [
-        "T0214",
-        "T0447"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 472.9,
-      "crit": 61.22,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0447 (criticality 42)"
-      ]
-    },
-    {
-      "id": "912",
-      "sec": 5,
-      "line": "DN",
-      "day": 1,
-      "s": 2160,
-      "e": 2280,
-      "tasks": [
-        "T0460"
+        "T0341"
       ],
       "depts": [
         "ENGG"
@@ -293998,24 +293921,128 @@
         "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 201.3,
-      "crit": 58.65,
+      "traffic": 591.5,
+      "crit": 76.74,
       "why": [
+        "inside mandated corridor",
+        "driven by T0341 (criticality 77)"
+      ]
+    },
+    {
+      "id": "841",
+      "sec": 5,
+      "line": "UP",
+      "day": 1,
+      "s": 2160,
+      "e": 2280,
+      "tasks": [
+        "T0155"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 416.7,
+      "crit": 60.92,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0155 (criticality 61)"
+      ]
+    },
+    {
+      "id": "913",
+      "sec": 5,
+      "line": "DN",
+      "day": 1,
+      "s": 2160,
+      "e": 2340,
+      "tasks": [
+        "T0038",
+        "T0460"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 349.6,
+      "crit": 97.74,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
         "driven by T0460 (criticality 59)"
       ]
     },
     {
-      "id": "677",
-      "sec": 4,
+      "id": "1418",
+      "sec": 8,
+      "line": "DN",
+      "day": 1,
+      "s": 2160,
+      "e": 2340,
+      "tasks": [
+        "T0226"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 288.7,
+      "crit": 35.57,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0226 (criticality 36)"
+      ]
+    },
+    {
+      "id": "2340",
+      "sec": 14,
+      "line": "UP",
+      "day": 1,
+      "s": 2160,
+      "e": 2340,
+      "tasks": [
+        "T0331",
+        "T0382"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 561.2,
+      "crit": 58.89,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0331 (criticality 36)"
+      ]
+    },
+    {
+      "id": "342",
+      "sec": 2,
       "line": "UP",
       "day": 1,
       "s": 2340,
-      "e": 2640,
+      "e": 2520,
       "tasks": [
-        "T0124",
-        "T0148",
-        "T0329"
+        "T0198",
+        "T0447",
+        "T0512"
       ],
       "depts": [
         "ENGG",
@@ -294028,23 +294055,23 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 994.9,
-      "crit": 111.55,
+      "traffic": 479.6,
+      "crit": 115.41,
       "why": [
         "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 995 wtd detention min",
-        "driven by T0329 (criticality 59)"
+        "outside corridor -- 480 wtd detention min",
+        "driven by T0512 (criticality 47)"
       ]
     },
     {
-      "id": "1683",
-      "sec": 10,
-      "line": "UP",
+      "id": "2254",
+      "sec": 13,
+      "line": "DN",
       "day": 1,
-      "s": 2520,
-      "e": 2760,
+      "s": 2640,
+      "e": 2940,
       "tasks": [
-        "T0187"
+        "T0511"
       ],
       "depts": [
         "S&T"
@@ -294053,39 +294080,11 @@
         "DISCONN"
       ],
       "corridor": false,
-      "traffic": 498.2,
-      "crit": 32.62,
+      "traffic": 304.8,
+      "crit": 56.1,
       "why": [
-        "outside corridor -- 498 wtd detention min",
-        "driven by T0187 (criticality 33)"
-      ]
-    },
-    {
-      "id": "348",
-      "sec": 2,
-      "line": "UP",
-      "day": 1,
-      "s": 2580,
-      "e": 2820,
-      "tasks": [
-        "T0198",
-        "T0523"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 699.5,
-      "crit": 72.41,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 699 wtd detention min",
-        "driven by T0523 (criticality 47)"
+        "outside corridor -- 305 wtd detention min",
+        "driven by T0511 (criticality 56)"
       ]
     },
     {
@@ -294096,37 +294095,33 @@
       "s": 2760,
       "e": 3000,
       "tasks": [
-        "T0325",
         "T0569"
       ],
       "depts": [
-        "S&T",
-        "TRD"
+        "S&T"
       ],
       "types": [
-        "DISCONN",
-        "POWER"
+        "DISCONN"
       ],
       "corridor": false,
       "traffic": 226.9,
-      "crit": 71.26,
+      "crit": 69.98,
       "why": [
-        "clubbed: S&T, TRD share one closure",
         "outside corridor -- 227 wtd detention min",
         "driven by T0569 (criticality 70)"
       ]
     },
     {
-      "id": "2356",
-      "sec": 14,
-      "line": "UP",
+      "id": "1096",
+      "sec": 6,
+      "line": "DN",
       "day": 2,
-      "s": 3120,
-      "e": 3300,
+      "s": 2880,
+      "e": 3180,
       "tasks": [
-        "T0358",
-        "T0382",
-        "T0479"
+        "T0162",
+        "T0304",
+        "T0538"
       ],
       "depts": [
         "ENGG",
@@ -294139,12 +294134,71 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 807.3,
-      "crit": 80.14,
+      "traffic": 758.8,
+      "crit": 142.68,
       "why": [
         "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 807 wtd detention min",
-        "driven by T0479 (criticality 39)"
+        "outside corridor -- 759 wtd detention min",
+        "driven by T0538 (criticality 69)"
+      ]
+    },
+    {
+      "id": "115",
+      "sec": 0,
+      "line": "DN",
+      "day": 2,
+      "s": 3300,
+      "e": 3480,
+      "tasks": [
+        "T0290",
+        "T0305",
+        "T0372"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 385.9,
+      "crit": 85.54,
+      "why": [
+        "clubbed: ENGG, S&T, TRD share one closure",
+        "outside corridor -- 386 wtd detention min",
+        "driven by T0372 (criticality 49)"
+      ]
+    },
+    {
+      "id": "506",
+      "sec": 3,
+      "line": "UP",
+      "day": 2,
+      "s": 3480,
+      "e": 3660,
+      "tasks": [
+        "T0268",
+        "T0349"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 1057.6,
+      "crit": 106.32,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0268 (criticality 62)"
       ]
     },
     {
@@ -294155,75 +294209,44 @@
       "s": 3480,
       "e": 3660,
       "tasks": [
-        "T0211",
-        "T0469",
-        "T0498"
+        "T0438"
       ],
       "depts": [
-        "ENGG",
-        "S&T",
-        "TRD"
+        "ENGG"
       ],
       "types": [
-        "DISCONN",
-        "POWER",
         "TRAFFIC"
       ],
       "corridor": true,
       "traffic": 680.1,
-      "crit": 108.03,
+      "crit": 72.94,
       "why": [
-        "clubbed: ENGG, S&T, TRD share one closure",
         "inside mandated corridor",
-        "driven by T0469 (criticality 79)"
+        "driven by T0438 (criticality 73)"
       ]
     },
     {
-      "id": "112",
-      "sec": 0,
-      "line": "DN",
+      "id": "2024",
+      "sec": 12,
+      "line": "UP",
       "day": 2,
       "s": 3480,
       "e": 3660,
       "tasks": [
-        "T0087"
+        "T0594"
       ],
       "depts": [
-        "ENGG"
+        "S&T"
       ],
       "types": [
-        "TRAFFIC"
+        "DISCONN"
       ],
       "corridor": true,
-      "traffic": 632.5,
-      "crit": 36.85,
+      "traffic": 492.3,
+      "crit": 3.8,
       "why": [
         "inside mandated corridor",
-        "driven by T0087 (criticality 37)"
-      ]
-    },
-    {
-      "id": "2108",
-      "sec": 12,
-      "line": "DN",
-      "day": 2,
-      "s": 3480,
-      "e": 3600,
-      "tasks": [
-        "T0236"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 368.4,
-      "crit": 25.55,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0236 (criticality 26)"
+        "driven by T0594 (criticality 4)"
       ]
     },
     {
@@ -294258,44 +294281,48 @@
       "s": 3540,
       "e": 3720,
       "tasks": [
+        "T0104",
         "T0393"
       ],
       "depts": [
+        "ENGG",
         "S&T"
       ],
       "types": [
-        "DISCONN"
+        "DISCONN",
+        "TRAFFIC"
       ],
       "corridor": true,
       "traffic": 589.4,
-      "crit": 43.5,
+      "crit": 54.86,
       "why": [
+        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
         "driven by T0393 (criticality 44)"
       ]
     },
     {
-      "id": "1771",
+      "id": "1770",
       "sec": 10,
       "line": "DN",
       "day": 2,
       "s": 3540,
-      "e": 3720,
+      "e": 3660,
       "tasks": [
-        "T0160"
+        "T0311"
       ],
       "depts": [
-        "S&T"
+        "ENGG"
       ],
       "types": [
-        "DISCONN"
+        "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 432.0,
-      "crit": 47.98,
+      "traffic": 302.3,
+      "crit": 32.23,
       "why": [
         "inside mandated corridor",
-        "driven by T0160 (criticality 48)"
+        "driven by T0311 (criticality 32)"
       ]
     },
     {
@@ -294306,24 +294333,44 @@
       "s": 3540,
       "e": 3720,
       "tasks": [
-        "T0383",
-        "T0516"
+        "T0125"
       ],
       "depts": [
-        "ENGG",
         "S&T"
       ],
       "types": [
-        "DISCONN",
-        "TRAFFIC"
+        "DISCONN"
       ],
       "corridor": true,
       "traffic": 857.3,
-      "crit": 124.02,
+      "crit": 32.45,
       "why": [
-        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0383 (criticality 66)"
+        "driven by T0125 (criticality 32)"
+      ]
+    },
+    {
+      "id": "2193",
+      "sec": 13,
+      "line": "UP",
+      "day": 2,
+      "s": 3540,
+      "e": 3720,
+      "tasks": [
+        "T0572"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 449.3,
+      "crit": 14.81,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0572 (criticality 15)"
       ]
     },
     {
@@ -294334,7 +294381,7 @@
       "s": 3540,
       "e": 3720,
       "tasks": [
-        "T0354"
+        "T0018"
       ],
       "depts": [
         "S&T"
@@ -294344,10 +294391,10 @@
       ],
       "corridor": true,
       "traffic": 354.4,
-      "crit": 22.69,
+      "crit": 9.95,
       "why": [
         "inside mandated corridor",
-        "driven by T0354 (criticality 23)"
+        "driven by T0018 (criticality 10)"
       ]
     },
     {
@@ -294358,156 +294405,56 @@
       "s": 3600,
       "e": 3780,
       "tasks": [
-        "T0333",
-        "T0525"
+        "T0154"
       ],
       "depts": [
-        "ENGG",
         "S&T"
       ],
       "types": [
-        "DISCONN",
-        "TRAFFIC"
+        "DISCONN"
       ],
       "corridor": true,
       "traffic": 1123.5,
-      "crit": 90.28,
+      "crit": 30.73,
       "why": [
-        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0333 (criticality 56)"
+        "driven by T0154 (criticality 31)"
       ]
     },
     {
-      "id": "1937",
-      "sec": 11,
-      "line": "DN",
-      "day": 2,
-      "s": 3600,
-      "e": 3720,
-      "tasks": [
-        "T0172"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 441.3,
-      "crit": 54.25,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0172 (criticality 54)"
-      ]
-    },
-    {
-      "id": "1345",
-      "sec": 8,
-      "line": "UP",
-      "day": 2,
-      "s": 3600,
-      "e": 3780,
-      "tasks": [
-        "T0547"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 665.0,
-      "crit": 27.16,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0547 (criticality 27)"
-      ]
-    },
-    {
-      "id": "1431",
-      "sec": 8,
+      "id": "926",
+      "sec": 5,
       "line": "DN",
       "day": 2,
       "s": 3600,
       "e": 3780,
       "tasks": [
-        "T0226"
+        "T0174"
       ],
       "depts": [
-        "S&T"
+        "ENGG"
       ],
       "types": [
-        "DISCONN"
+        "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 356.5,
-      "crit": 35.57,
+      "traffic": 350.9,
+      "crit": 53.0,
       "why": [
         "inside mandated corridor",
-        "driven by T0226 (criticality 36)"
+        "driven by T0174 (criticality 53)"
       ]
     },
     {
-      "id": "2352",
+      "id": "2353",
       "sec": 14,
       "line": "UP",
       "day": 2,
       "s": 3600,
-      "e": 3720,
+      "e": 3780,
       "tasks": [
-        "T0331"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 435.7,
-      "crit": 35.81,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0331 (criticality 36)"
-      ]
-    },
-    {
-      "id": "2441",
-      "sec": 14,
-      "line": "DN",
-      "day": 2,
-      "s": 3600,
-      "e": 3720,
-      "tasks": [
-        "T0256"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 608.5,
-      "crit": 46.7,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0256 (criticality 47)"
-      ]
-    },
-    {
-      "id": "275",
-      "sec": 1,
-      "line": "DN",
-      "day": 2,
-      "s": 3720,
-      "e": 3900,
-      "tasks": [
-        "T0095",
-        "T0408"
+        "T0020",
+        "T0462"
       ],
       "depts": [
         "ENGG",
@@ -294517,26 +294464,54 @@
         "DISCONN",
         "TRAFFIC"
       ],
-      "corridor": false,
-      "traffic": 1070.1,
-      "crit": 118.7,
+      "corridor": true,
+      "traffic": 640.7,
+      "crit": 66.11,
       "why": [
         "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 1070 wtd detention min",
-        "driven by T0095 (criticality 65)"
+        "inside mandated corridor",
+        "driven by T0020 (criticality 36)"
       ]
     },
     {
-      "id": "511",
-      "sec": 3,
+      "id": "2442",
+      "sec": 14,
+      "line": "DN",
+      "day": 2,
+      "s": 3600,
+      "e": 3780,
+      "tasks": [
+        "T0007",
+        "T0362"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 945.9,
+      "crit": 70.62,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0007 (criticality 49)"
+      ]
+    },
+    {
+      "id": "199",
+      "sec": 1,
       "line": "UP",
       "day": 2,
-      "s": 3780,
-      "e": 4080,
+      "s": 3720,
+      "e": 3960,
       "tasks": [
-        "T0132",
-        "T0449",
-        "T0489"
+        "T0066",
+        "T0219",
+        "T0302"
       ],
       "depts": [
         "ENGG",
@@ -294549,49 +294524,21 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 1366.7,
-      "crit": 147.48,
+      "traffic": 1276.9,
+      "crit": 180.2,
       "why": [
         "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 1367 wtd detention min",
-        "driven by T0489 (criticality 65)"
+        "outside corridor -- 1277 wtd detention min",
+        "driven by T0066 (criticality 73)"
       ]
     },
     {
-      "id": "1101",
+      "id": "1100",
       "sec": 6,
       "line": "DN",
       "day": 2,
       "s": 4260,
-      "e": 4560,
-      "tasks": [
-        "T0304",
-        "T0538"
-      ],
-      "depts": [
-        "S&T",
-        "TRD"
-      ],
-      "types": [
-        "DISCONN",
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 681.6,
-      "crit": 127.26,
-      "why": [
-        "clubbed: S&T, TRD share one closure",
-        "outside corridor -- 682 wtd detention min",
-        "driven by T0538 (criticality 69)"
-      ]
-    },
-    {
-      "id": "1113",
-      "sec": 6,
-      "line": "DN",
-      "day": 3,
-      "s": 4560,
-      "e": 4800,
+      "e": 4500,
       "tasks": [
         "T0515"
       ],
@@ -294602,35 +294549,94 @@
         "DISCONN"
       ],
       "corridor": false,
-      "traffic": 414.4,
+      "traffic": 447.8,
       "crit": 43.06,
       "why": [
-        "outside corridor -- 414 wtd detention min",
+        "outside corridor -- 448 wtd detention min",
         "driven by T0515 (criticality 43)"
       ]
     },
     {
-      "id": "287",
+      "id": "1789",
+      "sec": 10,
+      "line": "DN",
+      "day": 3,
+      "s": 4320,
+      "e": 4620,
+      "tasks": [
+        "T0524",
+        "T0580",
+        "T0586"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 1018.6,
+      "crit": 120.4,
+      "why": [
+        "clubbed: ENGG, S&T, TRD share one closure",
+        "outside corridor -- 1019 wtd detention min",
+        "driven by T0580 (criticality 66)"
+      ]
+    },
+    {
+      "id": "2211",
+      "sec": 13,
+      "line": "UP",
+      "day": 3,
+      "s": 4440,
+      "e": 4740,
+      "tasks": [
+        "T0088"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": false,
+      "traffic": 521.3,
+      "crit": 45.57,
+      "why": [
+        "outside corridor -- 521 wtd detention min",
+        "driven by T0088 (criticality 46)"
+      ]
+    },
+    {
+      "id": "290",
       "sec": 1,
       "line": "DN",
       "day": 3,
       "s": 4680,
-      "e": 4800,
+      "e": 4980,
       "tasks": [
-        "T0202"
+        "T0095",
+        "T0567"
       ],
       "depts": [
-        "ENGG"
+        "ENGG",
+        "S&T"
       ],
       "types": [
+        "DISCONN",
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 227.5,
-      "crit": 64.95,
+      "traffic": 1174.9,
+      "crit": 120.0,
       "why": [
-        "outside corridor -- 228 wtd detention min",
-        "driven by T0202 (criticality 65)"
+        "clubbed: ENGG, S&T share one closure",
+        "outside corridor -- 1175 wtd detention min",
+        "driven by T0095 (criticality 65)"
       ]
     },
     {
@@ -294662,34 +294668,27 @@
       ]
     },
     {
-      "id": "2369",
-      "sec": 14,
-      "line": "UP",
+      "id": "125",
+      "sec": 0,
+      "line": "DN",
       "day": 3,
-      "s": 4800,
-      "e": 5040,
+      "s": 4920,
+      "e": 5100,
       "tasks": [
-        "T0060",
-        "T0385",
-        "T0436"
+        "T0087"
       ],
       "depts": [
-        "ENGG",
-        "S&T",
-        "TRD"
+        "ENGG"
       ],
       "types": [
-        "DISCONN",
-        "POWER",
         "TRAFFIC"
       ],
-      "corridor": false,
-      "traffic": 1147.8,
-      "crit": 88.37,
+      "corridor": true,
+      "traffic": 575.1,
+      "crit": 36.85,
       "why": [
-        "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 1148 wtd detention min",
-        "driven by T0060 (criticality 47)"
+        "inside mandated corridor",
+        "driven by T0087 (criticality 37)"
       ]
     },
     {
@@ -294717,6 +294716,54 @@
       ]
     },
     {
+      "id": "2122",
+      "sec": 12,
+      "line": "DN",
+      "day": 3,
+      "s": 4920,
+      "e": 5100,
+      "tasks": [
+        "T0418"
+      ],
+      "depts": [
+        "TRD"
+      ],
+      "types": [
+        "POWER"
+      ],
+      "corridor": true,
+      "traffic": 349.0,
+      "crit": 37.53,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0418 (criticality 38)"
+      ]
+    },
+    {
+      "id": "1104",
+      "sec": 6,
+      "line": "DN",
+      "day": 3,
+      "s": 4920,
+      "e": 5100,
+      "tasks": [
+        "T0274"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 631.5,
+      "crit": 58.43,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0274 (criticality 58)"
+      ]
+    },
+    {
       "id": "1704",
       "sec": 10,
       "line": "UP",
@@ -294741,14 +294788,38 @@
       ]
     },
     {
-      "id": "2275",
-      "sec": 13,
+      "id": "1784",
+      "sec": 10,
       "line": "DN",
       "day": 3,
       "s": 4980,
       "e": 5160,
       "tasks": [
-        "T0288"
+        "T0050"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 356.1,
+      "crit": 3.12,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0050 (criticality 3)"
+      ]
+    },
+    {
+      "id": "697",
+      "sec": 4,
+      "line": "UP",
+      "day": 3,
+      "s": 4980,
+      "e": 5100,
+      "tasks": [
+        "T0265"
       ],
       "depts": [
         "ENGG"
@@ -294757,23 +294828,47 @@
         "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 246.5,
-      "crit": 15.4,
+      "traffic": 568.1,
+      "crit": 36.25,
       "why": [
         "inside mandated corridor",
-        "driven by T0288 (criticality 15)"
+        "driven by T0265 (criticality 36)"
       ]
     },
     {
-      "id": "1189",
-      "sec": 7,
-      "line": "UP",
+      "id": "2274",
+      "sec": 13,
+      "line": "DN",
+      "day": 3,
+      "s": 4980,
+      "e": 5100,
+      "tasks": [
+        "T0043"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 119.0,
+      "crit": 47.92,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0043 (criticality 48)"
+      ]
+    },
+    {
+      "id": "2463",
+      "sec": 14,
+      "line": "DN",
       "day": 3,
       "s": 4980,
       "e": 5160,
       "tasks": [
-        "T0230",
-        "T0481"
+        "T0068",
+        "T0256"
       ],
       "depts": [
         "ENGG",
@@ -294783,41 +294878,13 @@
         "DISCONN",
         "TRAFFIC"
       ],
-      "corridor": true,
-      "traffic": 704.9,
-      "crit": 100.57,
+      "corridor": false,
+      "traffic": 596.4,
+      "crit": 87.88,
       "why": [
         "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0481 (criticality 67)"
-      ]
-    },
-    {
-      "id": "1862",
-      "sec": 11,
-      "line": "UP",
-      "day": 3,
-      "s": 5040,
-      "e": 5220,
-      "tasks": [
-        "T0152",
-        "T0154"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 1260.8,
-      "crit": 60.32,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0154 (criticality 31)"
+        "outside corridor -- 596 wtd detention min",
+        "driven by T0256 (criticality 47)"
       ]
     },
     {
@@ -294828,7 +294895,7 @@
       "s": 5040,
       "e": 5160,
       "tasks": [
-        "T0433"
+        "T0123"
       ],
       "depts": [
         "ENGG"
@@ -294838,10 +294905,10 @@
       ],
       "corridor": true,
       "traffic": 259.1,
-      "crit": 48.24,
+      "crit": 46.68,
       "why": [
         "inside mandated corridor",
-        "driven by T0433 (criticality 48)"
+        "driven by T0123 (criticality 47)"
       ]
     },
     {
@@ -294852,20 +294919,24 @@
       "s": 5040,
       "e": 5220,
       "tasks": [
-        "T0212"
+        "T0212",
+        "T0406"
       ],
       "depts": [
+        "ENGG",
         "S&T"
       ],
       "types": [
-        "DISCONN"
+        "DISCONN",
+        "TRAFFIC"
       ],
       "corridor": true,
       "traffic": 616.5,
-      "crit": 10.2,
+      "crit": 24.37,
       "why": [
+        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0212 (criticality 10)"
+        "driven by T0406 (criticality 14)"
       ]
     },
     {
@@ -294893,44 +294964,120 @@
       ]
     },
     {
-      "id": "2455",
-      "sec": 14,
+      "id": "1443",
+      "sec": 8,
       "line": "DN",
       "day": 3,
       "s": 5040,
-      "e": 5220,
+      "e": 5160,
       "tasks": [
-        "T0306",
-        "T0362"
+        "T0571"
       ],
       "depts": [
-        "ENGG",
-        "S&T"
+        "ENGG"
       ],
       "types": [
-        "DISCONN",
         "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 910.5,
-      "crit": 68.03,
+      "traffic": 177.7,
+      "crit": 60.53,
       "why": [
-        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0306 (criticality 47)"
+        "driven by T0571 (criticality 61)"
       ]
     },
     {
-      "id": "208",
-      "sec": 1,
+      "id": "369",
+      "sec": 2,
       "line": "UP",
       "day": 3,
-      "s": 5160,
+      "s": 5220,
+      "e": 5460,
+      "tasks": [
+        "T0523"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": false,
+      "traffic": 622.8,
+      "crit": 46.77,
+      "why": [
+        "outside corridor -- 623 wtd detention min",
+        "driven by T0523 (criticality 47)"
+      ]
+    },
+    {
+      "id": "865",
+      "sec": 5,
+      "line": "UP",
+      "day": 3,
+      "s": 5220,
       "e": 5400,
       "tasks": [
-        "T0129",
-        "T0179",
-        "T0302"
+        "T0281",
+        "T0402"
+      ],
+      "depts": [
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER"
+      ],
+      "corridor": false,
+      "traffic": 290.0,
+      "crit": 129.0,
+      "why": [
+        "clubbed: S&T, TRD share one closure",
+        "outside corridor -- 290 wtd detention min",
+        "driven by T0281 (criticality 73)"
+      ]
+    },
+    {
+      "id": "1627",
+      "sec": 9,
+      "line": "DN",
+      "day": 3,
+      "s": 5640,
+      "e": 5880,
+      "tasks": [
+        "T0177",
+        "T0325"
+      ],
+      "depts": [
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER"
+      ],
+      "corridor": false,
+      "traffic": 287.1,
+      "crit": 59.61,
+      "why": [
+        "clubbed: S&T, TRD share one closure",
+        "outside corridor -- 287 wtd detention min",
+        "driven by T0177 (criticality 58)"
+      ]
+    },
+    {
+      "id": "2388",
+      "sec": 14,
+      "line": "UP",
+      "day": 4,
+      "s": 6240,
+      "e": 6540,
+      "tasks": [
+        "T0257",
+        "T0384",
+        "T0385"
       ],
       "depts": [
         "ENGG",
@@ -294943,21 +295090,353 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 975.5,
-      "crit": 175.22,
+      "traffic": 1231.8,
+      "crit": 109.71,
       "why": [
         "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 976 wtd detention min",
+        "outside corridor -- 1232 wtd detention min",
+        "driven by T0257 (criticality 45)"
+      ]
+    },
+    {
+      "id": "2473",
+      "sec": 14,
+      "line": "DN",
+      "day": 4,
+      "s": 6360,
+      "e": 6540,
+      "tasks": [
+        "T0232",
+        "T0407"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 394.7,
+      "crit": 38.23,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "outside corridor -- 395 wtd detention min",
+        "driven by T0407 (criticality 21)"
+      ]
+    },
+    {
+      "id": "2135",
+      "sec": 12,
+      "line": "DN",
+      "day": 4,
+      "s": 6360,
+      "e": 6540,
+      "tasks": [
+        "T0475"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 357.5,
+      "crit": 11.21,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0475 (criticality 11)"
+      ]
+    },
+    {
+      "id": "1040",
+      "sec": 6,
+      "line": "UP",
+      "day": 4,
+      "s": 6360,
+      "e": 6540,
+      "tasks": [
+        "T0138"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 542.7,
+      "crit": 20.67,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0138 (criticality 21)"
+      ]
+    },
+    {
+      "id": "1716",
+      "sec": 10,
+      "line": "UP",
+      "day": 4,
+      "s": 6420,
+      "e": 6600,
+      "tasks": [
+        "T0573"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 576.2,
+      "crit": 38.91,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0573 (criticality 39)"
+      ]
+    },
+    {
+      "id": "1796",
+      "sec": 10,
+      "line": "DN",
+      "day": 4,
+      "s": 6420,
+      "e": 6540,
+      "tasks": [
+        "T0366"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 251.7,
+      "crit": 52.38,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0366 (criticality 52)"
+      ]
+    },
+    {
+      "id": "2288",
+      "sec": 13,
+      "line": "DN",
+      "day": 4,
+      "s": 6420,
+      "e": 6600,
+      "tasks": [
+        "T0354"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 270.0,
+      "crit": 22.69,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0354 (criticality 23)"
+      ]
+    },
+    {
+      "id": "1964",
+      "sec": 11,
+      "line": "DN",
+      "day": 4,
+      "s": 6480,
+      "e": 6660,
+      "tasks": [
+        "T0172",
+        "T0597"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 525.0,
+      "crit": 70.35,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0172 (criticality 54)"
+      ]
+    },
+    {
+      "id": "376",
+      "sec": 2,
+      "line": "UP",
+      "day": 4,
+      "s": 6480,
+      "e": 6660,
+      "tasks": [
+        "T0214"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 513.5,
+      "crit": 18.88,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0214 (criticality 19)"
+      ]
+    },
+    {
+      "id": "952",
+      "sec": 5,
+      "line": "DN",
+      "day": 4,
+      "s": 6480,
+      "e": 6660,
+      "tasks": [
+        "T0518"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 298.4,
+      "crit": 35.74,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0518 (criticality 36)"
+      ]
+    },
+    {
+      "id": "1371",
+      "sec": 8,
+      "line": "UP",
+      "day": 4,
+      "s": 6480,
+      "e": 6660,
+      "tasks": [
+        "T0484",
+        "T0530"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 624.2,
+      "crit": 96.46,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0530 (criticality 51)"
+      ]
+    },
+    {
+      "id": "542",
+      "sec": 3,
+      "line": "UP",
+      "day": 4,
+      "s": 6600,
+      "e": 6900,
+      "tasks": [
+        "T0449"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": false,
+      "traffic": 1160.0,
+      "crit": 65.04,
+      "why": [
+        "outside corridor -- 1160 wtd detention min",
+        "driven by T0449 (criticality 65)"
+      ]
+    },
+    {
+      "id": "216",
+      "sec": 1,
+      "line": "UP",
+      "day": 4,
+      "s": 6600,
+      "e": 6840,
+      "tasks": [
+        "T0129",
+        "T0360"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 1003.8,
+      "crit": 123.4,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "outside corridor -- 1004 wtd detention min",
         "driven by T0129 (criticality 62)"
       ]
     },
     {
-      "id": "867",
+      "id": "714",
+      "sec": 4,
+      "line": "UP",
+      "day": 4,
+      "s": 6660,
+      "e": 6840,
+      "tasks": [
+        "T0323",
+        "T0399"
+      ],
+      "depts": [
+        "ENGG",
+        "TRD"
+      ],
+      "types": [
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 479.6,
+      "crit": 96.95,
+      "why": [
+        "clubbed: ENGG, TRD share one closure",
+        "outside corridor -- 480 wtd detention min",
+        "driven by T0399 (criticality 70)"
+      ]
+    },
+    {
+      "id": "880",
       "sec": 5,
       "line": "UP",
-      "day": 3,
-      "s": 5220,
-      "e": 5520,
+      "day": 4,
+      "s": 6660,
+      "e": 6960,
       "tasks": [
         "T0453",
         "T0527"
@@ -294971,23 +295450,54 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 641.7,
+      "traffic": 604.8,
       "crit": 85.72,
       "why": [
         "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 642 wtd detention min",
+        "outside corridor -- 605 wtd detention min",
         "driven by T0527 (criticality 56)"
       ]
     },
     {
-      "id": "2285",
-      "sec": 13,
-      "line": "DN",
-      "day": 3,
-      "s": 5520,
-      "e": 5820,
+      "id": "1555",
+      "sec": 9,
+      "line": "UP",
+      "day": 4,
+      "s": 6960,
+      "e": 7260,
       "tasks": [
-        "T0511"
+        "T0216",
+        "T0417",
+        "T0446"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T",
+        "TRD"
+      ],
+      "types": [
+        "DISCONN",
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 912.8,
+      "crit": 105.31,
+      "why": [
+        "clubbed: ENGG, S&T, TRD share one closure",
+        "outside corridor -- 913 wtd detention min",
+        "driven by T0216 (criticality 57)"
+      ]
+    },
+    {
+      "id": "959",
+      "sec": 5,
+      "line": "DN",
+      "day": 4,
+      "s": 7020,
+      "e": 7320,
+      "tasks": [
+        "T0348"
       ],
       "depts": [
         "S&T"
@@ -294996,510 +295506,24 @@
         "DISCONN"
       ],
       "corridor": false,
-      "traffic": 337.1,
-      "crit": 56.1,
+      "traffic": 471.1,
+      "crit": 46.35,
       "why": [
-        "outside corridor -- 337 wtd detention min",
-        "driven by T0511 (criticality 56)"
-      ]
-    },
-    {
-      "id": "944",
-      "sec": 5,
-      "line": "DN",
-      "day": 3,
-      "s": 5580,
-      "e": 5880,
-      "tasks": [
-        "T0348",
-        "T0434"
-      ],
-      "depts": [
-        "S&T",
-        "TRD"
-      ],
-      "types": [
-        "DISCONN",
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 444.8,
-      "crit": 67.95,
-      "why": [
-        "clubbed: S&T, TRD share one closure",
-        "outside corridor -- 445 wtd detention min",
+        "outside corridor -- 471 wtd detention min",
         "driven by T0348 (criticality 46)"
       ]
     },
     {
-      "id": "1123",
-      "sec": 6,
-      "line": "DN",
-      "day": 4,
-      "s": 6120,
-      "e": 6300,
-      "tasks": [
-        "T0162",
-        "T0182",
-        "T0274"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T",
-        "TRD"
-      ],
-      "types": [
-        "DISCONN",
-        "POWER",
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 445.4,
-      "crit": 99.37,
-      "why": [
-        "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 445 wtd detention min",
-        "driven by T0274 (criticality 58)"
-      ]
-    },
-    {
-      "id": "2050",
-      "sec": 12,
-      "line": "UP",
-      "day": 4,
-      "s": 6360,
-      "e": 6540,
-      "tasks": [
-        "T0594"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 544.9,
-      "crit": 3.8,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0594 (criticality 4)"
-      ]
-    },
-    {
-      "id": "2135",
-      "sec": 12,
-      "line": "DN",
-      "day": 4,
-      "s": 6360,
-      "e": 6540,
-      "tasks": [
-        "T0595"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 357.5,
-      "crit": 48.17,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0595 (criticality 48)"
-      ]
-    },
-    {
-      "id": "1040",
-      "sec": 6,
-      "line": "UP",
-      "day": 4,
-      "s": 6360,
-      "e": 6540,
-      "tasks": [
-        "T0113"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 542.7,
-      "crit": 61.39,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0113 (criticality 61)"
-      ]
-    },
-    {
-      "id": "1716",
-      "sec": 10,
-      "line": "UP",
-      "day": 4,
-      "s": 6420,
-      "e": 6600,
-      "tasks": [
-        "T0104",
-        "T0573"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 576.2,
-      "crit": 50.27,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0573 (criticality 39)"
-      ]
-    },
-    {
-      "id": "1796",
-      "sec": 10,
-      "line": "DN",
-      "day": 4,
-      "s": 6420,
-      "e": 6540,
-      "tasks": [
-        "T0588"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 251.7,
-      "crit": 27.33,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0588 (criticality 27)"
-      ]
-    },
-    {
-      "id": "293",
-      "sec": 1,
-      "line": "DN",
-      "day": 4,
-      "s": 6420,
-      "e": 6600,
-      "tasks": [
-        "T0058",
-        "T0059",
-        "T0228"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T",
-        "TRD"
-      ],
-      "types": [
-        "DISCONN",
-        "POWER",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 2041.7,
-      "crit": 164.38,
-      "why": [
-        "clubbed: ENGG, S&T, TRD share one closure",
-        "inside mandated corridor",
-        "driven by T0058 (criticality 59)"
-      ]
-    },
-    {
-      "id": "2288",
-      "sec": 13,
-      "line": "DN",
-      "day": 4,
-      "s": 6420,
-      "e": 6600,
-      "tasks": [
-        "T0009"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 270.0,
-      "crit": 15.07,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0009 (criticality 15)"
-      ]
-    },
-    {
-      "id": "1201",
+      "id": "1215",
       "sec": 7,
       "line": "UP",
-      "day": 4,
-      "s": 6420,
-      "e": 6540,
+      "day": 5,
+      "s": 7380,
+      "e": 7620,
       "tasks": [
-        "T0590"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 450.3,
-      "crit": 67.39,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0590 (criticality 67)"
-      ]
-    },
-    {
-      "id": "1964",
-      "sec": 11,
-      "line": "DN",
-      "day": 4,
-      "s": 6480,
-      "e": 6660,
-      "tasks": [
-        "T0002"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 525.0,
-      "crit": 58.62,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0002 (criticality 59)"
-      ]
-    },
-    {
-      "id": "951",
-      "sec": 5,
-      "line": "DN",
-      "day": 4,
-      "s": 6480,
-      "e": 6600,
-      "tasks": [
-        "T0181"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 161.9,
-      "crit": 30.8,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0181 (criticality 31)"
-      ]
-    },
-    {
-      "id": "1371",
-      "sec": 8,
-      "line": "UP",
-      "day": 4,
-      "s": 6480,
-      "e": 6660,
-      "tasks": [
-        "T0121"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 624.2,
-      "crit": 45.45,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0121 (criticality 45)"
-      ]
-    },
-    {
-      "id": "1456",
-      "sec": 8,
-      "line": "DN",
-      "day": 4,
-      "s": 6480,
-      "e": 6600,
-      "tasks": [
-        "T0571"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 120.6,
-      "crit": 60.53,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0571 (criticality 61)"
-      ]
-    },
-    {
-      "id": "2467",
-      "sec": 14,
-      "line": "DN",
-      "day": 4,
-      "s": 6480,
-      "e": 6600,
-      "tasks": [
-        "T0007"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 629.5,
-      "crit": 49.44,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0007 (criticality 49)"
-      ]
-    },
-    {
-      "id": "541",
-      "sec": 3,
-      "line": "UP",
-      "day": 4,
-      "s": 6600,
-      "e": 6840,
-      "tasks": [
-        "T0013",
-        "T0117"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 792.9,
-      "crit": 87.71,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 793 wtd detention min",
-        "driven by T0117 (criticality 45)"
-      ]
-    },
-    {
-      "id": "878",
-      "sec": 5,
-      "line": "UP",
-      "day": 4,
-      "s": 6660,
-      "e": 6840,
-      "tasks": [
-        "T0155",
-        "T0281"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 264.2,
-      "crit": 133.68,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 264 wtd detention min",
-        "driven by T0281 (criticality 73)"
-      ]
-    },
-    {
-      "id": "2054",
-      "sec": 12,
-      "line": "UP",
-      "day": 4,
-      "s": 6720,
-      "e": 6960,
-      "tasks": [
-        "T0233"
-      ],
-      "depts": [
-        "TRD"
-      ],
-      "types": [
-        "POWER"
-      ],
-      "corridor": false,
-      "traffic": 370.8,
-      "crit": 59.4,
-      "why": [
-        "outside corridor -- 371 wtd detention min",
-        "driven by T0233 (criticality 59)"
-      ]
-    },
-    {
-      "id": "1635",
-      "sec": 9,
-      "line": "DN",
-      "day": 4,
-      "s": 7080,
-      "e": 7320,
-      "tasks": [
-        "T0177"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": false,
-      "traffic": 305.3,
-      "crit": 58.33,
-      "why": [
-        "outside corridor -- 305 wtd detention min",
-        "driven by T0177 (criticality 58)"
-      ]
-    },
-    {
-      "id": "1295",
-      "sec": 7,
-      "line": "DN",
-      "day": 4,
-      "s": 7080,
-      "e": 7380,
-      "tasks": [
-        "T0046",
-        "T0191",
-        "T0415"
+        "T0024",
+        "T0267",
+        "T0561"
       ],
       "depts": [
         "ENGG",
@@ -295512,12 +295536,12 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 848.5,
-      "crit": 121.57,
+      "traffic": 774.9,
+      "crit": 84.79,
       "why": [
         "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 849 wtd detention min",
-        "driven by T0046 (criticality 58)"
+        "outside corridor -- 775 wtd detention min",
+        "driven by T0024 (criticality 40)"
       ]
     },
     {
@@ -295529,7 +295553,7 @@
       "e": 7860,
       "tasks": [
         "T0031",
-        "T0506"
+        "T0049"
       ],
       "depts": [
         "ENGG",
@@ -295541,7 +295565,7 @@
       ],
       "corridor": false,
       "traffic": 635.8,
-      "crit": 67.76,
+      "crit": 78.44,
       "why": [
         "clubbed: ENGG, S&T share one closure",
         "outside corridor -- 636 wtd detention min",
@@ -295549,67 +295573,15 @@
       ]
     },
     {
-      "id": "545",
-      "sec": 3,
-      "line": "UP",
-      "day": 5,
-      "s": 7800,
-      "e": 7980,
-      "tasks": [
-        "T0349"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 1062.5,
-      "crit": 43.88,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0349 (criticality 44)"
-      ]
-    },
-    {
-      "id": "636",
-      "sec": 3,
+      "id": "311",
+      "sec": 1,
       "line": "DN",
       "day": 5,
-      "s": 7800,
-      "e": 7980,
+      "s": 7620,
+      "e": 7860,
       "tasks": [
-        "T0229",
-        "T0264"
-      ],
-      "depts": [
-        "ENGG",
-        "TRD"
-      ],
-      "types": [
-        "POWER",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 1383.9,
-      "crit": 85.97,
-      "why": [
-        "clubbed: ENGG, TRD share one closure",
-        "inside mandated corridor",
-        "driven by T0229 (criticality 50)"
-      ]
-    },
-    {
-      "id": "2063",
-      "sec": 12,
-      "line": "UP",
-      "day": 5,
-      "s": 7800,
-      "e": 7980,
-      "tasks": [
-        "T0079",
-        "T0419"
+        "T0058",
+        "T0298"
       ],
       "depts": [
         "ENGG",
@@ -295619,13 +295591,37 @@
         "DISCONN",
         "TRAFFIC"
       ],
-      "corridor": true,
-      "traffic": 504.2,
-      "crit": 94.51,
+      "corridor": false,
+      "traffic": 1053.3,
+      "crit": 80.85,
       "why": [
         "clubbed: ENGG, S&T share one closure",
+        "outside corridor -- 1053 wtd detention min",
+        "driven by T0058 (criticality 59)"
+      ]
+    },
+    {
+      "id": "60",
+      "sec": 0,
+      "line": "UP",
+      "day": 5,
+      "s": 7800,
+      "e": 7980,
+      "tasks": [
+        "T0469"
+      ],
+      "depts": [
+        "TRD"
+      ],
+      "types": [
+        "POWER"
+      ],
+      "corridor": true,
+      "traffic": 715.0,
+      "crit": 78.93,
+      "why": [
         "inside mandated corridor",
-        "driven by T0079 (criticality 50)"
+        "driven by T0469 (criticality 79)"
       ]
     },
     {
@@ -295636,80 +295632,8 @@
       "s": 7800,
       "e": 7980,
       "tasks": [
+        "T0236",
         "T0342"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 387.7,
-      "crit": 38.87,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0342 (criticality 39)"
-      ]
-    },
-    {
-      "id": "1725",
-      "sec": 10,
-      "line": "UP",
-      "day": 5,
-      "s": 7860,
-      "e": 8040,
-      "tasks": [
-        "T0289"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 627.5,
-      "crit": 48.67,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0289 (criticality 49)"
-      ]
-    },
-    {
-      "id": "1810",
-      "sec": 10,
-      "line": "DN",
-      "day": 5,
-      "s": 7860,
-      "e": 8040,
-      "tasks": [
-        "T0586"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 276.1,
-      "crit": 35.12,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0586 (criticality 35)"
-      ]
-    },
-    {
-      "id": "810",
-      "sec": 4,
-      "line": "DN",
-      "day": 5,
-      "s": 7860,
-      "e": 8040,
-      "tasks": [
-        "T0125",
-        "T0492"
       ],
       "depts": [
         "ENGG",
@@ -295720,12 +295644,84 @@
         "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 879.6,
-      "crit": 97.19,
+      "traffic": 387.7,
+      "crit": 64.42,
       "why": [
         "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0492 (criticality 65)"
+        "driven by T0342 (criticality 39)"
+      ]
+    },
+    {
+      "id": "1047",
+      "sec": 6,
+      "line": "UP",
+      "day": 5,
+      "s": 7800,
+      "e": 7980,
+      "tasks": [
+        "T0113"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 556.4,
+      "crit": 61.39,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0113 (criticality 61)"
+      ]
+    },
+    {
+      "id": "1725",
+      "sec": 10,
+      "line": "UP",
+      "day": 5,
+      "s": 7860,
+      "e": 8040,
+      "tasks": [
+        "T0081"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 627.5,
+      "crit": 37.27,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0081 (criticality 37)"
+      ]
+    },
+    {
+      "id": "1809",
+      "sec": 10,
+      "line": "DN",
+      "day": 5,
+      "s": 7860,
+      "e": 7980,
+      "tasks": [
+        "T0588"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 204.6,
+      "crit": 27.33,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0588 (criticality 27)"
       ]
     },
     {
@@ -295736,7 +295732,7 @@
       "s": 7860,
       "e": 8040,
       "tasks": [
-        "T0371"
+        "T0037"
       ],
       "depts": [
         "S&T"
@@ -295746,10 +295742,10 @@
       ],
       "corridor": true,
       "traffic": 504.6,
-      "crit": 44.11,
+      "crit": 17.45,
       "why": [
         "inside mandated corridor",
-        "driven by T0371 (criticality 44)"
+        "driven by T0037 (criticality 17)"
       ]
     },
     {
@@ -295777,6 +295773,34 @@
       ]
     },
     {
+      "id": "1887",
+      "sec": 11,
+      "line": "UP",
+      "day": 5,
+      "s": 7920,
+      "e": 8100,
+      "tasks": [
+        "T0152",
+        "T0333"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 1176.9,
+      "crit": 85.53,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0333 (criticality 56)"
+      ]
+    },
+    {
       "id": "1977",
       "sec": 11,
       "line": "DN",
@@ -295784,7 +295808,31 @@
       "s": 7920,
       "e": 8100,
       "tasks": [
-        "T0341"
+        "T0002"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 557.9,
+      "crit": 58.62,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0002 (criticality 59)"
+      ]
+    },
+    {
+      "id": "961",
+      "sec": 5,
+      "line": "DN",
+      "day": 5,
+      "s": 7920,
+      "e": 8040,
+      "tasks": [
+        "T0432"
       ],
       "depts": [
         "ENGG"
@@ -295793,95 +295841,59 @@
         "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 557.9,
-      "crit": 76.74,
+      "traffic": 182.7,
+      "crit": 58.83,
       "why": [
-        "inside mandated corridor",
-        "driven by T0341 (criticality 77)"
-      ]
-    },
-    {
-      "id": "962",
-      "sec": 5,
-      "line": "DN",
-      "day": 5,
-      "s": 7920,
-      "e": 8100,
-      "tasks": [
-        "T0432",
-        "T0518"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 353.5,
-      "crit": 94.57,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
         "driven by T0432 (criticality 59)"
       ]
     },
     {
-      "id": "2391",
-      "sec": 14,
+      "id": "1380",
+      "sec": 8,
       "line": "UP",
       "day": 5,
       "s": 7920,
       "e": 8100,
       "tasks": [
-        "T0327",
-        "T0514"
+        "T0121"
       ],
       "depts": [
-        "ENGG",
         "S&T"
       ],
       "types": [
-        "DISCONN",
-        "TRAFFIC"
+        "DISCONN"
       ],
       "corridor": true,
-      "traffic": 793.4,
-      "crit": 103.86,
+      "traffic": 623.0,
+      "crit": 45.45,
       "why": [
-        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0327 (criticality 57)"
+        "driven by T0121 (criticality 45)"
       ]
     },
     {
-      "id": "2477",
+      "id": "2390",
       "sec": 14,
-      "line": "DN",
+      "line": "UP",
       "day": 5,
       "s": 7920,
-      "e": 8100,
+      "e": 8040,
       "tasks": [
-        "T0068",
-        "T0407"
+        "T0327"
       ],
       "depts": [
-        "ENGG",
-        "S&T"
+        "ENGG"
       ],
       "types": [
-        "DISCONN",
         "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 1147.2,
-      "crit": 62.46,
+      "traffic": 442.0,
+      "crit": 56.52,
       "why": [
-        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0068 (criticality 41)"
+        "driven by T0327 (criticality 57)"
       ]
     },
     {
@@ -295913,43 +295925,15 @@
       ]
     },
     {
-      "id": "725",
-      "sec": 4,
+      "id": "550",
+      "sec": 3,
       "line": "UP",
       "day": 5,
       "s": 8100,
-      "e": 8280,
+      "e": 8400,
       "tasks": [
-        "T0323",
-        "T0399"
-      ],
-      "depts": [
-        "ENGG",
-        "TRD"
-      ],
-      "types": [
-        "POWER",
-        "TRAFFIC"
-      ],
-      "corridor": false,
-      "traffic": 505.7,
-      "crit": 96.95,
-      "why": [
-        "clubbed: ENGG, TRD share one closure",
-        "outside corridor -- 506 wtd detention min",
-        "driven by T0399 (criticality 70)"
-      ]
-    },
-    {
-      "id": "1307",
-      "sec": 7,
-      "line": "DN",
-      "day": 5,
-      "s": 8520,
-      "e": 8760,
-      "tasks": [
-        "T0203",
-        "T0254"
+        "T0142",
+        "T0489"
       ],
       "depts": [
         "S&T",
@@ -295960,25 +295944,25 @@
         "POWER"
       ],
       "corridor": false,
-      "traffic": 312.1,
-      "crit": 70.19,
+      "traffic": 1337.5,
+      "crit": 124.42,
       "why": [
         "clubbed: S&T, TRD share one closure",
-        "outside corridor -- 312 wtd detention min",
-        "driven by T0203 (criticality 59)"
+        "outside corridor -- 1338 wtd detention min",
+        "driven by T0489 (criticality 65)"
       ]
     },
     {
-      "id": "659",
-      "sec": 3,
+      "id": "1308",
+      "sec": 7,
       "line": "DN",
-      "day": 6,
-      "s": 9000,
-      "e": 9300,
+      "day": 5,
+      "s": 8520,
+      "e": 8820,
       "tasks": [
-        "T0409",
-        "T0445",
-        "T0536"
+        "T0046",
+        "T0191",
+        "T0415"
       ],
       "depts": [
         "ENGG",
@@ -295991,11 +295975,39 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 1020.3,
-      "crit": 164.3,
+      "traffic": 840.6,
+      "crit": 121.57,
       "why": [
         "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 1020 wtd detention min",
+        "outside corridor -- 841 wtd detention min",
+        "driven by T0046 (criticality 58)"
+      ]
+    },
+    {
+      "id": "657",
+      "sec": 3,
+      "line": "DN",
+      "day": 6,
+      "s": 9000,
+      "e": 9180,
+      "tasks": [
+        "T0229",
+        "T0445"
+      ],
+      "depts": [
+        "ENGG",
+        "TRD"
+      ],
+      "types": [
+        "POWER",
+        "TRAFFIC"
+      ],
+      "corridor": false,
+      "traffic": 579.7,
+      "crit": 121.72,
+      "why": [
+        "clubbed: ENGG, TRD share one closure",
+        "outside corridor -- 580 wtd detention min",
         "driven by T0445 (criticality 72)"
       ]
     },
@@ -296028,15 +296040,15 @@
       ]
     },
     {
-      "id": "985",
-      "sec": 5,
-      "line": "DN",
+      "id": "73",
+      "sec": 0,
+      "line": "UP",
       "day": 6,
-      "s": 9000,
-      "e": 9300,
+      "s": 9240,
+      "e": 9420,
       "tasks": [
-        "T0049",
-        "T0468"
+        "T0211",
+        "T0498"
       ],
       "depts": [
         "ENGG",
@@ -296046,37 +296058,13 @@
         "DISCONN",
         "TRAFFIC"
       ],
-      "corridor": false,
-      "traffic": 605.2,
-      "crit": 73.35,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 605 wtd detention min",
-        "driven by T0468 (criticality 46)"
-      ]
-    },
-    {
-      "id": "73",
-      "sec": 0,
-      "line": "UP",
-      "day": 6,
-      "s": 9240,
-      "e": 9420,
-      "tasks": [
-        "T0438"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
       "corridor": true,
       "traffic": 625.6,
-      "crit": 72.94,
+      "crit": 29.1,
       "why": [
+        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0438 (criticality 73)"
+        "driven by T0211 (criticality 19)"
       ]
     },
     {
@@ -296087,31 +296075,35 @@
       "s": 9240,
       "e": 9420,
       "tasks": [
-        "T0061"
+        "T0061",
+        "T0114"
       ],
       "depts": [
+        "ENGG",
         "S&T"
       ],
       "types": [
-        "DISCONN"
+        "DISCONN",
+        "TRAFFIC"
       ],
       "corridor": true,
       "traffic": 566.6,
-      "crit": 21.87,
+      "crit": 86.43,
       "why": [
+        "clubbed: ENGG, S&T share one closure",
         "inside mandated corridor",
-        "driven by T0061 (criticality 22)"
+        "driven by T0114 (criticality 65)"
       ]
     },
     {
-      "id": "1056",
-      "sec": 6,
-      "line": "UP",
+      "id": "2160",
+      "sec": 12,
+      "line": "DN",
       "day": 6,
       "s": 9240,
-      "e": 9420,
+      "e": 9360,
       "tasks": [
-        "T0138"
+        "T0227"
       ],
       "depts": [
         "ENGG"
@@ -296120,11 +296112,11 @@
         "TRAFFIC"
       ],
       "corridor": true,
-      "traffic": 612.7,
-      "crit": 20.67,
+      "traffic": 433.7,
+      "crit": 35.08,
       "why": [
         "inside mandated corridor",
-        "driven by T0138 (criticality 21)"
+        "driven by T0227 (criticality 35)"
       ]
     },
     {
@@ -296135,31 +296127,7 @@
       "s": 9300,
       "e": 9480,
       "tasks": [
-        "T0081"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 710.4,
-      "crit": 37.27,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0081 (criticality 37)"
-      ]
-    },
-    {
-      "id": "1823",
-      "sec": 10,
-      "line": "DN",
-      "day": 6,
-      "s": 9300,
-      "e": 9480,
-      "tasks": [
-        "T0050"
+        "T0289"
       ],
       "depts": [
         "S&T"
@@ -296168,11 +296136,39 @@
         "DISCONN"
       ],
       "corridor": true,
-      "traffic": 440.1,
-      "crit": 3.12,
+      "traffic": 710.4,
+      "crit": 48.67,
       "why": [
         "inside mandated corridor",
-        "driven by T0050 (criticality 3)"
+        "driven by T0289 (criticality 49)"
+      ]
+    },
+    {
+      "id": "735",
+      "sec": 4,
+      "line": "UP",
+      "day": 6,
+      "s": 9300,
+      "e": 9480,
+      "tasks": [
+        "T0083",
+        "T0148"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 875.1,
+      "crit": 37.56,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0148 (criticality 19)"
       ]
     },
     {
@@ -296184,160 +296180,8 @@
       "e": 9480,
       "tasks": [
         "T0078",
+        "T0179",
         "T0247"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 1413.3,
-      "crit": 86.03,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0247 (criticality 53)"
-      ]
-    },
-    {
-      "id": "1990",
-      "sec": 11,
-      "line": "DN",
-      "day": 6,
-      "s": 9360,
-      "e": 9540,
-      "tasks": [
-        "T0262"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 617.1,
-      "crit": 25.06,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0262 (criticality 25)"
-      ]
-    },
-    {
-      "id": "975",
-      "sec": 5,
-      "line": "DN",
-      "day": 6,
-      "s": 9360,
-      "e": 9540,
-      "tasks": [
-        "T0038"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": true,
-      "traffic": 428.4,
-      "crit": 39.09,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0038 (criticality 39)"
-      ]
-    },
-    {
-      "id": "2403",
-      "sec": 14,
-      "line": "UP",
-      "day": 6,
-      "s": 9360,
-      "e": 9480,
-      "tasks": [
-        "T0020"
-      ],
-      "depts": [
-        "ENGG"
-      ],
-      "types": [
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 454.8,
-      "crit": 35.86,
-      "why": [
-        "inside mandated corridor",
-        "driven by T0020 (criticality 36)"
-      ]
-    },
-    {
-      "id": "2490",
-      "sec": 14,
-      "line": "DN",
-      "day": 6,
-      "s": 9360,
-      "e": 9540,
-      "tasks": [
-        "T0232",
-        "T0345"
-      ],
-      "depts": [
-        "ENGG",
-        "S&T"
-      ],
-      "types": [
-        "DISCONN",
-        "TRAFFIC"
-      ],
-      "corridor": true,
-      "traffic": 1092.1,
-      "crit": 36.67,
-      "why": [
-        "clubbed: ENGG, S&T share one closure",
-        "inside mandated corridor",
-        "driven by T0345 (criticality 20)"
-      ]
-    },
-    {
-      "id": "568",
-      "sec": 3,
-      "line": "UP",
-      "day": 6,
-      "s": 9480,
-      "e": 9780,
-      "tasks": [
-        "T0142"
-      ],
-      "depts": [
-        "S&T"
-      ],
-      "types": [
-        "DISCONN"
-      ],
-      "corridor": false,
-      "traffic": 1122.6,
-      "crit": 59.17,
-      "why": [
-        "outside corridor -- 1123 wtd detention min",
-        "driven by T0142 (criticality 59)"
-      ]
-    },
-    {
-      "id": "236",
-      "sec": 1,
-      "line": "UP",
-      "day": 6,
-      "s": 9480,
-      "e": 9720,
-      "tasks": [
-        "T0066",
-        "T0115",
-        "T0360"
       ],
       "depts": [
         "ENGG",
@@ -296349,25 +296193,157 @@
         "POWER",
         "TRAFFIC"
       ],
-      "corridor": false,
-      "traffic": 982.9,
-      "crit": 138.8,
+      "corridor": true,
+      "traffic": 1413.3,
+      "crit": 144.58,
       "why": [
         "clubbed: ENGG, S&T, TRD share one closure",
-        "outside corridor -- 983 wtd detention min",
-        "driven by T0066 (criticality 73)"
+        "inside mandated corridor",
+        "driven by T0179 (criticality 59)"
       ]
     },
     {
-      "id": "1232",
-      "sec": 7,
+      "id": "315",
+      "sec": 1,
+      "line": "DN",
+      "day": 6,
+      "s": 9300,
+      "e": 9480,
+      "tasks": [
+        "T0059",
+        "T0202"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 2038.2,
+      "crit": 118.79,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0202 (criticality 65)"
+      ]
+    },
+    {
+      "id": "2314",
+      "sec": 13,
+      "line": "DN",
+      "day": 6,
+      "s": 9300,
+      "e": 9480,
+      "tasks": [
+        "T0392"
+      ],
+      "depts": [
+        "S&T"
+      ],
+      "types": [
+        "DISCONN"
+      ],
+      "corridor": true,
+      "traffic": 365.8,
+      "crit": 42.81,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0392 (criticality 43)"
+      ]
+    },
+    {
+      "id": "1990",
+      "sec": 11,
+      "line": "DN",
+      "day": 6,
+      "s": 9360,
+      "e": 9540,
+      "tasks": [
+        "T0262",
+        "T0433"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 617.1,
+      "crit": 73.3,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0433 (criticality 48)"
+      ]
+    },
+    {
+      "id": "974",
+      "sec": 5,
+      "line": "DN",
+      "day": 6,
+      "s": 9360,
+      "e": 9480,
+      "tasks": [
+        "T0181"
+      ],
+      "depts": [
+        "ENGG"
+      ],
+      "types": [
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 197.2,
+      "crit": 30.8,
+      "why": [
+        "inside mandated corridor",
+        "driven by T0181 (criticality 31)"
+      ]
+    },
+    {
+      "id": "2404",
+      "sec": 14,
       "line": "UP",
       "day": 6,
-      "s": 9540,
-      "e": 9780,
+      "s": 9360,
+      "e": 9540,
       "tasks": [
-        "T0267",
-        "T0561"
+        "T0041",
+        "T0514"
+      ],
+      "depts": [
+        "ENGG",
+        "S&T"
+      ],
+      "types": [
+        "DISCONN",
+        "TRAFFIC"
+      ],
+      "corridor": true,
+      "traffic": 761.5,
+      "crit": 57.05,
+      "why": [
+        "clubbed: ENGG, S&T share one closure",
+        "inside mandated corridor",
+        "driven by T0514 (criticality 47)"
+      ]
+    },
+    {
+      "id": "567",
+      "sec": 3,
+      "line": "UP",
+      "day": 6,
+      "s": 9480,
+      "e": 9720,
+      "tasks": [
+        "T0013",
+        "T0117"
       ],
       "depts": [
         "ENGG",
@@ -296378,40 +296354,36 @@
         "TRAFFIC"
       ],
       "corridor": false,
-      "traffic": 605.6,
-      "crit": 44.83,
+      "traffic": 707.0,
+      "crit": 87.71,
       "why": [
         "clubbed: ENGG, S&T share one closure",
-        "outside corridor -- 606 wtd detention min",
-        "driven by T0267 (criticality 25)"
+        "outside corridor -- 707 wtd detention min",
+        "driven by T0117 (criticality 45)"
       ]
     },
     {
-      "id": "2164",
+      "id": "2082",
       "sec": 12,
-      "line": "DN",
+      "line": "UP",
       "day": 6,
-      "s": 9900,
-      "e": 10080,
+      "s": 9600,
+      "e": 9840,
       "tasks": [
-        "T0227",
-        "T0418"
+        "T0233"
       ],
       "depts": [
-        "ENGG",
         "TRD"
       ],
       "types": [
-        "POWER",
-        "TRAFFIC"
+        "POWER"
       ],
       "corridor": false,
-      "traffic": 217.5,
-      "crit": 72.61,
+      "traffic": 454.3,
+      "crit": 59.4,
       "why": [
-        "clubbed: ENGG, TRD share one closure",
-        "outside corridor -- 218 wtd detention min",
-        "driven by T0418 (criticality 38)"
+        "outside corridor -- 454 wtd detention min",
+        "driven by T0233 (criticality 59)"
       ]
     }
   ],
@@ -316393,62 +316365,61 @@
     "days": 30,
     "corridorMinutes": 180,
     "slotsTotal": 851,
-    "slotsUsed": 148,
+    "slotsUsed": 150,
     "blocks": [
       {
-        "id": "181",
+        "id": "182",
         "sec": 3,
-        "line": "UP",
-        "day": 0,
-        "s": 600,
-        "e": 780,
-        "tasks": [
-          "T0268",
-          "T0552"
-        ],
-        "depts": [
-          "ENGG",
-          "S&T"
-        ],
-        "types": [
-          "DISCONN",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 1020.9,
-        "crit": 114.82,
-        "why": [
-          "clubbed: ENGG, S&T share one closure",
-          "inside mandated corridor",
-          "driven by T0268 (criticality 62)"
-        ]
-      },
-      {
-        "id": "522",
-        "sec": 9,
         "line": "DN",
         "day": 0,
         "s": 600,
         "e": 780,
         "tasks": [
-          "T0437",
-          "T0589"
+          "T0215",
+          "T0264",
+          "T0539"
         ],
         "depts": [
           "ENGG",
-          "S&T"
+          "S&T",
+          "TRD"
         ],
         "types": [
           "DISCONN",
+          "POWER",
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 592.5,
-        "crit": 41.16,
+        "traffic": 1236.1,
+        "crit": 84.52,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
+          "clubbed: ENGG, S&T, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0437 (criticality 28)"
+          "driven by T0539 (criticality 38)"
+        ]
+      },
+      {
+        "id": "1",
+        "sec": 0,
+        "line": "UP",
+        "day": 0,
+        "s": 600,
+        "e": 780,
+        "tasks": [
+          "T0438"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 644.0,
+        "crit": 72.94,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0438 (criticality 73)"
         ]
       },
       {
@@ -316459,35 +316430,7 @@
         "s": 600,
         "e": 780,
         "tasks": [
-          "T0419",
-          "T0594"
-        ],
-        "depts": [
-          "ENGG",
-          "S&T"
-        ],
-        "types": [
-          "DISCONN",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 461.3,
-        "crit": 48.62,
-        "why": [
-          "clubbed: ENGG, S&T share one closure",
-          "inside mandated corridor",
-          "driven by T0419 (criticality 45)"
-        ]
-      },
-      {
-        "id": "361",
-        "sec": 6,
-        "line": "UP",
-        "day": 0,
-        "s": 600,
-        "e": 780,
-        "tasks": [
-          "T0528"
+          "T0028"
         ],
         "depts": [
           "ENGG"
@@ -316496,11 +316439,35 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 538.5,
-        "crit": 21.5,
+        "traffic": 461.3,
+        "crit": 14.48,
         "why": [
           "inside mandated corridor",
-          "driven by T0528 (criticality 22)"
+          "driven by T0028 (criticality 14)"
+        ]
+      },
+      {
+        "id": "362",
+        "sec": 6,
+        "line": "DN",
+        "day": 0,
+        "s": 600,
+        "e": 780,
+        "tasks": [
+          "T0274"
+        ],
+        "depts": [
+          "S&T"
+        ],
+        "types": [
+          "DISCONN"
+        ],
+        "corridor": true,
+        "traffic": 574.9,
+        "crit": 58.43,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0274 (criticality 58)"
         ]
       },
       {
@@ -316535,7 +316502,7 @@
         "s": 660,
         "e": 840,
         "tasks": [
-          "T0366"
+          "T0405"
         ],
         "depts": [
           "ENGG"
@@ -316545,38 +316512,10 @@
         ],
         "corridor": true,
         "traffic": 327.6,
-        "crit": 52.38,
+        "crit": 53.11,
         "why": [
           "inside mandated corridor",
-          "driven by T0366 (criticality 52)"
-        ]
-      },
-      {
-        "id": "242",
-        "sec": 4,
-        "line": "DN",
-        "day": 0,
-        "s": 660,
-        "e": 840,
-        "tasks": [
-          "T0125",
-          "T0383"
-        ],
-        "depts": [
-          "ENGG",
-          "S&T"
-        ],
-        "types": [
-          "DISCONN",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 778.8,
-        "crit": 98.82,
-        "why": [
-          "clubbed: ENGG, S&T share one closure",
-          "inside mandated corridor",
-          "driven by T0383 (criticality 66)"
+          "driven by T0405 (criticality 53)"
         ]
       },
       {
@@ -316587,7 +316526,7 @@
         "s": 660,
         "e": 840,
         "tasks": [
-          "T0075",
+          "T0122",
           "T0408"
         ],
         "depts": [
@@ -316600,11 +316539,11 @@
         ],
         "corridor": true,
         "traffic": 1857.1,
-        "crit": 114.46,
+        "crit": 125.98,
         "why": [
           "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0075 (criticality 61)"
+          "driven by T0122 (criticality 72)"
         ]
       },
       {
@@ -316632,6 +316571,30 @@
         ]
       },
       {
+        "id": "417",
+        "sec": 7,
+        "line": "DN",
+        "day": 0,
+        "s": 660,
+        "e": 840,
+        "tasks": [
+          "T0176"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 400.4,
+        "crit": 16.53,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0176 (criticality 17)"
+        ]
+      },
+      {
         "id": "632",
         "sec": 11,
         "line": "DN",
@@ -316639,52 +316602,44 @@
         "s": 720,
         "e": 900,
         "tasks": [
-          "T0508",
-          "T0597"
+          "T0584"
         ],
         "depts": [
-          "ENGG",
-          "S&T"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 598.2,
-        "crit": 25.59,
+        "crit": 13.37,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0597 (criticality 16)"
+          "driven by T0584 (criticality 13)"
         ]
       },
       {
-        "id": "121",
+        "id": "122",
         "sec": 2,
-        "line": "UP",
+        "line": "DN",
         "day": 0,
         "s": 720,
         "e": 900,
         "tasks": [
-          "T0198",
-          "T0447"
+          "T0221"
         ],
         "depts": [
-          "ENGG",
-          "S&T"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 507.3,
-        "crit": 67.98,
+        "traffic": 660.7,
+        "crit": 36.72,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0447 (criticality 42)"
+          "driven by T0221 (criticality 37)"
         ]
       },
       {
@@ -316695,24 +316650,20 @@
         "s": 720,
         "e": 900,
         "tasks": [
-          "T0038",
-          "T0460"
+          "T0421"
         ],
         "depts": [
-          "ENGG",
-          "S&T"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 306.2,
-        "crit": 97.74,
+        "crit": 11.4,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0460 (criticality 59)"
+          "driven by T0421 (criticality 11)"
         ]
       },
       {
@@ -316723,18 +316674,22 @@
         "s": 720,
         "e": 900,
         "tasks": [
+          "T0484",
           "T0530"
         ],
         "depts": [
+          "ENGG",
           "S&T"
         ],
         "types": [
-          "DISCONN"
+          "DISCONN",
+          "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 637.5,
-        "crit": 50.58,
+        "crit": 96.46,
         "why": [
+          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
           "driven by T0530 (criticality 51)"
         ]
@@ -316772,85 +316727,62 @@
         "e": 900,
         "tasks": [
           "T0297",
-          "T0462",
-          "T0502"
+          "T0462"
         ],
         "depts": [
           "ENGG",
-          "S&T",
-          "TRD"
+          "S&T"
         ],
         "types": [
           "DISCONN",
-          "POWER",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 788.9,
-        "crit": 106.28,
+        "crit": 48.47,
         "why": [
-          "clubbed: ENGG, S&T, TRD share one closure",
+          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0502 (criticality 58)"
+          "driven by T0462 (criticality 30)"
         ]
       },
       {
-        "id": "3",
+        "id": "183",
+        "sec": 3,
+        "line": "UP",
+        "day": 1,
+        "s": 2040,
+        "e": 2220,
+        "tasks": [
+          "T0268",
+          "T0552"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 1099.6,
+        "crit": 114.82,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0268 (criticality 62)"
+        ]
+      },
+      {
+        "id": "4",
         "sec": 0,
-        "line": "UP",
-        "day": 1,
-        "s": 2040,
-        "e": 2220,
-        "tasks": [
-          "T0438"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 681.9,
-        "crit": 72.94,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0438 (criticality 73)"
-        ]
-      },
-      {
-        "id": "688",
-        "sec": 12,
-        "line": "UP",
-        "day": 1,
-        "s": 2040,
-        "e": 2220,
-        "tasks": [
-          "T0028"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 535.9,
-        "crit": 14.48,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0028 (criticality 14)"
-        ]
-      },
-      {
-        "id": "578",
-        "sec": 10,
         "line": "DN",
         "day": 1,
-        "s": 2100,
-        "e": 2280,
+        "s": 2040,
+        "e": 2220,
         "tasks": [
-          "T0405"
+          "T0084"
         ],
         "depts": [
           "ENGG"
@@ -316859,22 +316791,50 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 409.3,
-        "crit": 53.11,
+        "traffic": 643.8,
+        "crit": 56.86,
         "why": [
           "inside mandated corridor",
-          "driven by T0405 (criticality 53)"
+          "driven by T0084 (criticality 57)"
         ]
       },
       {
-        "id": "243",
-        "sec": 4,
+        "id": "523",
+        "sec": 9,
         "line": "UP",
         "day": 1,
-        "s": 2100,
-        "e": 2280,
+        "s": 2040,
+        "e": 2220,
         "tasks": [
-          "T0124"
+          "T0054",
+          "T0451"
+        ],
+        "depts": [
+          "ENGG",
+          "TRD"
+        ],
+        "types": [
+          "POWER",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 633.1,
+        "crit": 96.57,
+        "why": [
+          "clubbed: ENGG, TRD share one closure",
+          "inside mandated corridor",
+          "driven by T0451 (criticality 62)"
+        ]
+      },
+      {
+        "id": "363",
+        "sec": 6,
+        "line": "UP",
+        "day": 1,
+        "s": 2040,
+        "e": 2220,
+        "tasks": [
+          "T0528"
         ],
         "depts": [
           "ENGG"
@@ -316883,11 +316843,11 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 931.8,
-        "crit": 32.78,
+        "traffic": 623.5,
+        "crit": 21.5,
         "why": [
           "inside mandated corridor",
-          "driven by T0124 (criticality 33)"
+          "driven by T0528 (criticality 22)"
         ]
       },
       {
@@ -316898,52 +316858,20 @@
         "s": 2100,
         "e": 2280,
         "tasks": [
-          "T0078",
           "T0302"
         ],
         "depts": [
-          "ENGG",
-          "S&T"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 1348.2,
-        "crit": 88.13,
+        "crit": 54.82,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
           "driven by T0302 (criticality 55)"
-        ]
-      },
-      {
-        "id": "743",
-        "sec": 13,
-        "line": "UP",
-        "day": 1,
-        "s": 2100,
-        "e": 2280,
-        "tasks": [
-          "T0037",
-          "T0094"
-        ],
-        "depts": [
-          "ENGG",
-          "S&T"
-        ],
-        "types": [
-          "DISCONN",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 463.5,
-        "crit": 40.49,
-        "why": [
-          "clubbed: ENGG, S&T share one closure",
-          "inside mandated corridor",
-          "driven by T0094 (criticality 23)"
         ]
       },
       {
@@ -316983,7 +316911,7 @@
         "e": 2340,
         "tasks": [
           "T0002",
-          "T0123"
+          "T0508"
         ],
         "depts": [
           "ENGG",
@@ -316995,7 +316923,7 @@
         ],
         "corridor": true,
         "traffic": 591.5,
-        "crit": 105.3,
+        "crit": 68.11,
         "why": [
           "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
@@ -317003,39 +316931,15 @@
         ]
       },
       {
-        "id": "303",
-        "sec": 5,
+        "id": "123",
+        "sec": 2,
         "line": "UP",
         "day": 1,
         "s": 2160,
         "e": 2340,
         "tasks": [
-          "T0281"
-        ],
-        "depts": [
-          "S&T"
-        ],
-        "types": [
-          "DISCONN"
-        ],
-        "corridor": true,
-        "traffic": 575.7,
-        "crit": 72.76,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0281 (criticality 73)"
-        ]
-      },
-      {
-        "id": "304",
-        "sec": 5,
-        "line": "DN",
-        "day": 1,
-        "s": 2160,
-        "e": 2340,
-        "tasks": [
-          "T0461",
-          "T0518"
+          "T0198",
+          "T0447"
         ],
         "depts": [
           "ENGG",
@@ -317046,12 +316950,40 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 349.6,
-        "crit": 71.22,
+        "traffic": 472.9,
+        "crit": 67.98,
         "why": [
           "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0518 (criticality 36)"
+          "driven by T0447 (criticality 42)"
+        ]
+      },
+      {
+        "id": "303",
+        "sec": 5,
+        "line": "UP",
+        "day": 1,
+        "s": 2160,
+        "e": 2340,
+        "tasks": [
+          "T0155",
+          "T0281"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 575.7,
+        "crit": 133.68,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0281 (criticality 73)"
         ]
       },
       {
@@ -317086,27 +317018,20 @@
         "s": 2160,
         "e": 2340,
         "tasks": [
-          "T0275",
-          "T0331",
-          "T0514"
+          "T0486"
         ],
         "depts": [
-          "ENGG",
-          "S&T",
-          "TRD"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
-          "POWER",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 561.2,
-        "crit": 127.39,
+        "crit": 4.22,
         "why": [
-          "clubbed: ENGG, S&T, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0514 (criticality 47)"
+          "driven by T0486 (criticality 4)"
         ]
       },
       {
@@ -317138,16 +317063,232 @@
         ]
       },
       {
-        "id": "185",
-        "sec": 3,
+        "id": "525",
+        "sec": 9,
+        "line": "DN",
+        "day": 2,
+        "s": 3480,
+        "e": 3660,
+        "tasks": [
+          "T0437",
+          "T0589"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 609.9,
+        "crit": 41.16,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0437 (criticality 28)"
+        ]
+      },
+      {
+        "id": "689",
+        "sec": 12,
         "line": "UP",
         "day": 2,
         "s": 3480,
         "e": 3660,
         "tasks": [
-          "T0132",
-          "T0146",
-          "T0349"
+          "T0079",
+          "T0419"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 492.3,
+        "crit": 94.51,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0079 (criticality 50)"
+        ]
+      },
+      {
+        "id": "364",
+        "sec": 6,
+        "line": "UP",
+        "day": 2,
+        "s": 3480,
+        "e": 3660,
+        "tasks": [
+          "T0113",
+          "T0241"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 608.4,
+        "crit": 116.85,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0113 (criticality 61)"
+        ]
+      },
+      {
+        "id": "579",
+        "sec": 10,
+        "line": "UP",
+        "day": 2,
+        "s": 3540,
+        "e": 3720,
+        "tasks": [
+          "T0351"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 589.4,
+        "crit": 16.34,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0351 (criticality 16)"
+        ]
+      },
+      {
+        "id": "246",
+        "sec": 4,
+        "line": "DN",
+        "day": 2,
+        "s": 3540,
+        "e": 3720,
+        "tasks": [
+          "T0383",
+          "T0516"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 857.3,
+        "crit": 124.02,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0383 (criticality 66)"
+        ]
+      },
+      {
+        "id": "745",
+        "sec": 13,
+        "line": "UP",
+        "day": 2,
+        "s": 3540,
+        "e": 3720,
+        "tasks": [
+          "T0094",
+          "T0371"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 449.3,
+        "crit": 67.15,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0371 (criticality 44)"
+        ]
+      },
+      {
+        "id": "418",
+        "sec": 7,
+        "line": "UP",
+        "day": 2,
+        "s": 3540,
+        "e": 3720,
+        "tasks": [
+          "T0230",
+          "T0481"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 819.2,
+        "crit": 100.57,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0481 (criticality 67)"
+        ]
+      },
+      {
+        "id": "419",
+        "sec": 7,
+        "line": "DN",
+        "day": 2,
+        "s": 3540,
+        "e": 3720,
+        "tasks": [
+          "T0093"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 450.5,
+        "crit": 19.2,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0093 (criticality 19)"
+        ]
+      },
+      {
+        "id": "634",
+        "sec": 11,
+        "line": "UP",
+        "day": 2,
+        "s": 3600,
+        "e": 3780,
+        "tasks": [
+          "T0154",
+          "T0334",
+          "T0525"
         ],
         "depts": [
           "ENGG",
@@ -317160,216 +317301,12 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 1057.6,
-        "crit": 102.14,
+        "traffic": 1123.5,
+        "crit": 126.02,
         "why": [
           "clubbed: ENGG, S&T, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0349 (criticality 44)"
-        ]
-      },
-      {
-        "id": "6",
-        "sec": 0,
-        "line": "DN",
-        "day": 2,
-        "s": 3480,
-        "e": 3660,
-        "tasks": [
-          "T0084",
-          "T0290"
-        ],
-        "depts": [
-          "ENGG",
-          "S&T"
-        ],
-        "types": [
-          "DISCONN",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 632.5,
-        "crit": 71.83,
-        "why": [
-          "clubbed: ENGG, S&T share one closure",
-          "inside mandated corridor",
-          "driven by T0084 (criticality 57)"
-        ]
-      },
-      {
-        "id": "689",
-        "sec": 12,
-        "line": "UP",
-        "day": 2,
-        "s": 3480,
-        "e": 3660,
-        "tasks": [
-          "T0079",
-          "T0114"
-        ],
-        "depts": [
-          "ENGG",
-          "S&T"
-        ],
-        "types": [
-          "DISCONN",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 492.3,
-        "crit": 114.25,
-        "why": [
-          "clubbed: ENGG, S&T share one closure",
-          "inside mandated corridor",
-          "driven by T0114 (criticality 65)"
-        ]
-      },
-      {
-        "id": "690",
-        "sec": 12,
-        "line": "DN",
-        "day": 2,
-        "s": 3480,
-        "e": 3660,
-        "tasks": [
-          "T0236"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 434.7,
-        "crit": 25.55,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0236 (criticality 26)"
-        ]
-      },
-      {
-        "id": "579",
-        "sec": 10,
-        "line": "UP",
-        "day": 2,
-        "s": 3540,
-        "e": 3720,
-        "tasks": [
-          "T0393"
-        ],
-        "depts": [
-          "S&T"
-        ],
-        "types": [
-          "DISCONN"
-        ],
-        "corridor": true,
-        "traffic": 589.4,
-        "crit": 43.5,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0393 (criticality 44)"
-        ]
-      },
-      {
-        "id": "65",
-        "sec": 1,
-        "line": "UP",
-        "day": 2,
-        "s": 3540,
-        "e": 3720,
-        "tasks": [
-          "T0500"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 1367.6,
-        "crit": 63.78,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0500 (criticality 64)"
-        ]
-      },
-      {
-        "id": "745",
-        "sec": 13,
-        "line": "UP",
-        "day": 2,
-        "s": 3540,
-        "e": 3720,
-        "tasks": [
-          "T0572"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 449.3,
-        "crit": 14.81,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0572 (criticality 15)"
-        ]
-      },
-      {
-        "id": "419",
-        "sec": 7,
-        "line": "DN",
-        "day": 2,
-        "s": 3540,
-        "e": 3720,
-        "tasks": [
-          "T0176"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 450.5,
-        "crit": 16.53,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0176 (criticality 17)"
-        ]
-      },
-      {
-        "id": "634",
-        "sec": 11,
-        "line": "UP",
-        "day": 2,
-        "s": 3600,
-        "e": 3780,
-        "tasks": [
-          "T0154",
-          "T0525"
-        ],
-        "depts": [
-          "ENGG",
-          "S&T"
-        ],
-        "types": [
-          "DISCONN",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 1123.5,
-        "crit": 65.07,
-        "why": [
-          "clubbed: ENGG, S&T share one closure",
-          "inside mandated corridor",
-          "driven by T0525 (criticality 34)"
+          "driven by T0334 (criticality 61)"
         ]
       },
       {
@@ -317380,32 +317317,8 @@
         "s": 3600,
         "e": 3780,
         "tasks": [
-          "T0174"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 350.9,
-        "crit": 53.0,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0174 (criticality 53)"
-        ]
-      },
-      {
-        "id": "469",
-        "sec": 8,
-        "line": "UP",
-        "day": 2,
-        "s": 3600,
-        "e": 3780,
-        "tasks": [
-          "T0484",
-          "T0547"
+          "T0038",
+          "T0460"
         ],
         "depts": [
           "ENGG",
@@ -317416,12 +317329,12 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 665.0,
-        "crit": 73.04,
+        "traffic": 350.9,
+        "crit": 97.74,
         "why": [
           "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0484 (criticality 46)"
+          "driven by T0460 (criticality 59)"
         ]
       },
       {
@@ -317432,20 +317345,24 @@
         "s": 3600,
         "e": 3780,
         "tasks": [
-          "T0332"
+          "T0331",
+          "T0382"
         ],
         "depts": [
-          "ENGG"
+          "ENGG",
+          "S&T"
         ],
         "types": [
+          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 640.7,
-        "crit": 7.27,
+        "crit": 58.89,
         "why": [
+          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0332 (criticality 7)"
+          "driven by T0331 (criticality 36)"
         ]
       },
       {
@@ -317456,8 +317373,8 @@
         "s": 3600,
         "e": 3780,
         "tasks": [
-          "T0007",
-          "T0068"
+          "T0068",
+          "T0401"
         ],
         "depts": [
           "ENGG",
@@ -317469,11 +317386,35 @@
         ],
         "corridor": true,
         "traffic": 945.9,
-        "crit": 90.62,
+        "crit": 70.29,
         "why": [
           "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0007 (criticality 49)"
+          "driven by T0068 (criticality 41)"
+        ]
+      },
+      {
+        "id": "8",
+        "sec": 0,
+        "line": "DN",
+        "day": 3,
+        "s": 4920,
+        "e": 5100,
+        "tasks": [
+          "T0305"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 575.1,
+        "crit": 21.35,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0305 (criticality 21)"
         ]
       },
       {
@@ -317508,24 +317449,20 @@
         "s": 4920,
         "e": 5100,
         "tasks": [
-          "T0227",
-          "T0342"
+          "T0595"
         ],
         "depts": [
-          "ENGG",
-          "S&T"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 349.0,
-        "crit": 73.95,
+        "crit": 48.17,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0342 (criticality 39)"
+          "driven by T0595 (criticality 48)"
         ]
       },
       {
@@ -317536,24 +317473,20 @@
         "s": 4920,
         "e": 5100,
         "tasks": [
-          "T0072",
-          "T0113"
+          "T0072"
         ],
         "depts": [
-          "ENGG",
-          "S&T"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 577.5,
-        "crit": 110.85,
+        "crit": 49.46,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0113 (criticality 61)"
+          "driven by T0072 (criticality 49)"
         ]
       },
       {
@@ -317564,24 +317497,20 @@
         "s": 4980,
         "e": 5160,
         "tasks": [
-          "T0160",
-          "T0311"
+          "T0167"
         ],
         "depts": [
-          "ENGG",
-          "S&T"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 356.1,
-        "crit": 80.21,
+        "crit": 41.25,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0160 (criticality 48)"
+          "driven by T0167 (criticality 41)"
         ]
       },
       {
@@ -317592,24 +317521,20 @@
         "s": 4980,
         "e": 5160,
         "tasks": [
-          "T0148",
-          "T0265"
+          "T0323"
         ],
         "depts": [
-          "ENGG",
-          "S&T"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 917.2,
-        "crit": 55.59,
+        "crit": 27.15,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0265 (criticality 36)"
+          "driven by T0323 (criticality 27)"
         ]
       },
       {
@@ -317675,7 +317600,7 @@
         "s": 4980,
         "e": 5160,
         "tasks": [
-          "T0590"
+          "T0055"
         ],
         "depts": [
           "ENGG"
@@ -317685,10 +317610,10 @@
         ],
         "corridor": true,
         "traffic": 704.9,
-        "crit": 67.39,
+        "crit": 64.61,
         "why": [
           "inside mandated corridor",
-          "driven by T0590 (criticality 67)"
+          "driven by T0055 (criticality 65)"
         ]
       },
       {
@@ -317699,80 +317624,8 @@
         "s": 5040,
         "e": 5220,
         "tasks": [
-          "T0584"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 617.9,
-        "crit": 13.37,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0584 (criticality 13)"
-        ]
-      },
-      {
-        "id": "128",
-        "sec": 2,
-        "line": "DN",
-        "day": 3,
-        "s": 5040,
-        "e": 5220,
-        "tasks": [
-          "T0221"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 616.5,
-        "crit": 36.72,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0221 (criticality 37)"
-        ]
-      },
-      {
-        "id": "471",
-        "sec": 8,
-        "line": "UP",
-        "day": 3,
-        "s": 5040,
-        "e": 5220,
-        "tasks": [
-          "T0102"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 606.4,
-        "crit": 31.23,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0102 (criticality 31)"
-        ]
-      },
-      {
-        "id": "806",
-        "sec": 14,
-        "line": "UP",
-        "day": 3,
-        "s": 5040,
-        "e": 5220,
-        "tasks": [
-          "T0327",
-          "T0382"
+          "T0172",
+          "T0597"
         ],
         "depts": [
           "ENGG",
@@ -317783,12 +317636,88 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 785.5,
-        "crit": 79.6,
+        "traffic": 617.9,
+        "crit": 70.35,
         "why": [
           "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0327 (criticality 57)"
+          "driven by T0172 (criticality 54)"
+        ]
+      },
+      {
+        "id": "308",
+        "sec": 5,
+        "line": "DN",
+        "day": 3,
+        "s": 5040,
+        "e": 5220,
+        "tasks": [
+          "T0461",
+          "T0518"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 373.4,
+        "crit": 71.22,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0518 (criticality 36)"
+        ]
+      },
+      {
+        "id": "471",
+        "sec": 8,
+        "line": "UP",
+        "day": 3,
+        "s": 5040,
+        "e": 5220,
+        "tasks": [
+          "T0547"
+        ],
+        "depts": [
+          "S&T"
+        ],
+        "types": [
+          "DISCONN"
+        ],
+        "corridor": true,
+        "traffic": 606.4,
+        "crit": 27.16,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0547 (criticality 27)"
+        ]
+      },
+      {
+        "id": "806",
+        "sec": 14,
+        "line": "UP",
+        "day": 3,
+        "s": 5040,
+        "e": 5220,
+        "tasks": [
+          "T0332"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 785.5,
+        "crit": 7.27,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0332 (criticality 7)"
         ]
       },
       {
@@ -317820,58 +317749,6 @@
         ]
       },
       {
-        "id": "10",
-        "sec": 0,
-        "line": "DN",
-        "day": 4,
-        "s": 6360,
-        "e": 6540,
-        "tasks": [
-          "T0423"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 642.8,
-        "crit": 13.74,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0423 (criticality 14)"
-        ]
-      },
-      {
-        "id": "528",
-        "sec": 9,
-        "line": "UP",
-        "day": 4,
-        "s": 6360,
-        "e": 6540,
-        "tasks": [
-          "T0054",
-          "T0451"
-        ],
-        "depts": [
-          "ENGG",
-          "TRD"
-        ],
-        "types": [
-          "POWER",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 570.6,
-        "crit": 96.57,
-        "why": [
-          "clubbed: ENGG, TRD share one closure",
-          "inside mandated corridor",
-          "driven by T0451 (criticality 62)"
-        ]
-      },
-      {
         "id": "694",
         "sec": 12,
         "line": "DN",
@@ -317879,7 +317756,7 @@
         "s": 6360,
         "e": 6540,
         "tasks": [
-          "T0475"
+          "T0236"
         ],
         "depts": [
           "ENGG"
@@ -317889,34 +317766,10 @@
         ],
         "corridor": true,
         "traffic": 357.5,
-        "crit": 11.21,
+        "crit": 25.55,
         "why": [
           "inside mandated corridor",
-          "driven by T0475 (criticality 11)"
-        ]
-      },
-      {
-        "id": "368",
-        "sec": 6,
-        "line": "UP",
-        "day": 4,
-        "s": 6360,
-        "e": 6540,
-        "tasks": [
-          "T0241"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 542.7,
-        "crit": 55.46,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0241 (criticality 55)"
+          "driven by T0236 (criticality 26)"
         ]
       },
       {
@@ -317951,20 +317804,24 @@
         "s": 6420,
         "e": 6600,
         "tasks": [
-          "T0167"
+          "T0160",
+          "T0311"
         ],
         "depts": [
-          "ENGG"
+          "ENGG",
+          "S&T"
         ],
         "types": [
+          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 327.2,
-        "crit": 41.25,
+        "crit": 80.21,
         "why": [
+          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0167 (criticality 41)"
+          "driven by T0160 (criticality 48)"
         ]
       },
       {
@@ -317975,20 +317832,20 @@
         "s": 6420,
         "e": 6600,
         "tasks": [
-          "T0354"
+          "T0106"
         ],
         "depts": [
-          "S&T"
+          "TRD"
         ],
         "types": [
-          "DISCONN"
+          "POWER"
         ],
         "corridor": true,
         "traffic": 270.0,
-        "crit": 22.69,
+        "crit": 55.27,
         "why": [
           "inside mandated corridor",
-          "driven by T0354 (criticality 23)"
+          "driven by T0106 (criticality 55)"
         ]
       },
       {
@@ -317999,7 +317856,7 @@
         "s": 6420,
         "e": 6600,
         "tasks": [
-          "T0481"
+          "T0150"
         ],
         "depts": [
           "ENGG"
@@ -318009,10 +317866,38 @@
         ],
         "corridor": true,
         "traffic": 687.5,
-        "crit": 67.47,
+        "crit": 33.99,
         "why": [
           "inside mandated corridor",
-          "driven by T0481 (criticality 67)"
+          "driven by T0150 (criticality 34)"
+        ]
+      },
+      {
+        "id": "638",
+        "sec": 11,
+        "line": "UP",
+        "day": 4,
+        "s": 6480,
+        "e": 6660,
+        "tasks": [
+          "T0152",
+          "T0333"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 1177.8,
+        "crit": 85.53,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0333 (criticality 56)"
         ]
       },
       {
@@ -318023,20 +317908,24 @@
         "s": 6480,
         "e": 6660,
         "tasks": [
-          "T0341"
+          "T0123",
+          "T0262"
         ],
         "depts": [
-          "ENGG"
+          "ENGG",
+          "S&T"
         ],
         "types": [
+          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 525.0,
-        "crit": 76.74,
+        "crit": 71.74,
         "why": [
+          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0341 (criticality 77)"
+          "driven by T0123 (criticality 47)"
         ]
       },
       {
@@ -318047,7 +317936,7 @@
         "s": 6480,
         "e": 6660,
         "tasks": [
-          "T0181"
+          "T0174"
         ],
         "depts": [
           "ENGG"
@@ -318057,10 +317946,34 @@
         ],
         "corridor": true,
         "traffic": 298.4,
-        "crit": 30.8,
+        "crit": 53.0,
         "why": [
           "inside mandated corridor",
-          "driven by T0181 (criticality 31)"
+          "driven by T0174 (criticality 53)"
+        ]
+      },
+      {
+        "id": "473",
+        "sec": 8,
+        "line": "UP",
+        "day": 4,
+        "s": 6480,
+        "e": 6660,
+        "tasks": [
+          "T0102"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 624.2,
+        "crit": 31.23,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0102 (criticality 31)"
         ]
       },
       {
@@ -318071,68 +317984,24 @@
         "s": 7800,
         "e": 7980,
         "tasks": [
-          "T0305"
+          "T0290",
+          "T0423"
         ],
         "depts": [
-          "ENGG"
+          "ENGG",
+          "S&T"
         ],
         "types": [
+          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 621.1,
-        "crit": 21.35,
+        "crit": 28.71,
         "why": [
+          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0305 (criticality 21)"
-        ]
-      },
-      {
-        "id": "696",
-        "sec": 12,
-        "line": "DN",
-        "day": 5,
-        "s": 7800,
-        "e": 7980,
-        "tasks": [
-          "T0595"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 387.7,
-        "crit": 48.17,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0595 (criticality 48)"
-        ]
-      },
-      {
-        "id": "371",
-        "sec": 6,
-        "line": "DN",
-        "day": 5,
-        "s": 7800,
-        "e": 7980,
-        "tasks": [
-          "T0053"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 553.2,
-        "crit": 15.78,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0053 (criticality 16)"
+          "driven by T0290 (criticality 15)"
         ]
       },
       {
@@ -318143,7 +318012,7 @@
         "s": 7860,
         "e": 8040,
         "tasks": [
-          "T0289"
+          "T0393"
         ],
         "depts": [
           "S&T"
@@ -318153,10 +318022,10 @@
         ],
         "corridor": true,
         "traffic": 627.5,
-        "crit": 48.67,
+        "crit": 43.5,
         "why": [
           "inside mandated corridor",
-          "driven by T0289 (criticality 49)"
+          "driven by T0393 (criticality 44)"
         ]
       },
       {
@@ -318167,20 +318036,24 @@
         "s": 7860,
         "e": 8040,
         "tasks": [
-          "T0588"
+          "T0050",
+          "T0366"
         ],
         "depts": [
-          "ENGG"
+          "ENGG",
+          "S&T"
         ],
         "types": [
+          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 276.1,
-        "crit": 27.33,
+        "crit": 55.5,
         "why": [
+          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0588 (criticality 27)"
+          "driven by T0366 (criticality 52)"
         ]
       },
       {
@@ -318191,7 +318064,7 @@
         "s": 7860,
         "e": 8040,
         "tasks": [
-          "T0323"
+          "T0265"
         ],
         "depts": [
           "ENGG"
@@ -318201,10 +318074,38 @@
         ],
         "corridor": true,
         "traffic": 872.5,
-        "crit": 27.15,
+        "crit": 36.25,
         "why": [
           "inside mandated corridor",
-          "driven by T0323 (criticality 27)"
+          "driven by T0265 (criticality 36)"
+        ]
+      },
+      {
+        "id": "71",
+        "sec": 1,
+        "line": "UP",
+        "day": 5,
+        "s": 7860,
+        "e": 8040,
+        "tasks": [
+          "T0247",
+          "T0259"
+        ],
+        "depts": [
+          "ENGG",
+          "TRD"
+        ],
+        "types": [
+          "POWER",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 1391.6,
+        "crit": 126.32,
+        "why": [
+          "clubbed: ENGG, TRD share one closure",
+          "inside mandated corridor",
+          "driven by T0259 (criticality 74)"
         ]
       },
       {
@@ -318216,7 +318117,7 @@
         "e": 8040,
         "tasks": [
           "T0035",
-          "T0058"
+          "T0075"
         ],
         "depts": [
           "ENGG",
@@ -318228,7 +318129,7 @@
         ],
         "corridor": true,
         "traffic": 1852.2,
-        "crit": 120.28,
+        "crit": 121.74,
         "why": [
           "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
@@ -318243,7 +318144,7 @@
         "s": 7860,
         "e": 8040,
         "tasks": [
-          "T0055"
+          "T0590"
         ],
         "depts": [
           "ENGG"
@@ -318253,38 +318154,34 @@
         ],
         "corridor": true,
         "traffic": 665.6,
-        "crit": 64.61,
+        "crit": 67.39,
         "why": [
           "inside mandated corridor",
-          "driven by T0055 (criticality 65)"
+          "driven by T0590 (criticality 67)"
         ]
       },
       {
-        "id": "425",
-        "sec": 7,
+        "id": "641",
+        "sec": 11,
         "line": "DN",
         "day": 5,
-        "s": 7860,
-        "e": 8040,
+        "s": 7920,
+        "e": 8100,
         "tasks": [
-          "T0093",
-          "T0203"
+          "T0341"
         ],
         "depts": [
-          "ENGG",
-          "TRD"
+          "ENGG"
         ],
         "types": [
-          "POWER",
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 375.1,
-        "crit": 78.46,
+        "traffic": 557.9,
+        "crit": 76.74,
         "why": [
-          "clubbed: ENGG, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0203 (criticality 59)"
+          "driven by T0341 (criticality 77)"
         ]
       },
       {
@@ -318295,7 +318192,7 @@
         "s": 7920,
         "e": 8100,
         "tasks": [
-          "T0309"
+          "T0286"
         ],
         "depts": [
           "ENGG"
@@ -318305,74 +318202,22 @@
         ],
         "corridor": true,
         "traffic": 657.8,
-        "crit": 47.1,
+        "crit": 34.14,
         "why": [
           "inside mandated corridor",
-          "driven by T0309 (criticality 47)"
+          "driven by T0286 (criticality 34)"
         ]
       },
       {
-        "id": "194",
-        "sec": 3,
-        "line": "DN",
-        "day": 6,
-        "s": 9240,
-        "e": 9420,
+        "id": "809",
+        "sec": 14,
+        "line": "UP",
+        "day": 5,
+        "s": 7920,
+        "e": 8100,
         "tasks": [
-          "T0445",
-          "T0539"
-        ],
-        "depts": [
-          "ENGG",
-          "TRD"
-        ],
-        "types": [
-          "POWER",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 1271.1,
-        "crit": 110.23,
-        "why": [
-          "clubbed: ENGG, TRD share one closure",
-          "inside mandated corridor",
-          "driven by T0445 (criticality 72)"
-        ]
-      },
-      {
-        "id": "373",
-        "sec": 6,
-        "line": "DN",
-        "day": 6,
-        "s": 9240,
-        "e": 9420,
-        "tasks": [
-          "T0522"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 570.0,
-        "crit": 16.21,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0522 (criticality 16)"
-        ]
-      },
-      {
-        "id": "590",
-        "sec": 10,
-        "line": "DN",
-        "day": 7,
-        "s": 10740,
-        "e": 10920,
-        "tasks": [
-          "T0050",
-          "T0586"
+          "T0327",
+          "T0514"
         ],
         "depts": [
           "ENGG",
@@ -318383,23 +318228,23 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 294.3,
-        "crit": 38.24,
+        "traffic": 793.4,
+        "crit": 103.86,
         "why": [
           "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0586 (criticality 35)"
+          "driven by T0327 (criticality 57)"
         ]
       },
       {
-        "id": "756",
-        "sec": 13,
+        "id": "373",
+        "sec": 6,
         "line": "DN",
-        "day": 7,
-        "s": 10740,
-        "e": 10920,
+        "day": 6,
+        "s": 9240,
+        "e": 9420,
         "tasks": [
-          "T0288"
+          "T0053"
         ],
         "depts": [
           "ENGG"
@@ -318408,24 +318253,48 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 269.3,
-        "crit": 15.4,
+        "traffic": 570.0,
+        "crit": 15.78,
         "why": [
           "inside mandated corridor",
-          "driven by T0288 (criticality 15)"
+          "driven by T0053 (criticality 16)"
         ]
       },
       {
-        "id": "644",
-        "sec": 11,
+        "id": "253",
+        "sec": 4,
         "line": "UP",
-        "day": 7,
-        "s": 10800,
-        "e": 10980,
+        "day": 6,
+        "s": 9300,
+        "e": 9480,
         "tasks": [
-          "T0152",
-          "T0333",
-          "T0334"
+          "T0124"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 875.1,
+        "crit": 32.78,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0124 (criticality 33)"
+        ]
+      },
+      {
+        "id": "73",
+        "sec": 1,
+        "line": "UP",
+        "day": 6,
+        "s": 9300,
+        "e": 9480,
+        "tasks": [
+          "T0078",
+          "T0179",
+          "T0500"
         ],
         "depts": [
           "ENGG",
@@ -318438,24 +318307,48 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 1080.7,
-        "crit": 146.48,
+        "traffic": 1413.3,
+        "crit": 155.64,
         "why": [
           "clubbed: ENGG, S&T, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0334 (criticality 61)"
+          "driven by T0500 (criticality 64)"
         ]
       },
       {
-        "id": "645",
-        "sec": 11,
+        "id": "812",
+        "sec": 14,
         "line": "DN",
-        "day": 7,
-        "s": 10800,
-        "e": 10980,
+        "day": 6,
+        "s": 9360,
+        "e": 9540,
         "tasks": [
-          "T0172",
-          "T0262"
+          "T0407"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 1092.1,
+        "crit": 21.28,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0407 (criticality 21)"
+        ]
+      },
+      {
+        "id": "699",
+        "sec": 12,
+        "line": "UP",
+        "day": 7,
+        "s": 10680,
+        "e": 10860,
+        "tasks": [
+          "T0114",
+          "T0594"
         ],
         "depts": [
           "ENGG",
@@ -318466,24 +318359,231 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 563.4,
-        "crit": 79.31,
+        "traffic": 507.6,
+        "crit": 68.36,
         "why": [
           "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0172 (criticality 54)"
+          "driven by T0114 (criticality 65)"
         ]
       },
       {
-        "id": "77",
-        "sec": 1,
+        "id": "589",
+        "sec": 10,
         "line": "UP",
+        "day": 7,
+        "s": 10740,
+        "e": 10920,
+        "tasks": [
+          "T0104",
+          "T0289"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 615.9,
+        "crit": 60.03,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0289 (criticality 49)"
+        ]
+      },
+      {
+        "id": "590",
+        "sec": 10,
+        "line": "DN",
+        "day": 7,
+        "s": 10740,
+        "e": 10920,
+        "tasks": [
+          "T0588"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 294.3,
+        "crit": 27.33,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0588 (criticality 27)"
+        ]
+      },
+      {
+        "id": "255",
+        "sec": 4,
+        "line": "UP",
+        "day": 7,
+        "s": 10740,
+        "e": 10920,
+        "tasks": [
+          "T0083",
+          "T0148",
+          "T0399"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T",
+          "TRD"
+        ],
+        "types": [
+          "DISCONN",
+          "POWER",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 904.1,
+        "crit": 107.36,
+        "why": [
+          "clubbed: ENGG, S&T, TRD share one closure",
+          "inside mandated corridor",
+          "driven by T0399 (criticality 70)"
+        ]
+      },
+      {
+        "id": "256",
+        "sec": 4,
+        "line": "DN",
+        "day": 7,
+        "s": 10740,
+        "e": 10920,
+        "tasks": [
+          "T0125",
+          "T0492"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T"
+        ],
+        "types": [
+          "DISCONN",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 853.0,
+        "crit": 97.19,
+        "why": [
+          "clubbed: ENGG, S&T share one closure",
+          "inside mandated corridor",
+          "driven by T0492 (criticality 65)"
+        ]
+      },
+      {
+        "id": "756",
+        "sec": 13,
+        "line": "DN",
+        "day": 7,
+        "s": 10740,
+        "e": 10920,
+        "tasks": [
+          "T0354"
+        ],
+        "depts": [
+          "S&T"
+        ],
+        "types": [
+          "DISCONN"
+        ],
+        "corridor": true,
+        "traffic": 269.3,
+        "crit": 22.69,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0354 (criticality 23)"
+        ]
+      },
+      {
+        "id": "644",
+        "sec": 11,
+        "line": "UP",
+        "day": 7,
+        "s": 10800,
+        "e": 10980,
+        "tasks": [
+          "T0156"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 1080.7,
+        "crit": 18.34,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0156 (criticality 18)"
+        ]
+      },
+      {
+        "id": "645",
+        "sec": 11,
+        "line": "DN",
+        "day": 7,
+        "s": 10800,
+        "e": 10980,
+        "tasks": [
+          "T0433"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 563.4,
+        "crit": 48.24,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0433 (criticality 48)"
+        ]
+      },
+      {
+        "id": "316",
+        "sec": 5,
+        "line": "DN",
+        "day": 7,
+        "s": 10800,
+        "e": 10980,
+        "tasks": [
+          "T0181"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 334.8,
+        "crit": 30.8,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0181 (criticality 31)"
+        ]
+      },
+      {
+        "id": "78",
+        "sec": 1,
+        "line": "DN",
         "day": 8,
         "s": 12180,
         "e": 12360,
         "tasks": [
-          "T0179",
-          "T0247"
+          "T0202",
+          "T0425"
         ],
         "depts": [
           "ENGG",
@@ -318494,36 +318594,12 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 1401.9,
-        "crit": 111.27,
+        "traffic": 2004.6,
+        "crit": 108.59,
         "why": [
           "clubbed: ENGG, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0179 (criticality 59)"
-        ]
-      },
-      {
-        "id": "757",
-        "sec": 13,
-        "line": "UP",
-        "day": 8,
-        "s": 12180,
-        "e": 12360,
-        "tasks": [
-          "T0045"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 574.7,
-        "crit": 17.75,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0045 (criticality 18)"
+          "driven by T0202 (criticality 65)"
         ]
       },
       {
@@ -318551,40 +318627,16 @@
         ]
       },
       {
-        "id": "80",
-        "sec": 1,
+        "id": "703",
+        "sec": 12,
         "line": "DN",
         "day": 9,
-        "s": 13620,
-        "e": 13800,
+        "s": 13560,
+        "e": 13740,
         "tasks": [
-          "T0202"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 1797.6,
-        "crit": 64.95,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0202 (criticality 65)"
-        ]
-      },
-      {
-        "id": "430",
-        "sec": 7,
-        "line": "UP",
-        "day": 9,
-        "s": 13620,
-        "e": 13800,
-        "tasks": [
-          "T0024",
-          "T0150",
-          "T0230"
+          "T0227",
+          "T0342",
+          "T0418"
         ],
         "depts": [
           "ENGG",
@@ -318597,12 +318649,12 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 790.8,
-        "crit": 107.05,
+        "traffic": 465.1,
+        "crit": 111.48,
         "why": [
           "clubbed: ENGG, S&T, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0024 (criticality 40)"
+          "driven by T0342 (criticality 39)"
         ]
       },
       {
@@ -318613,7 +318665,7 @@
         "s": 13680,
         "e": 13860,
         "tasks": [
-          "T0286"
+          "T0309"
         ],
         "depts": [
           "ENGG"
@@ -318623,34 +318675,10 @@
         ],
         "corridor": true,
         "traffic": 640.1,
-        "crit": 34.14,
+        "crit": 47.1,
         "why": [
           "inside mandated corridor",
-          "driven by T0286 (criticality 34)"
-        ]
-      },
-      {
-        "id": "319",
-        "sec": 5,
-        "line": "UP",
-        "day": 9,
-        "s": 13680,
-        "e": 13860,
-        "tasks": [
-          "T0155"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 638.5,
-        "crit": 60.92,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0155 (criticality 61)"
+          "driven by T0309 (criticality 47)"
         ]
       },
       {
@@ -318685,7 +318713,7 @@
         "s": 15060,
         "e": 15240,
         "tasks": [
-          "T0340"
+          "T0430"
         ],
         "depts": [
           "ENGG"
@@ -318695,10 +318723,10 @@
         ],
         "corridor": true,
         "traffic": 254.1,
-        "crit": 14.92,
+        "crit": 17.48,
         "why": [
           "inside mandated corridor",
-          "driven by T0340 (criticality 15)"
+          "driven by T0430 (criticality 17)"
         ]
       },
       {
@@ -318709,9 +318737,9 @@
         "s": 15120,
         "e": 15300,
         "tasks": [
+          "T0007",
           "T0232",
-          "T0239",
-          "T0407"
+          "T0239"
         ],
         "depts": [
           "ENGG",
@@ -318725,11 +318753,39 @@
         ],
         "corridor": true,
         "traffic": 837.5,
-        "crit": 67.7,
+        "crit": 95.86,
         "why": [
           "clubbed: ENGG, S&T, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0239 (criticality 29)"
+          "driven by T0007 (criticality 49)"
+        ]
+      },
+      {
+        "id": "204",
+        "sec": 3,
+        "line": "DN",
+        "day": 11,
+        "s": 16440,
+        "e": 16620,
+        "tasks": [
+          "T0229",
+          "T0445"
+        ],
+        "depts": [
+          "ENGG",
+          "TRD"
+        ],
+        "types": [
+          "POWER",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 1275.6,
+        "crit": 121.72,
+        "why": [
+          "clubbed: ENGG, TRD share one closure",
+          "inside mandated corridor",
+          "driven by T0445 (criticality 72)"
         ]
       },
       {
@@ -318757,59 +318813,27 @@
         ]
       },
       {
-        "id": "264",
-        "sec": 4,
+        "id": "764",
+        "sec": 13,
         "line": "DN",
         "day": 11,
         "s": 16500,
         "e": 16680,
         "tasks": [
-          "T0492",
-          "T0516"
+          "T0288"
         ],
         "depts": [
-          "ENGG",
-          "S&T"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 849.9,
-        "crit": 122.39,
+        "traffic": 286.0,
+        "crit": 15.4,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0492 (criticality 65)"
-        ]
-      },
-      {
-        "id": "763",
-        "sec": 13,
-        "line": "UP",
-        "day": 11,
-        "s": 16500,
-        "e": 16680,
-        "tasks": [
-          "T0005",
-          "T0371"
-        ],
-        "depts": [
-          "S&T",
-          "TRD"
-        ],
-        "types": [
-          "DISCONN",
-          "POWER"
-        ],
-        "corridor": true,
-        "traffic": 458.8,
-        "crit": 83.23,
-        "why": [
-          "clubbed: S&T, TRD share one closure",
-          "inside mandated corridor",
-          "driven by T0371 (criticality 44)"
+          "driven by T0288 (criticality 15)"
         ]
       },
       {
@@ -318820,7 +318844,7 @@
         "s": 16560,
         "e": 16740,
         "tasks": [
-          "T0194"
+          "T0137"
         ],
         "depts": [
           "ENGG"
@@ -318830,10 +318854,10 @@
         ],
         "corridor": true,
         "traffic": 307.3,
-        "crit": 7.47,
+        "crit": 4.18,
         "why": [
           "inside mandated corridor",
-          "driven by T0194 (criticality 7)"
+          "driven by T0137 (criticality 4)"
         ]
       },
       {
@@ -318868,7 +318892,7 @@
         "s": 16560,
         "e": 16740,
         "tasks": [
-          "T0111"
+          "T0368"
         ],
         "depts": [
           "ENGG"
@@ -318878,10 +318902,10 @@
         ],
         "corridor": true,
         "traffic": 573.0,
-        "crit": 6.6,
+        "crit": 10.54,
         "why": [
           "inside mandated corridor",
-          "driven by T0111 (criticality 7)"
+          "driven by T0368 (criticality 11)"
         ]
       },
       {
@@ -318940,8 +318964,32 @@
         "s": 18000,
         "e": 18180,
         "tasks": [
-          "T0020",
-          "T0060"
+          "T0111"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 710.0,
+        "crit": 6.6,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0111 (criticality 7)"
+        ]
+      },
+      {
+        "id": "822",
+        "sec": 14,
+        "line": "DN",
+        "day": 12,
+        "s": 18000,
+        "e": 18180,
+        "tasks": [
+          "T0317",
+          "T0345"
         ],
         "depts": [
           "ENGG",
@@ -318952,12 +319000,43 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 710.0,
-        "crit": 83.25,
+        "traffic": 1093.6,
+        "crit": 60.26,
         "why": [
           "clubbed: ENGG, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0060 (criticality 47)"
+          "driven by T0317 (criticality 41)"
+        ]
+      },
+      {
+        "id": "27",
+        "sec": 0,
+        "line": "UP",
+        "day": 13,
+        "s": 19320,
+        "e": 19500,
+        "tasks": [
+          "T0211",
+          "T0469",
+          "T0498"
+        ],
+        "depts": [
+          "ENGG",
+          "S&T",
+          "TRD"
+        ],
+        "types": [
+          "DISCONN",
+          "POWER",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 623.5,
+        "crit": 108.03,
+        "why": [
+          "clubbed: ENGG, S&T, TRD share one closure",
+          "inside mandated corridor",
+          "driven by T0469 (criticality 79)"
         ]
       },
       {
@@ -318968,7 +319047,7 @@
         "s": 19320,
         "e": 19500,
         "tasks": [
-          "T0218"
+          "T0475"
         ],
         "depts": [
           "ENGG"
@@ -318978,34 +319057,10 @@
         ],
         "corridor": true,
         "traffic": 379.7,
-        "crit": 0.38,
+        "crit": 11.21,
         "why": [
           "inside mandated corridor",
-          "driven by T0218 (criticality 0)"
-        ]
-      },
-      {
-        "id": "601",
-        "sec": 10,
-        "line": "DN",
-        "day": 13,
-        "s": 19380,
-        "e": 19560,
-        "tasks": [
-          "T0048"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 311.7,
-        "crit": 2.49,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0048 (criticality 2)"
+          "driven by T0475 (criticality 11)"
         ]
       },
       {
@@ -319057,43 +319112,15 @@
         ]
       },
       {
-        "id": "824",
-        "sec": 14,
-        "line": "DN",
-        "day": 13,
-        "s": 19440,
-        "e": 19620,
-        "tasks": [
-          "T0317",
-          "T0345"
-        ],
-        "depts": [
-          "ENGG",
-          "TRD"
-        ],
-        "types": [
-          "POWER",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 1013.2,
-        "crit": 60.26,
-        "why": [
-          "clubbed: ENGG, TRD share one closure",
-          "inside mandated corridor",
-          "driven by T0317 (criticality 41)"
-        ]
-      },
-      {
-        "id": "441",
-        "sec": 7,
+        "id": "90",
+        "sec": 1,
         "line": "DN",
         "day": 14,
         "s": 20820,
         "e": 21000,
         "tasks": [
-          "T0335",
-          "T0593"
+          "T0044",
+          "T0058"
         ],
         "depts": [
           "ENGG",
@@ -319104,36 +319131,12 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 452.1,
-        "crit": 21.4,
+        "traffic": 1871.1,
+        "crit": 78.34,
         "why": [
           "clubbed: ENGG, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0335 (criticality 20)"
-        ]
-      },
-      {
-        "id": "658",
-        "sec": 11,
-        "line": "DN",
-        "day": 14,
-        "s": 20880,
-        "e": 21060,
-        "tasks": [
-          "T0440"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 464.8,
-        "crit": 6.47,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0440 (criticality 6)"
+          "driven by T0058 (criticality 59)"
         ]
       },
       {
@@ -319144,7 +319147,7 @@
         "s": 20880,
         "e": 21060,
         "tasks": [
-          "T0137"
+          "T0074"
         ],
         "depts": [
           "ENGG"
@@ -319154,52 +319157,21 @@
         ],
         "corridor": true,
         "traffic": 322.1,
-        "crit": 4.18,
+        "crit": 0.47,
         "why": [
           "inside mandated corridor",
-          "driven by T0137 (criticality 4)"
+          "driven by T0074 (criticality 0)"
         ]
       },
       {
-        "id": "31",
+        "id": "32",
         "sec": 0,
-        "line": "UP",
+        "line": "DN",
         "day": 15,
         "s": 22200,
         "e": 22380,
         "tasks": [
-          "T0211",
-          "T0469",
-          "T0498"
-        ],
-        "depts": [
-          "ENGG",
-          "S&T",
-          "TRD"
-        ],
-        "types": [
-          "DISCONN",
-          "POWER",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 764.5,
-        "crit": 108.03,
-        "why": [
-          "clubbed: ENGG, S&T, TRD share one closure",
-          "inside mandated corridor",
-          "driven by T0469 (criticality 79)"
-        ]
-      },
-      {
-        "id": "331",
-        "sec": 5,
-        "line": "UP",
-        "day": 15,
-        "s": 22320,
-        "e": 22500,
-        "tasks": [
-          "T0517"
+          "T0107"
         ],
         "depts": [
           "ENGG"
@@ -319208,11 +319180,87 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 611.3,
-        "crit": 0.45,
+        "traffic": 585.2,
+        "crit": 3.99,
         "why": [
           "inside mandated corridor",
-          "driven by T0517 (criticality 0)"
+          "driven by T0107 (criticality 4)"
+        ]
+      },
+      {
+        "id": "771",
+        "sec": 13,
+        "line": "UP",
+        "day": 15,
+        "s": 22260,
+        "e": 22440,
+        "tasks": [
+          "T0005",
+          "T0037"
+        ],
+        "depts": [
+          "S&T",
+          "TRD"
+        ],
+        "types": [
+          "DISCONN",
+          "POWER"
+        ],
+        "corridor": true,
+        "traffic": 505.6,
+        "crit": 56.57,
+        "why": [
+          "clubbed: S&T, TRD share one closure",
+          "inside mandated corridor",
+          "driven by T0005 (criticality 39)"
+        ]
+      },
+      {
+        "id": "332",
+        "sec": 5,
+        "line": "DN",
+        "day": 15,
+        "s": 22320,
+        "e": 22500,
+        "tasks": [
+          "T0194"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 326.0,
+        "crit": 7.47,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0194 (criticality 7)"
+        ]
+      },
+      {
+        "id": "213",
+        "sec": 3,
+        "line": "UP",
+        "day": 16,
+        "s": 23640,
+        "e": 23820,
+        "tasks": [
+          "T0159"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 970.6,
+        "crit": 16.0,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0159 (criticality 16)"
         ]
       },
       {
@@ -319271,31 +319319,31 @@
         "s": 23700,
         "e": 23880,
         "tasks": [
-          "T0283"
+          "T0573"
         ],
         "depts": [
-          "ENGG"
+          "S&T"
         ],
         "types": [
-          "TRAFFIC"
+          "DISCONN"
         ],
         "corridor": true,
         "traffic": 576.0,
-        "crit": 1.15,
+        "crit": 38.91,
         "why": [
           "inside mandated corridor",
-          "driven by T0283 (criticality 1)"
+          "driven by T0573 (criticality 39)"
         ]
       },
       {
-        "id": "442",
-        "sec": 7,
-        "line": "UP",
+        "id": "606",
+        "sec": 10,
+        "line": "DN",
         "day": 16,
         "s": 23700,
         "e": 23880,
         "tasks": [
-          "T0307"
+          "T0586"
         ],
         "depts": [
           "ENGG"
@@ -319304,11 +319352,11 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 630.1,
-        "crit": 16.81,
+        "traffic": 376.1,
+        "crit": 35.12,
         "why": [
           "inside mandated corridor",
-          "driven by T0307 (criticality 17)"
+          "driven by T0586 (criticality 35)"
         ]
       },
       {
@@ -319319,8 +319367,8 @@
         "s": 23760,
         "e": 23940,
         "tasks": [
-          "T0041",
-          "T0479"
+          "T0020",
+          "T0060"
         ],
         "depts": [
           "ENGG",
@@ -319332,39 +319380,11 @@
         ],
         "corridor": true,
         "traffic": 566.8,
-        "crit": 48.96,
+        "crit": 83.25,
         "why": [
           "clubbed: ENGG, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0479 (criticality 39)"
-        ]
-      },
-      {
-        "id": "216",
-        "sec": 3,
-        "line": "DN",
-        "day": 17,
-        "s": 25080,
-        "e": 25260,
-        "tasks": [
-          "T0229",
-          "T0264"
-        ],
-        "depts": [
-          "ENGG",
-          "TRD"
-        ],
-        "types": [
-          "POWER",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 1248.2,
-        "crit": 85.97,
-        "why": [
-          "clubbed: ENGG, TRD share one closure",
-          "inside mandated corridor",
-          "driven by T0229 (criticality 50)"
+          "driven by T0060 (criticality 47)"
         ]
       },
       {
@@ -319375,7 +319395,7 @@
         "s": 25140,
         "e": 25320,
         "tasks": [
-          "T0430"
+          "T0340"
         ],
         "depts": [
           "ENGG"
@@ -319385,38 +319405,58 @@
         ],
         "corridor": true,
         "traffic": 282.2,
-        "crit": 17.48,
+        "crit": 14.92,
         "why": [
           "inside mandated corridor",
-          "driven by T0430 (criticality 17)"
+          "driven by T0340 (criticality 15)"
         ]
       },
       {
-        "id": "665",
-        "sec": 11,
-        "line": "DN",
-        "day": 18,
-        "s": 26640,
-        "e": 26820,
+        "id": "830",
+        "sec": 14,
+        "line": "UP",
+        "day": 17,
+        "s": 25200,
+        "e": 25380,
         "tasks": [
-          "T0433",
-          "T0457"
+          "T0336"
         ],
         "depts": [
-          "ENGG",
           "TRD"
         ],
         "types": [
-          "POWER",
+          "POWER"
+        ],
+        "corridor": true,
+        "traffic": 639.1,
+        "crit": 31.89,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0336 (criticality 32)"
+        ]
+      },
+      {
+        "id": "777",
+        "sec": 13,
+        "line": "UP",
+        "day": 18,
+        "s": 26580,
+        "e": 26760,
+        "tasks": [
+          "T0572"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 683.3,
-        "crit": 53.99,
+        "traffic": 442.9,
+        "crit": 14.81,
         "why": [
-          "clubbed: ENGG, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0433 (criticality 48)"
+          "driven by T0572 (criticality 15)"
         ]
       },
       {
@@ -319427,20 +319467,24 @@
         "s": 26640,
         "e": 26820,
         "tasks": [
-          "T0486"
+          "T0358",
+          "T0479"
         ],
         "depts": [
-          "ENGG"
+          "ENGG",
+          "TRD"
         ],
         "types": [
+          "POWER",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 601.6,
-        "crit": 4.22,
+        "crit": 57.06,
         "why": [
+          "clubbed: ENGG, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0486 (criticality 4)"
+          "driven by T0479 (criticality 39)"
         ]
       },
       {
@@ -319475,24 +319519,20 @@
         "s": 28020,
         "e": 28200,
         "tasks": [
-          "T0104",
-          "T0573"
+          "T0217"
         ],
         "depts": [
-          "ENGG",
-          "S&T"
+          "ENGG"
         ],
         "types": [
-          "DISCONN",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 580.9,
-        "crit": 50.27,
+        "crit": 3.53,
         "why": [
-          "clubbed: ENGG, S&T share one closure",
           "inside mandated corridor",
-          "driven by T0573 (criticality 39)"
+          "driven by T0217 (criticality 4)"
         ]
       },
       {
@@ -319520,55 +319560,27 @@
         ]
       },
       {
-        "id": "834",
-        "sec": 14,
-        "line": "DN",
+        "id": "159",
+        "sec": 2,
+        "line": "UP",
         "day": 19,
         "s": 28080,
         "e": 28260,
         "tasks": [
-          "T0245",
-          "T0401"
+          "T0512"
         ],
         "depts": [
-          "ENGG",
           "TRD"
         ],
         "types": [
-          "POWER",
-          "TRAFFIC"
+          "POWER"
         ],
         "corridor": true,
-        "traffic": 1054.5,
-        "crit": 69.31,
-        "why": [
-          "clubbed: ENGG, TRD share one closure",
-          "inside mandated corridor",
-          "driven by T0245 (criticality 40)"
-        ]
-      },
-      {
-        "id": "42",
-        "sec": 0,
-        "line": "DN",
-        "day": 20,
-        "s": 29400,
-        "e": 29580,
-        "tasks": [
-          "T0107"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 586.4,
-        "crit": 3.99,
+        "traffic": 477.0,
+        "crit": 47.43,
         "why": [
           "inside mandated corridor",
-          "driven by T0107 (criticality 4)"
+          "driven by T0512 (criticality 47)"
         ]
       },
       {
@@ -319579,38 +319591,7 @@
         "s": 29400,
         "e": 29580,
         "tasks": [
-          "T0162",
-          "T0182",
-          "T0274"
-        ],
-        "depts": [
-          "ENGG",
-          "S&T",
-          "TRD"
-        ],
-        "types": [
-          "DISCONN",
-          "POWER",
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 575.5,
-        "crit": 99.37,
-        "why": [
-          "clubbed: ENGG, S&T, TRD share one closure",
-          "inside mandated corridor",
-          "driven by T0274 (criticality 58)"
-        ]
-      },
-      {
-        "id": "615",
-        "sec": 10,
-        "line": "UP",
-        "day": 21,
-        "s": 30900,
-        "e": 31080,
-        "tasks": [
-          "T0351"
+          "T0522"
         ],
         "depts": [
           "ENGG"
@@ -319619,20 +319600,20 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 564.8,
-        "crit": 16.34,
+        "traffic": 575.5,
+        "crit": 16.21,
         "why": [
           "inside mandated corridor",
-          "driven by T0351 (criticality 16)"
+          "driven by T0522 (criticality 16)"
         ]
       },
       {
-        "id": "506",
+        "id": "504",
         "sec": 8,
         "line": "DN",
-        "day": 21,
-        "s": 30960,
-        "e": 31140,
+        "day": 20,
+        "s": 29520,
+        "e": 29700,
         "tasks": [
           "T0379"
         ],
@@ -319643,7 +319624,7 @@
           "POWER"
         ],
         "corridor": true,
-        "traffic": 298.1,
+        "traffic": 353.8,
         "crit": 39.72,
         "why": [
           "inside mandated corridor",
@@ -319651,15 +319632,15 @@
         ]
       },
       {
-        "id": "838",
-        "sec": 14,
-        "line": "UP",
-        "day": 22,
-        "s": 32400,
-        "e": 32580,
+        "id": "401",
+        "sec": 6,
+        "line": "DN",
+        "day": 21,
+        "s": 30840,
+        "e": 31020,
         "tasks": [
-          "T0336",
-          "T0358"
+          "T0162",
+          "T0182"
         ],
         "depts": [
           "ENGG",
@@ -319670,23 +319651,23 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 645.6,
-        "crit": 49.7,
+        "traffic": 559.1,
+        "crit": 40.94,
         "why": [
           "clubbed: ENGG, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0336 (criticality 32)"
+          "driven by T0182 (criticality 26)"
         ]
       },
       {
-        "id": "618",
+        "id": "615",
         "sec": 10,
         "line": "UP",
-        "day": 23,
-        "s": 33780,
-        "e": 33960,
+        "day": 21,
+        "s": 30900,
+        "e": 31080,
         "tasks": [
-          "T0217"
+          "T0283"
         ],
         "depts": [
           "ENGG"
@@ -319695,22 +319676,98 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 605.3,
-        "crit": 3.53,
+        "traffic": 564.8,
+        "crit": 1.15,
         "why": [
           "inside mandated corridor",
-          "driven by T0217 (criticality 4)"
+          "driven by T0283 (criticality 1)"
         ]
       },
       {
-        "id": "788",
-        "sec": 13,
+        "id": "672",
+        "sec": 11,
+        "line": "DN",
+        "day": 22,
+        "s": 32400,
+        "e": 32580,
+        "tasks": [
+          "T0440"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 614.5,
+        "crit": 6.47,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0440 (criticality 6)"
+        ]
+      },
+      {
+        "id": "839",
+        "sec": 14,
+        "line": "DN",
+        "day": 22,
+        "s": 32400,
+        "e": 32580,
+        "tasks": [
+          "T0119",
+          "T0245"
+        ],
+        "depts": [
+          "ENGG",
+          "TRD"
+        ],
+        "types": [
+          "POWER",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 1021.2,
+        "crit": 40.73,
+        "why": [
+          "clubbed: ENGG, TRD share one closure",
+          "inside mandated corridor",
+          "driven by T0245 (criticality 40)"
+        ]
+      },
+      {
+        "id": "729",
+        "sec": 12,
         "line": "DN",
         "day": 23,
-        "s": 33780,
-        "e": 33960,
+        "s": 33720,
+        "e": 33900,
         "tasks": [
-          "T0106"
+          "T0218"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 385.7,
+        "crit": 0.38,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0218 (criticality 0)"
+        ]
+      },
+      {
+        "id": "167",
+        "sec": 2,
+        "line": "UP",
+        "day": 23,
+        "s": 33840,
+        "e": 34020,
+        "tasks": [
+          "T0029"
         ],
         "depts": [
           "TRD"
@@ -319719,11 +319776,11 @@
           "POWER"
         ],
         "corridor": true,
-        "traffic": 306.0,
-        "crit": 55.27,
+        "traffic": 552.1,
+        "crit": 5.31,
         "why": [
           "inside mandated corridor",
-          "driven by T0106 (criticality 55)"
+          "driven by T0029 (criticality 5)"
         ]
       },
       {
@@ -319734,7 +319791,7 @@
         "s": 33840,
         "e": 34020,
         "tasks": [
-          "T0118"
+          "T0200"
         ],
         "depts": [
           "ENGG"
@@ -319744,10 +319801,10 @@
         ],
         "corridor": true,
         "traffic": 802.0,
-        "crit": 16.38,
+        "crit": 25.43,
         "why": [
           "inside mandated corridor",
-          "driven by T0118 (criticality 16)"
+          "driven by T0200 (criticality 25)"
         ]
       },
       {
@@ -319775,14 +319832,14 @@
         ]
       },
       {
-        "id": "675",
-        "sec": 11,
+        "id": "789",
+        "sec": 13,
         "line": "UP",
         "day": 24,
-        "s": 35280,
-        "e": 35460,
+        "s": 35220,
+        "e": 35400,
         "tasks": [
-          "T0156"
+          "T0045"
         ],
         "depts": [
           "ENGG"
@@ -319791,22 +319848,22 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 1084.7,
-        "crit": 18.34,
+        "traffic": 443.0,
+        "crit": 17.75,
         "why": [
           "inside mandated corridor",
-          "driven by T0156 (criticality 18)"
+          "driven by T0045 (criticality 18)"
         ]
       },
       {
-        "id": "169",
-        "sec": 2,
+        "id": "456",
+        "sec": 7,
         "line": "UP",
         "day": 24,
-        "s": 35280,
-        "e": 35460,
+        "s": 35220,
+        "e": 35400,
         "tasks": [
-          "T0512"
+          "T0024"
         ],
         "depts": [
           "TRD"
@@ -319815,35 +319872,11 @@
           "POWER"
         ],
         "corridor": true,
-        "traffic": 456.1,
-        "crit": 47.43,
+        "traffic": 681.8,
+        "crit": 39.96,
         "why": [
           "inside mandated corridor",
-          "driven by T0512 (criticality 47)"
-        ]
-      },
-      {
-        "id": "842",
-        "sec": 14,
-        "line": "UP",
-        "day": 24,
-        "s": 35280,
-        "e": 35460,
-        "tasks": [
-          "T0368"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 573.8,
-        "crit": 10.54,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0368 (criticality 11)"
+          "driven by T0024 (criticality 40)"
         ]
       },
       {
@@ -319854,7 +319887,7 @@
         "s": 35280,
         "e": 35460,
         "tasks": [
-          "T0200"
+          "T0118"
         ],
         "depts": [
           "ENGG"
@@ -319864,10 +319897,34 @@
         ],
         "corridor": true,
         "traffic": 947.3,
-        "crit": 25.43,
+        "crit": 16.38,
         "why": [
           "inside mandated corridor",
-          "driven by T0200 (criticality 25)"
+          "driven by T0118 (criticality 16)"
+        ]
+      },
+      {
+        "id": "623",
+        "sec": 10,
+        "line": "DN",
+        "day": 25,
+        "s": 36660,
+        "e": 36840,
+        "tasks": [
+          "T0027"
+        ],
+        "depts": [
+          "ENGG"
+        ],
+        "types": [
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 345.0,
+        "crit": 1.46,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0027 (criticality 1)"
         ]
       },
       {
@@ -319895,38 +319952,14 @@
         ]
       },
       {
-        "id": "351",
-        "sec": 5,
+        "id": "458",
+        "sec": 7,
         "line": "UP",
         "day": 25,
-        "s": 36720,
-        "e": 36900,
+        "s": 36660,
+        "e": 36840,
         "tasks": [
-          "T0402"
-        ],
-        "depts": [
-          "TRD"
-        ],
-        "types": [
-          "POWER"
-        ],
-        "corridor": true,
-        "traffic": 575.6,
-        "crit": 56.24,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0402 (criticality 56)"
-        ]
-      },
-      {
-        "id": "352",
-        "sec": 5,
-        "line": "DN",
-        "day": 25,
-        "s": 36720,
-        "e": 36900,
-        "tasks": [
-          "T0421"
+          "T0307"
         ],
         "depts": [
           "ENGG"
@@ -319935,11 +319968,39 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 307.3,
-        "crit": 11.4,
+        "traffic": 676.6,
+        "crit": 16.81,
         "why": [
           "inside mandated corridor",
-          "driven by T0421 (criticality 11)"
+          "driven by T0307 (criticality 17)"
+        ]
+      },
+      {
+        "id": "459",
+        "sec": 7,
+        "line": "DN",
+        "day": 25,
+        "s": 36660,
+        "e": 36840,
+        "tasks": [
+          "T0335",
+          "T0593"
+        ],
+        "depts": [
+          "ENGG",
+          "TRD"
+        ],
+        "types": [
+          "POWER",
+          "TRAFFIC"
+        ],
+        "corridor": true,
+        "traffic": 456.0,
+        "crit": 21.4,
+        "why": [
+          "clubbed: ENGG, TRD share one closure",
+          "inside mandated corridor",
+          "driven by T0335 (criticality 20)"
         ]
       },
       {
@@ -319950,92 +320011,27 @@
         "s": 38040,
         "e": 38220,
         "tasks": [
-          "T0159"
+          "T0132",
+          "T0146",
+          "T0349"
         ],
         "depts": [
-          "ENGG"
+          "ENGG",
+          "S&T",
+          "TRD"
         ],
         "types": [
+          "DISCONN",
+          "POWER",
           "TRAFFIC"
         ],
         "corridor": true,
         "traffic": 963.4,
-        "crit": 16.0,
+        "crit": 102.14,
         "why": [
+          "clubbed: ENGG, S&T, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0159 (criticality 16)"
-        ]
-      },
-      {
-        "id": "680",
-        "sec": 11,
-        "line": "DN",
-        "day": 26,
-        "s": 38160,
-        "e": 38340,
-        "tasks": [
-          "T0585"
-        ],
-        "depts": [
-          "TRD"
-        ],
-        "types": [
-          "POWER"
-        ],
-        "corridor": true,
-        "traffic": 618.6,
-        "crit": 0.39,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0585 (criticality 0)"
-        ]
-      },
-      {
-        "id": "354",
-        "sec": 5,
-        "line": "DN",
-        "day": 26,
-        "s": 38160,
-        "e": 38340,
-        "tasks": [
-          "T0074"
-        ],
-        "depts": [
-          "ENGG"
-        ],
-        "types": [
-          "TRAFFIC"
-        ],
-        "corridor": true,
-        "traffic": 331.3,
-        "crit": 0.47,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0074 (criticality 0)"
-        ]
-      },
-      {
-        "id": "737",
-        "sec": 12,
-        "line": "DN",
-        "day": 27,
-        "s": 39480,
-        "e": 39660,
-        "tasks": [
-          "T0418"
-        ],
-        "depts": [
-          "TRD"
-        ],
-        "types": [
-          "POWER"
-        ],
-        "corridor": true,
-        "traffic": 376.4,
-        "crit": 37.53,
-        "why": [
-          "inside mandated corridor",
-          "driven by T0418 (criticality 38)"
+          "driven by T0349 (criticality 44)"
         ]
       },
       {
@@ -320046,7 +320042,7 @@
         "s": 39540,
         "e": 39720,
         "tasks": [
-          "T0027"
+          "T0048"
         ],
         "depts": [
           "ENGG"
@@ -320056,10 +320052,10 @@
         ],
         "corridor": true,
         "traffic": 304.0,
-        "crit": 1.46,
+        "crit": 2.49,
         "why": [
           "inside mandated corridor",
-          "driven by T0027 (criticality 1)"
+          "driven by T0048 (criticality 2)"
         ]
       },
       {
@@ -320115,15 +320111,15 @@
         ]
       },
       {
-        "id": "297",
-        "sec": 4,
+        "id": "847",
+        "sec": 14,
         "line": "UP",
-        "day": 28,
-        "s": 40980,
-        "e": 41160,
+        "day": 27,
+        "s": 39600,
+        "e": 39780,
         "tasks": [
-          "T0083",
-          "T0399"
+          "T0041",
+          "T0369"
         ],
         "depts": [
           "ENGG",
@@ -320134,12 +320130,36 @@
           "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 915.0,
-        "crit": 88.02,
+        "traffic": 641.1,
+        "crit": 14.44,
         "why": [
           "clubbed: ENGG, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0399 (criticality 70)"
+          "driven by T0041 (criticality 10)"
+        ]
+      },
+      {
+        "id": "465",
+        "sec": 7,
+        "line": "DN",
+        "day": 28,
+        "s": 40980,
+        "e": 41160,
+        "tasks": [
+          "T0203"
+        ],
+        "depts": [
+          "TRD"
+        ],
+        "types": [
+          "POWER"
+        ],
+        "corridor": true,
+        "traffic": 371.9,
+        "crit": 59.26,
+        "why": [
+          "inside mandated corridor",
+          "driven by T0203 (criticality 59)"
         ]
       },
       {
@@ -320167,49 +320187,53 @@
         ]
       },
       {
-        "id": "179",
-        "sec": 2,
+        "id": "359",
+        "sec": 5,
         "line": "UP",
         "day": 29,
         "s": 42480,
         "e": 42660,
         "tasks": [
-          "T0029"
+          "T0402",
+          "T0517"
         ],
         "depts": [
+          "ENGG",
           "TRD"
         ],
         "types": [
-          "POWER"
+          "POWER",
+          "TRAFFIC"
         ],
         "corridor": true,
-        "traffic": 507.1,
-        "crit": 5.31,
+        "traffic": 609.5,
+        "crit": 56.69,
         "why": [
+          "clubbed: ENGG, TRD share one closure",
           "inside mandated corridor",
-          "driven by T0029 (criticality 5)"
+          "driven by T0402 (criticality 56)"
         ]
       }
     ],
     "metrics": {
       "label": "TRACKSEN monthly (corridor-slot)",
-      "risk_retired_per_block_hour": 16.22,
-      "tasks_scheduled": 211,
-      "tasks_unscheduled": 78,
-      "blocks_used": 148,
-      "block_hours": 444.0,
-      "criticality_retired": 7201.080000000002,
-      "clubbing_ratio": 1.426,
-      "clubbed_blocks": 54,
-      "line_closures_saved": 63,
-      "traffic_cost": 94840.3,
-      "traffic_cost_per_task": 449.5,
+      "risk_retired_per_block_hour": 16.26,
+      "tasks_scheduled": 214,
+      "tasks_unscheduled": 75,
+      "blocks_used": 150,
+      "block_hours": 450.0,
+      "criticality_retired": 7316.749999999997,
+      "clubbing_ratio": 1.427,
+      "clubbed_blocks": 55,
+      "line_closures_saved": 64,
+      "traffic_cost": 98607.2,
+      "traffic_cost_per_task": 460.8,
       "corridor_adherence": 1.0,
-      "block_utilisation": 0.634,
-      "overdue_task_days": 8832,
-      "expected_cancellations": 25.08,
-      "unplanned_failures": 183,
-      "critical_unplanned_failures": 29,
+      "block_utilisation": 0.6279,
+      "overdue_task_days": 8769,
+      "expected_cancellations": 25.06,
+      "unplanned_failures": 190,
+      "critical_unplanned_failures": 30,
       "notes": []
     },
     "extendedTasks": [
@@ -320526,49 +320550,49 @@
       "T0600"
     ],
     "backlogByDay": [
-      575,
-      554,
-      534,
-      513,
-      502,
-      490,
-      487,
-      479,
-      476,
-      468,
+      580,
+      561,
+      538,
+      519,
+      507,
+      492,
+      486,
+      472,
+      470,
       464,
-      456,
-      452,
-      446,
+      460,
+      453,
+      448,
       442,
-      438,
-      432,
-      429,
+      439,
+      435,
+      428,
       426,
-      420,
-      416,
+      423,
+      419,
+      417,
       414,
-      412,
-      409,
+      411,
+      408,
       404,
-      401,
-      398,
-      393,
+      399,
+      396,
       390,
-      389
+      388,
+      386
     ],
     "solver": {
       "status": "FEASIBLE",
-      "objective": 8302.49,
-      "wall_time_s": 600.62,
+      "objective": 8286.82,
+      "wall_time_s": 602.44,
       "candidates": 851,
       "assign_vars": 8131,
-      "scheduled": 211,
-      "unscheduled": 78,
+      "scheduled": 214,
+      "unscheduled": 75,
       "conflicts": 0,
-      "branches": 4416,
-      "best_bound": 8663.01,
-      "gap_pct": 4.34,
+      "branches": 0,
+      "best_bound": 8493.05,
+      "gap_pct": 2.49,
       "notes": []
     }
   }
