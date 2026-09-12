@@ -1,6 +1,6 @@
 """Approval workflow and audit trail.
 
-The claim SAMANVAY makes everywhere -- "the system recommends, the competent authority
+The claim TRACKSEN makes everywhere -- "the system recommends, the competent authority
 sanctions" -- is only worth anything if the code refuses when someone reaches past their
 authority. These tests are that refusal, written down.
 
@@ -253,6 +253,23 @@ def test_a_persisted_log_survives_reload_and_verifies(wf, tmp_path):
     assert [e.action for e in reloaded.for_plan("P9")][-1] == "SANCTION"
 
 
+def test_a_workflow_is_restored_from_a_persisted_log(tmp_path):
+    """A restart must preserve the sanction gate, not only its historic evidence."""
+    path = tmp_path / "audit.jsonl"
+    flow = ApprovalWorkflow(AuditLog(path))
+    flow.create("P9", ALL_DEPTS, JE)
+    _full_route(flow, "P9")
+
+    restored = ApprovalWorkflow(AuditLog(path))
+    status = restored.status("P9")
+    assert status["state"] == PlanState.SANCTIONED.value
+    assert status["sanctioned_by"] == DRM.name
+    assert status["ready_for_sanction"]
+
+    with pytest.raises(WorkflowError, match="supersede"):
+        restored.modify("P9", JE, note="attempted post-restart edit")
+
+
 def test_tampering_with_the_file_is_detected(wf, tmp_path):
     path = tmp_path / "audit.jsonl"
     flow = ApprovalWorkflow(AuditLog(path))
@@ -268,3 +285,67 @@ def test_tampering_with_the_file_is_detected(wf, tmp_path):
     status = AuditLog(path).verify()
     assert not status.intact, "a reworded remark went undetected"
     assert status.broken_at == 5
+
+
+# --------------------------------------------------------------------------- #
+# What was actually sanctioned
+# --------------------------------------------------------------------------- #
+
+def test_the_trail_records_which_plan_was_sanctioned_not_just_that_one_was(tmp_path):
+    """"PLAN-0007 was sanctioned by the DRM" is unfalsifiable without a fingerprint.
+
+    The chain proves the decision happened and was not edited afterwards. It could not,
+    until now, prove *what* was decided — any set of blocks could be presented later as
+    the sanctioned plan and nothing in the log would contradict it.
+    """
+    from samanvay.domain import Department
+    from samanvay.governance import Action, Actor, ApprovalWorkflow, AuditLog, Role
+
+    log = AuditLog(tmp_path / "audit.jsonl")
+    wf = ApprovalWorkflow(log)
+    depts = {Department.ENGINEERING}
+
+    wf.create("P1", depts, Actor("JE Kumar", Role.JE), plan_hash="abc123")
+    wf.concur("P1", Actor("Sr.DEN Rao", Role.SR_DEN), Department.ENGINEERING)
+    wf.clear_operations("P1", Actor("Sr.DOM Iyer", Role.SR_DOM))
+    wf.sanction("P1", Actor("DRM Sharma", Role.DRM))
+
+    sanction = [e for e in log if e.action == Action.SANCTION.value][-1]
+    assert sanction.detail.get("plan_hash") == "abc123", (
+        "the sanction entry does not say which plan was signed"
+    )
+    assert wf.status("P1")["sanctioned_hash"] == "abc123"
+
+
+def test_a_plan_hash_survives_a_restart(tmp_path):
+    from samanvay.domain import Department
+    from samanvay.governance import Actor, ApprovalWorkflow, AuditLog, Role
+
+    path = tmp_path / "audit.jsonl"
+    wf = ApprovalWorkflow(AuditLog(path))
+    wf.create("P1", {Department.SIGNAL}, Actor("JE Kumar", Role.JE), plan_hash="deadbeef")
+
+    restored = ApprovalWorkflow(AuditLog(path))
+    assert restored.plans["P1"].plan_hash == "deadbeef"
+
+
+def test_the_hash_tracks_what_the_plan_says_to_do(plan):
+    """Rescoring an unchanged plan must not read as a change to it."""
+    import copy
+
+    same = copy.deepcopy(plan)
+    assert same.content_hash() == plan.content_hash()
+
+    # Commentary is not content.
+    same.label = "renamed"
+    for b in same.blocks:
+        b.reasons = ["rewritten"]
+        b.criticality_retired = 0.0
+    assert same.content_hash() == plan.content_hash(), (
+        "a hash that moves when only commentary changes would flag every re-score "
+        "as a modification and make the signal useless"
+    )
+
+    # Moving a block is content.
+    same.blocks[0].start_min += 15
+    assert same.content_hash() != plan.content_hash(), "a moved block did not change the hash"

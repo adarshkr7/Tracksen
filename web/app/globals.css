@@ -1,55 +1,70 @@
 @import "tailwindcss";
 
-/* Warm, low-contrast surface. Restraint is the point: the chart carries the page,
-   and everything around it should recede. */
-:root {
-  --bg:        #faf9f5;
-  --surface:   #ffffff;
-  --surface-2: #f4f2ec;
-  --ink:       #1f1e1d;
-  --ink-2:     #56544e;
-  --ink-3:     #8b8980;
-  --line:      #e6e4dc;
-  --line-2:    #d6d3c9;
-  --accent:    #c96442;
-  --accent-2:  #a44f31;
-  --accent-bg: #f6ebe5;
+/* ===========================================================================
+   TRACKSEN — railway operations design system
 
-  /* Departments. Muted and warm-leaning so three of them can sit in one chart
-     without shouting at each other. */
-  --engg: #c96442;
-  --snt:  #4f6d7a;
-  --trd:  #8a7343;
-  --club: #2f2e2b;
-  --danger: #b3402a;
-  --danger-bg: #f7e6e1;
+   The reference is a divisional control room, not a SaaS dashboard: dense
+   information, flat surfaces, hard edges, and colour used only to carry
+   operational meaning. Deep railway maroon is the identity; status colours are
+   reserved for status and never used decoratively.
+   =========================================================================== */
+
+:root {
+  /* Surfaces — cool operational greys, not warm paper */
+  --bg:          #eef0f3;
+  --surface:     #ffffff;
+  --surface-2:   #f5f6f8;
+  --surface-3:   #e8ebef;
+
+  /* Control-room chrome — the navy the sidebar and header sit on */
+  --chrome:      #16212e;
+  --chrome-2:    #1e2c3c;
+  --chrome-3:    #2b3e52;
+  --chrome-ink:  #e7ecf2;
+  --chrome-ink-2:#93a4b8;
+
+  /* Ink */
+  --ink:         #16212e;
+  --ink-2:       #4a5a6c;
+  --ink-3:       #7b8a9b;
+
+  /* Rules — railway drawings are line-led */
+  --line:        #dde2e8;
+  --line-2:      #c6ced9;
+  --line-3:      #aab6c4;
+
+  /* Identity: deep railway maroon */
+  --rail:        #8c1d18;
+  --rail-2:      #a8302a;
+  --rail-3:      #6d1512;
+  --rail-bg:     #fbeceb;
+
+  /* Operational status — meaning only */
+  --ok:          #1b6e43;
+  --ok-bg:       #e6f2ec;
+  --warn:        #a35b00;
+  --warn-bg:     #fdf0dd;
+  --crit:        #b3241c;
+  --crit-bg:     #fce9e7;
+  --info:        #1d4e79;
+  --info-bg:     #e7eef6;
+
+  /* Departments — distinct at a glance in a dense chart */
+  --engg:        #8c1d18;   /* Engineering / P.Way */
+  --snt:         #1d4e79;   /* Signal & Telecom */
+  --trd:         #9a6a12;   /* Traction Distribution */
+  --club:        #2b3e52;   /* clubbed: multi-department */
+
+  --accent:      var(--rail);
+  --danger:      var(--crit);
+  --danger-bg:   var(--crit-bg);
+  --accent-bg:   var(--rail-bg);
+
+  --radius:      4px;
+  --sidebar-w:   232px;
+  --topbar-h:    56px;
 
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:        #262624;
-    --surface:   #30302e;
-    --surface-2: #393937;
-    --ink:       #f5f4ef;
-    --ink-2:     #b9b7ae;
-    --ink-3:     #8b8980;
-    --line:      #3e3e3b;
-    --line-2:    #4d4c48;
-    --accent:    #d97757;
-    --accent-2:  #e08e72;
-    --accent-bg: #3a2f2a;
-
-    --engg: #d97757;
-    --snt:  #7fa3b3;
-    --trd:  #bfa366;
-    --club: #cfcdc4;
-    --danger: #e08b6e;
-    --danger-bg: #46302a;
-
-    color-scheme: dark;
-  }
 }
 
 @theme inline {
@@ -60,9 +75,7 @@
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
   --color-line: var(--line);
-  --color-line-2: var(--line-2);
-  --color-accent: var(--accent);
-  --color-accent-bg: var(--accent-bg);
+  --color-rail: var(--rail);
 }
 
 html, body {
@@ -73,45 +86,111 @@ html, body {
 body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
+  font-size: 13px;
 }
 
-.serif {
-  font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+/* Operational data must be scannable in columns. */
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+.mono {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
 }
 
-.tnum { font-variant-numeric: tabular-nums; }
+/* Signage-style label: the small caps used on station boards and forms. */
+.sig {
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
 
-/* Quiet scrollbars -- visible enough to grab, invisible enough to ignore. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-2) transparent;
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
-*::-webkit-scrollbar { width: 8px; height: 8px; }
-*::-webkit-scrollbar-thumb {
-  background: var(--line-2);
-  border-radius: 999px;
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
 }
+
+/* Dense operational tables */
+table.ops { width: 100%; border-collapse: collapse; }
+table.ops th {
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-3);
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line-2);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+table.ops td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+table.ops tbody tr:hover { background: var(--surface-2); }
+table.ops tbody tr:last-child td { border-bottom: none; }
+
+/* Status lamp, as on a control panel */
+.lamp {
+  width: 7px; height: 7px; border-radius: 50%;
+  display: inline-block; flex: none;
+}
+.lamp-ok   { background: var(--ok);   box-shadow: 0 0 0 2px var(--ok-bg); }
+.lamp-warn { background: var(--warn); box-shadow: 0 0 0 2px var(--warn-bg); }
+.lamp-crit { background: var(--crit); box-shadow: 0 0 0 2px var(--crit-bg); }
+.lamp-off  { background: var(--ink-3); box-shadow: 0 0 0 2px var(--surface-3); }
+
+.lamp-live { animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+
+@keyframes fade-in { from { opacity: 0; transform: translateY(3px) } to { opacity: 1; transform: none } }
+.fade-in { animation: fade-in 160ms ease-out; }
+
+@keyframes sweep { from { background-position: 0 0 } to { background-position: 32px 0 } }
+.solving {
+  background-image: repeating-linear-gradient(
+    -45deg, var(--rail-bg) 0 8px, transparent 8px 16px);
+  animation: sweep .7s linear infinite;
+}
+
+/* Quiet scrollbars; a control room is not the place for chrome. */
+* { scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-thumb { background: var(--line-3); border-radius: 999px; }
 *::-webkit-scrollbar-track { background: transparent; }
 
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(2px); }
-  to   { opacity: 1; transform: none; }
-}
-.fade-in { animation: fade-in 180ms ease-out; }
-
-/* Chart weights differ by theme: a 6% wash reads on cream and vanishes on charcoal. */
-.corridor-band { fill: var(--accent); opacity: 0.07; }
+/* Chart primitives shared by the schematic and the time-distance chart */
+.corridor-band { fill: var(--rail); opacity: 0.06; }
 .train-paths   { opacity: 0.5; }
-.block-fill    { fill-opacity: 0.22; }
-.block-fill.clubbed { fill-opacity: 0.3; }
-.block-fill.active  { fill-opacity: 0.42; }
+.block-fill    { fill-opacity: 0.28; }
+.block-fill.clubbed { fill-opacity: 0.36; }
+.block-fill.active  { fill-opacity: 0.5; }
 
-@media (prefers-color-scheme: dark) {
-  .corridor-band { opacity: 0.16; }
-  .train-paths   { opacity: 0.72; }
-  .block-fill    { fill-opacity: 0.3; }
-  .block-fill.clubbed { fill-opacity: 0.42; }
-  .block-fill.active  { fill-opacity: 0.58; }
+/* Metric rows step down in whole columns so a tile is never stranded alone. */
+.metric-row { grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); }
+@media (max-width: 1500px) {
+  .metric-row { grid-template-columns: repeat(min(var(--cols, 4), 4), minmax(0, 1fr)); }
 }
+@media (max-width: 1180px) {
+  .metric-row { grid-template-columns: repeat(min(var(--cols, 4), 3), minmax(0, 1fr)); }
+}
+@media (max-width: 880px) {
+  .metric-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+a { color: inherit; text-decoration: none; }
+button { font: inherit; }

@@ -1,0 +1,339 @@
+# Coaching timetable — Danapur division
+# Buxar – Ara – Patna – Bakhtiyarpur – Mokama – Kiul – Jhajha, and every line that
+# comes onto it.
+# ============================================================================
+#
+# PROVENANCE. Read this before quoting anything out of this file.
+#
+#   provenance=named
+#       The train number, the name and the road it works over are a real service on
+#       this division. The TIMES AND RUNNING DAYS ARE APPROXIMATE — a plausible slot
+#       and a plausible frequency, consistent with the service's published pattern
+#       (daily for the Rajdhanis, the Mails and the stopping traffic; a few days a
+#       week for the Durontos, the Garib Raths and the long-distance weeklies). They
+#       are NOT a transcription of the Working Time Table and have not been checked
+#       against the current one. Do not quote a time or a running day from this file
+#       as booked.
+#
+#   provenance=representative
+#       MEMU and branch passenger services. The numbers are in the right series and
+#       the frequencies are realistic, but these particular numbers have not been
+#       individually verified. They stand in for the stopping traffic the road
+#       genuinely carries, which is a large part of what makes a mid-morning block
+#       expensive.
+#
+#   This is an EXTRACT, not the whole book. The real Howrah–Delhi trunk through Patna
+#   carries more coaching traffic than the services below. Traffic cost in TRACKSEN is
+#   computed from whatever is in this file, so the demonstration's cost of a block
+#   hour is CONSERVATIVE relative to the real road.
+#
+#   Goods is deliberately absent. Goods paths are not booked and not published, so
+#   TRACKSEN forecasts them and each carries the probability that it runs at all —
+#   which is why the cost of a block hour is an expectation rather than a count.
+#
+# On deployment this file is replaced by the division's own WTT extract. Nothing in
+# samanvay/network.py changes: the columns below are the contract.
+#
+# ---------------------------------------------------------------------------
+# COLUMNS
+#   train_no     as booked
+#   name         service name
+#   class        PREMIER | MAIL_EXP | PASSENGER   (sets the detention weight)
+#   route        MAIN | SSM | HJP | IPR | RGD | BRN | GAYA | JMP
+#   enter_at     station code where the service enters the modelled road
+#   leave_at     station code where it leaves it
+#   main_leg     for a branch service that works through onto the main line, the main
+#                station it runs to (when leave_at is the junction) or comes from
+#                (when enter_at is the junction). Blank for main-line services and for
+#                branch services that begin or end at the junction.
+#   enter_time   HH:MM at enter_at
+#   runs         "daily", or the days it works, written without separators from
+#                Mo Tu We Th Fr Sa Su — e.g. MoWeFr, TuSa, Su.
+#                Day 0 of the planning horizon is a Monday (HORIZON_START_WEEKDAY).
+#                This is why Tuesday is not Sunday on this road: a block that is cheap
+#                on one is not necessarily cheap on the other.
+#   provenance   named | representative
+# ---------------------------------------------------------------------------
+#
+train_no,name,class,route,enter_at,leave_at,main_leg,enter_time,runs,provenance
+#
+# ===========================================================================
+# MAIN LINE — Howrah / Sealdah / Kolkata – Delhi trunk via Patna
+# ===========================================================================
+#
+12305,Howrah – New Delhi Rajdhani,PREMIER,MAIN,JAJ,BXR,,22:40,MoWeThSa,named
+12306,New Delhi – Howrah Rajdhani,PREMIER,MAIN,BXR,JAJ,,02:05,TuThFrSu,named
+12313,Sealdah – New Delhi Rajdhani,PREMIER,MAIN,JAJ,BXR,,23:25,daily,named
+12314,New Delhi – Sealdah Rajdhani,PREMIER,MAIN,BXR,JAJ,,01:10,daily,named
+22349,Patna – Howrah Vande Bharat Express,PREMIER,MAIN,PNBE,JAJ,,06:05,MoTuWeThFrSa,named
+22350,Howrah – Patna Vande Bharat Express,PREMIER,MAIN,JAJ,PNBE,,17:30,MoTuWeThFrSa,named
+12309,Rajendra Nagar – New Delhi Rajdhani,PREMIER,MAIN,PNBE,BXR,,19:15,daily,named
+12310,New Delhi – Rajendra Nagar Rajdhani,PREMIER,MAIN,BXR,PNBE,,05:40,daily,named
+12273,Howrah – New Delhi Duronto,PREMIER,MAIN,JAJ,BXR,,23:55,TuWeFrSaSu,named
+12274,New Delhi – Howrah Duronto,PREMIER,MAIN,BXR,JAJ,,03:20,MoWeThSaSu,named
+12259,Sealdah – Bikaner Duronto,PREMIER,MAIN,JAJ,BXR,,21:05,MoTh,named
+12260,Bikaner – Sealdah Duronto,PREMIER,MAIN,BXR,JAJ,,04:45,WeSa,named
+12393,Sampoorna Kranti Express,MAIL_EXP,MAIN,PNBE,BXR,,18:05,daily,named
+12394,Sampoorna Kranti Express,MAIL_EXP,MAIN,BXR,PNBE,,06:25,daily,named
+12303,Poorva Express (via Patna),MAIL_EXP,MAIN,JAJ,BXR,,02:10,MoTuThSa,named
+12304,Poorva Express (via Patna),MAIL_EXP,MAIN,BXR,JAJ,,22:35,WeThSaSu,named
+13005,Howrah – Amritsar Mail,MAIL_EXP,MAIN,JAJ,BXR,,04:20,daily,named
+13006,Amritsar – Howrah Mail,MAIL_EXP,MAIN,BXR,JAJ,,18:10,daily,named
+13049,Howrah – Amritsar Express,MAIL_EXP,MAIN,JAJ,BXR,,11:45,daily,named
+13050,Amritsar – Howrah Express,MAIL_EXP,MAIN,BXR,JAJ,,09:25,daily,named
+12333,Vibhuti Express,MAIL_EXP,MAIN,JAJ,BXR,,03:30,daily,named
+12334,Vibhuti Express,MAIL_EXP,MAIN,BXR,JAJ,,21:40,daily,named
+12369,Howrah – Dehradun Kumbha Express,MAIL_EXP,MAIN,JAJ,BXR,,15:10,daily,named
+12370,Dehradun – Howrah Kumbha Express,MAIL_EXP,MAIN,BXR,JAJ,,12:35,daily,named
+12327,Howrah – Dehradun Upasana Express,MAIL_EXP,MAIN,JAJ,BXR,,16:40,daily,named
+12328,Dehradun – Howrah Upasana Express,MAIL_EXP,MAIN,BXR,JAJ,,11:15,daily,named
+12317,Kolkata – Amritsar Akal Takht Express,MAIL_EXP,MAIN,JAJ,BXR,,05:35,daily,named
+12318,Amritsar – Kolkata Akal Takht Express,MAIL_EXP,MAIN,BXR,JAJ,,19:50,daily,named
+12379,Sealdah – Amritsar Jallianwala Bagh Express,MAIL_EXP,MAIN,JAJ,BXR,,07:40,TuThSu,named
+12380,Amritsar – Sealdah Jallianwala Bagh Express,MAIL_EXP,MAIN,BXR,JAJ,,15:25,MoWeSa,named
+12987,Sealdah – Ajmer Express,MAIL_EXP,MAIN,JAJ,BXR,,08:15,TuSa,named
+12988,Ajmer – Sealdah Express,MAIL_EXP,MAIN,BXR,JAJ,,14:55,MoTh,named
+12315,Kolkata – Udaipur City Ananya Express,MAIL_EXP,MAIN,JAJ,BXR,,10:05,We,named
+12316,Udaipur City – Kolkata Ananya Express,MAIL_EXP,MAIN,BXR,JAJ,,17:50,Su,named
+13007,Howrah – Sri Ganganagar Udyan Abha Toofan Express,MAIL_EXP,MAIN,JAJ,BXR,,09:50,daily,named
+13008,Sri Ganganagar – Howrah Udyan Abha Toofan Express,MAIL_EXP,MAIN,BXR,JAJ,,13:05,daily,named
+13009,Howrah – Yoga Nagari Rishikesh Doon Express,MAIL_EXP,MAIN,JAJ,BXR,,12:20,daily,named
+13010,Yoga Nagari Rishikesh – Howrah Doon Express,MAIL_EXP,MAIN,BXR,JAJ,,07:45,daily,named
+13019,Howrah – Kathgodam Bagh Express,MAIL_EXP,MAIN,JAJ,BXR,,18:30,daily,named
+13020,Kathgodam – Howrah Bagh Express,MAIL_EXP,MAIN,BXR,JAJ,,23:35,daily,named
+13039,Howrah – Delhi Janta Express,MAIL_EXP,MAIN,JAJ,BXR,,20:25,daily,named
+13040,Delhi – Howrah Janta Express,MAIL_EXP,MAIN,BXR,JAJ,,08:05,daily,named
+12351,Rajendra Nagar – Howrah Express,MAIL_EXP,MAIN,PNBE,JAJ,,20:50,daily,named
+12352,Howrah – Rajendra Nagar Express,MAIL_EXP,MAIN,JAJ,PNBE,,06:15,daily,named
+12023,Howrah – Patna Jan Shatabdi,MAIL_EXP,MAIN,JAJ,PNBE,,11:20,MoTuWeThFrSa,named
+12024,Patna – Howrah Jan Shatabdi,MAIL_EXP,MAIN,PNBE,JAJ,,14:45,MoTuWeThFrSa,named
+12141,Rajendra Nagar – LTT Express,MAIL_EXP,MAIN,PNBE,BXR,,13:40,daily,named
+12142,LTT – Rajendra Nagar Express,MAIL_EXP,MAIN,BXR,PNBE,,10:15,daily,named
+13201,Rajendra Nagar – LTT Janata Express,MAIL_EXP,MAIN,PNBE,BXR,,08:30,daily,named
+13202,LTT – Rajendra Nagar Janata Express,MAIL_EXP,MAIN,BXR,PNBE,,20:40,daily,named
+22913,Patna – Bandra Terminus Humsafar Express,MAIL_EXP,MAIN,PNBE,BXR,,21:35,Fr,named
+22914,Bandra Terminus – Patna Humsafar Express,MAIL_EXP,MAIN,BXR,PNBE,,02:50,Tu,named
+12947,Patna – Ahmedabad Azimabad Express,MAIL_EXP,MAIN,PNBE,BXR,,14:30,We,named
+12948,Ahmedabad – Patna Azimabad Express,MAIL_EXP,MAIN,BXR,PNBE,,09:40,Sa,named
+13239,Patna – Kota Express,MAIL_EXP,MAIN,PNBE,BXR,,16:55,MoThSa,named
+13240,Kota – Patna Express,MAIL_EXP,MAIN,BXR,PNBE,,04:10,TuFrSu,named
+13243,Patna – Pt. Deen Dayal Upadhyaya Intercity,MAIL_EXP,MAIN,PNBE,BXR,,06:45,daily,named
+13244,Pt. Deen Dayal Upadhyaya – Patna Intercity,MAIL_EXP,MAIN,BXR,PNBE,,19:30,daily,named
+#
+# ===========================================================================
+# HAJIPUR LINE (DNR) — North Bihar onto the trunk over the Digha bridge
+# ===========================================================================
+#
+13237,Patliputra – Kota Express,MAIL_EXP,HJP,PPTA,DNR,BXR,17:45,TuSa,named
+13238,Kota – Patliputra Express,MAIL_EXP,HJP,DNR,PPTA,BXR,07:30,MoFr,named
+15203,Barauni – Lucknow Express,MAIL_EXP,HJP,HJP,DNR,BXR,22:15,daily,named
+15204,Lucknow – Barauni Express,MAIL_EXP,HJP,DNR,HJP,BXR,05:05,daily,named
+15547,Muzaffarpur – Patliputra Express,MAIL_EXP,HJP,HJP,PPTA,,09:45,daily,representative
+15548,Patliputra – Muzaffarpur Express,MAIL_EXP,HJP,PPTA,HJP,,18:20,daily,representative
+63261,Patna – Hajipur MEMU,PASSENGER,HJP,DNR,HJP,PNBE,07:55,daily,representative
+63262,Hajipur – Patna MEMU,PASSENGER,HJP,HJP,DNR,PNBE,10:40,daily,representative
+63263,Patna – Sonpur MEMU,PASSENGER,HJP,DNR,SEE,PNBE,16:10,daily,representative
+63264,Sonpur – Patna MEMU,PASSENGER,HJP,SEE,DNR,PNBE,19:05,daily,representative
+63265,Patliputra – Hajipur MEMU,PASSENGER,HJP,PPTA,HJP,,13:10,daily,representative
+63266,Hajipur – Patliputra MEMU,PASSENGER,HJP,HJP,PPTA,,15:45,daily,representative
+#
+# ===========================================================================
+# JAMALPUR LINE (KIUL) — Bhagalpur and Malda traffic onto the trunk
+# ===========================================================================
+#
+12367,Vikramshila Express,MAIL_EXP,JMP,JMP,KIUL,BXR,23:35,daily,named
+12368,Vikramshila Express,MAIL_EXP,JMP,KIUL,JMP,BXR,01:25,daily,named
+13413,Farakka Express,MAIL_EXP,JMP,JMP,KIUL,BXR,07:20,MoWeThSa,named
+13414,Farakka Express,MAIL_EXP,JMP,KIUL,JMP,BXR,17:05,TuWeFrSu,named
+22405,Bhagalpur – Anand Vihar Garib Rath,MAIL_EXP,JMP,JMP,KIUL,BXR,20:15,MoWeSa,named
+22406,Anand Vihar – Bhagalpur Garib Rath,MAIL_EXP,JMP,KIUL,JMP,BXR,08:55,TuThSu,named
+12335,Bhagalpur – LTT Express,MAIL_EXP,JMP,JMP,KIUL,BXR,12:50,ThSu,named
+12336,LTT – Bhagalpur Express,MAIL_EXP,JMP,KIUL,JMP,BXR,03:40,TuFr,named
+13429,Malda Town – Anand Vihar Express,MAIL_EXP,JMP,JMP,KIUL,BXR,19:05,WeSa,named
+13430,Anand Vihar – Malda Town Express,MAIL_EXP,JMP,KIUL,JMP,BXR,04:25,MoFr,named
+13415,Malda Town – Patna Intercity,MAIL_EXP,JMP,JMP,KIUL,PNBE,05:45,daily,named
+13416,Patna – Malda Town Intercity,MAIL_EXP,JMP,KIUL,JMP,PNBE,20:35,daily,named
+13401,Bhagalpur – Danapur Intercity,MAIL_EXP,JMP,JMP,KIUL,DNR,06:05,daily,named
+13402,Danapur – Bhagalpur Intercity,MAIL_EXP,JMP,KIUL,JMP,DNR,19:20,daily,named
+53431,Kiul – Jamalpur Passenger,PASSENGER,JMP,KIUL,JMP,,09:35,daily,representative
+53432,Jamalpur – Kiul Passenger,PASSENGER,JMP,JMP,KIUL,,15:05,daily,representative
+53433,Kiul – Jamalpur Passenger,PASSENGER,JMP,KIUL,JMP,,18:10,daily,representative
+53434,Jamalpur – Kiul Passenger,PASSENGER,JMP,JMP,KIUL,,06:40,daily,representative
+#
+# ===========================================================================
+# BARAUNI LINE (HTZ) — over Rajendra Setu, the heaviest branch on the division
+# ===========================================================================
+#
+12505,North East Express,MAIL_EXP,BRN,BJU,HTZ,BXR,05:25,daily,named
+12506,North East Express,MAIL_EXP,BRN,HTZ,BJU,BXR,21:10,daily,named
+12487,Seemanchal Express,MAIL_EXP,BRN,BJU,HTZ,BXR,00:40,daily,named
+12488,Seemanchal Express,MAIL_EXP,BRN,HTZ,BJU,BXR,20:05,daily,named
+12523,New Jalpaiguri – New Delhi Express,MAIL_EXP,BRN,BJU,HTZ,BXR,13:15,MoFr,named
+12524,New Delhi – New Jalpaiguri Express,MAIL_EXP,BRN,HTZ,BJU,BXR,06:55,WeSu,named
+12577,Bagmati Express,MAIL_EXP,BRN,BJU,HTZ,BXR,14:20,daily,named
+12578,Bagmati Express,MAIL_EXP,BRN,HTZ,BJU,BXR,10:50,daily,named
+15483,Alipurduar – Delhi Sikkim Mahananda Express,MAIL_EXP,BRN,BJU,HTZ,BXR,02:35,daily,named
+15484,Delhi – Alipurduar Sikkim Mahananda Express,MAIL_EXP,BRN,HTZ,BJU,BXR,23:15,daily,named
+13245,Rajendra Nagar – Kamakhya Capital Express,MAIL_EXP,BRN,HTZ,BJU,PNBE,16:40,daily,named
+13246,Kamakhya – Rajendra Nagar Capital Express,MAIL_EXP,BRN,BJU,HTZ,PNBE,09:05,daily,named
+12203,Saharsa – Amritsar Garib Rath,MAIL_EXP,BRN,BJU,HTZ,BXR,18:45,TuThSa,named
+12204,Amritsar – Saharsa Garib Rath,MAIL_EXP,BRN,HTZ,BJU,BXR,03:55,MoWeFr,named
+15027,Hatia – Gorakhpur Maurya Express,MAIL_EXP,BRN,HTZ,BJU,JAJ,11:40,daily,named
+15028,Gorakhpur – Hatia Maurya Express,MAIL_EXP,BRN,BJU,HTZ,JAJ,15:55,daily,named
+15621,Anand Vihar – Kamakhya Express,MAIL_EXP,BRN,HTZ,BJU,BXR,01:55,Th,named
+15622,Kamakhya – Anand Vihar Express,MAIL_EXP,BRN,BJU,HTZ,BXR,12:10,Su,named
+19483,Ahmedabad – Barauni Express,MAIL_EXP,BRN,HTZ,BJU,BXR,08:25,WeSa,named
+19484,Barauni – Ahmedabad Express,MAIL_EXP,BRN,BJU,HTZ,BXR,17:20,MoTh,named
+15231,Barauni – Gondia Express,MAIL_EXP,BRN,BJU,HTZ,BXR,22:50,daily,named
+15232,Gondia – Barauni Express,MAIL_EXP,BRN,HTZ,BJU,BXR,04:40,daily,named
+63231,Barauni – Hathidah MEMU,PASSENGER,BRN,BJU,HTZ,,07:45,daily,representative
+63232,Hathidah – Barauni MEMU,PASSENGER,BRN,HTZ,BJU,,10:20,daily,representative
+63233,Barauni – Mokama MEMU,PASSENGER,BRN,BJU,HTZ,MKA,14:50,daily,representative
+63234,Mokama – Barauni MEMU,PASSENGER,BRN,HTZ,BJU,MKA,18:15,daily,representative
+#
+# ===========================================================================
+# RAJGIR LINE (BKP)
+# ===========================================================================
+#
+12391,Rajgir – New Delhi Shramjeevi Express,MAIL_EXP,RGD,RGD,BKP,BXR,12:15,daily,named
+12392,New Delhi – Rajgir Shramjeevi Express,MAIL_EXP,RGD,BKP,RGD,BXR,15:50,daily,named
+12395,Rajgir – Ajmer Ziyarat Express,MAIL_EXP,RGD,RGD,BKP,BXR,10:05,Mo,named
+12396,Ajmer – Rajgir Ziyarat Express,MAIL_EXP,RGD,BKP,RGD,BXR,21:55,Th,named
+13233,Rajgir – Danapur Intercity,MAIL_EXP,RGD,RGD,BKP,DNR,06:20,daily,named
+13234,Danapur – Rajgir Intercity,MAIL_EXP,RGD,BKP,RGD,DNR,18:55,daily,named
+63221,Bakhtiyarpur – Rajgir MEMU,PASSENGER,RGD,BKP,RGD,,08:40,daily,representative
+63222,Rajgir – Bakhtiyarpur MEMU,PASSENGER,RGD,RGD,BKP,,11:30,daily,representative
+63223,Bakhtiyarpur – Rajgir MEMU,PASSENGER,RGD,BKP,RGD,,17:25,daily,representative
+63224,Rajgir – Bakhtiyarpur MEMU,PASSENGER,RGD,RGD,BKP,,20:10,daily,representative
+#
+# ===========================================================================
+# ISLAMPUR LINE (FUT)
+# ===========================================================================
+#
+20802,Islampur – New Delhi Magadh Express,MAIL_EXP,IPR,IPR,FUT,BXR,08:10,daily,named
+20801,New Delhi – Islampur Magadh Express,MAIL_EXP,IPR,FUT,IPR,BXR,19:45,daily,named
+63271,Fatuha – Islampur Passenger,PASSENGER,IPR,FUT,IPR,PNBE,06:30,daily,representative
+63272,Islampur – Fatuha Passenger,PASSENGER,IPR,IPR,FUT,PNBE,09:50,daily,representative
+63273,Fatuha – Islampur Passenger,PASSENGER,IPR,FUT,IPR,PNBE,15:20,daily,representative
+63274,Islampur – Fatuha Passenger,PASSENGER,IPR,IPR,FUT,PNBE,18:35,daily,representative
+#
+# ===========================================================================
+# GAYA LINE (KIUL)
+# ===========================================================================
+#
+53041,Kiul – Gaya Passenger,PASSENGER,GAYA,KIUL,GAYA,,06:50,daily,representative
+53042,Gaya – Kiul Passenger,PASSENGER,GAYA,GAYA,KIUL,,13:55,daily,representative
+53043,Kiul – Gaya Passenger,PASSENGER,GAYA,KIUL,GAYA,,16:20,daily,representative
+53044,Gaya – Kiul Passenger,PASSENGER,GAYA,GAYA,KIUL,,05:30,daily,representative
+#
+# ===========================================================================
+# SASARAM LINE (ARA)
+# ===========================================================================
+#
+63251,Ara – Sasaram Passenger,PASSENGER,SSM,ARA,SSM,,07:10,daily,representative
+63252,Sasaram – Ara Passenger,PASSENGER,SSM,SSM,ARA,,10:35,daily,representative
+63253,Ara – Sasaram Passenger,PASSENGER,SSM,ARA,SSM,,15:40,daily,representative
+63254,Sasaram – Ara Passenger,PASSENGER,SSM,SSM,ARA,,18:50,daily,representative
+#
+# ===========================================================================
+# MAIN LINE — stopping traffic
+# ===========================================================================
+#
+63201,Patna – Mokama MEMU,PASSENGER,MAIN,PNBE,MKA,,06:35,daily,representative
+63202,Mokama – Patna MEMU,PASSENGER,MAIN,MKA,PNBE,,09:10,daily,representative
+63203,Patna – Jhajha MEMU,PASSENGER,MAIN,PNBE,JAJ,,15:45,daily,representative
+63204,Jhajha – Patna MEMU,PASSENGER,MAIN,JAJ,PNBE,,07:20,daily,representative
+63205,Patna – Buxar MEMU,PASSENGER,MAIN,PNBE,BXR,,07:05,daily,representative
+63206,Buxar – Patna MEMU,PASSENGER,MAIN,BXR,PNBE,,17:15,daily,representative
+63207,Danapur – Ara MEMU,PASSENGER,MAIN,DNR,ARA,,10:25,daily,representative
+63208,Ara – Danapur MEMU,PASSENGER,MAIN,ARA,DNR,,12:40,daily,representative
+63209,Patna – Buxar MEMU,PASSENGER,MAIN,PNBE,BXR,,20:30,daily,representative
+63210,Buxar – Patna MEMU,PASSENGER,MAIN,BXR,PNBE,,05:50,daily,representative
+63211,Patna – Bakhtiyarpur MEMU,PASSENGER,MAIN,PNBE,BKP,,11:35,daily,representative
+63212,Bakhtiyarpur – Patna MEMU,PASSENGER,MAIN,BKP,PNBE,,08:20,daily,representative
+63213,Patna – Fatuha MEMU,PASSENGER,MAIN,PNBE,FUT,,18:40,daily,representative
+63214,Fatuha – Patna MEMU,PASSENGER,MAIN,FUT,PNBE,,21:20,daily,representative
+63215,Buxar – Ara MEMU,PASSENGER,MAIN,BXR,ARA,,13:50,MoTuWeThFrSa,representative
+63216,Ara – Buxar MEMU,PASSENGER,MAIN,ARA,BXR,,16:05,MoTuWeThFrSa,representative
+53231,Patna – Kiul Passenger,PASSENGER,MAIN,PNBE,KIUL,,14:10,daily,representative
+53232,Kiul – Patna Passenger,PASSENGER,MAIN,KIUL,PNBE,,04:50,daily,representative
+53233,Patna – Kiul Passenger,PASSENGER,MAIN,PNBE,KIUL,,21:05,daily,representative
+53234,Kiul – Patna Passenger,PASSENGER,MAIN,KIUL,PNBE,,11:55,daily,representative
+53235,Kiul – Jhajha Passenger,PASSENGER,MAIN,KIUL,JAJ,,13:25,daily,representative
+53236,Jhajha – Kiul Passenger,PASSENGER,MAIN,JAJ,KIUL,,16:50,daily,representative
+53237,Mokama – Kiul Passenger,PASSENGER,MAIN,MKA,KIUL,,19:55,daily,representative
+53238,Kiul – Mokama Passenger,PASSENGER,MAIN,KIUL,MKA,,08:45,daily,representative
+#
+# ===========================================================================
+# ORIGINATING AND TERMINATING TRAFFIC AT INTERMEDIATE STATIONS
+#
+# Ara, Buxar, Bakhtiyarpur, Mokama, Kiul and Jhajha all originate their own
+# services — they are not just places the Delhi trains pass through. Kiul and
+# Jhajha in particular turn a lot of stock, and that traffic is what occupies a
+# section at the hours the through expresses do not.
+#
+# Almost all of it is stopping traffic, and these numbers are REPRESENTATIVE:
+# the series is right and the frequencies are realistic, but individual MEMU and
+# passenger numbers have not been verified. Replace this block first when a real
+# WTT extract is available — it is the part of the file that carries the least
+# verified detail.
+# ===========================================================================
+#
+13255,Danapur – Anand Vihar Jan Sadharan Express,MAIL_EXP,MAIN,DNR,BXR,,23:20,Tu,named
+13256,Anand Vihar – Danapur Jan Sadharan Express,MAIL_EXP,MAIN,BXR,DNR,,12:55,Fr,named
+63217,Ara – Patna MEMU,PASSENGER,MAIN,ARA,PNBE,,05:20,daily,representative
+63218,Patna – Ara MEMU,PASSENGER,MAIN,PNBE,ARA,,19:10,daily,representative
+63219,Ara – Patna MEMU,PASSENGER,MAIN,ARA,PNBE,,14:55,daily,representative
+63220,Patna – Ara MEMU,PASSENGER,MAIN,PNBE,ARA,,08:05,daily,representative
+63225,Ara – Bakhtiyarpur MEMU,PASSENGER,MAIN,ARA,BKP,,09:40,MoTuWeThFrSa,representative
+63226,Bakhtiyarpur – Ara MEMU,PASSENGER,MAIN,BKP,ARA,,17:35,MoTuWeThFrSa,representative
+63227,Buxar – Danapur MEMU,PASSENGER,MAIN,BXR,DNR,,10:50,daily,representative
+63228,Danapur – Buxar MEMU,PASSENGER,MAIN,DNR,BXR,,15:15,daily,representative
+63229,Buxar – Bihiya MEMU,PASSENGER,MAIN,BXR,BEA,,19:25,MoTuWeThFrSa,representative
+63230,Bihiya – Buxar MEMU,PASSENGER,MAIN,BEA,BXR,,21:00,MoTuWeThFrSa,representative
+53239,Mokama – Patna Passenger,PASSENGER,MAIN,MKA,PNBE,,05:05,daily,representative
+53240,Patna – Mokama Passenger,PASSENGER,MAIN,PNBE,MKA,,17:55,daily,representative
+53241,Mokama – Jhajha Passenger,PASSENGER,MAIN,MKA,JAJ,,10:15,daily,representative
+53242,Jhajha – Mokama Passenger,PASSENGER,MAIN,JAJ,MKA,,14:40,daily,representative
+53243,Jhajha – Patna Passenger,PASSENGER,MAIN,JAJ,PNBE,,04:15,daily,representative
+53244,Patna – Jhajha Passenger,PASSENGER,MAIN,PNBE,JAJ,,22:10,daily,representative
+53245,Kiul – Barh Passenger,PASSENGER,MAIN,KIUL,BARH,,07:35,daily,representative
+53246,Barh – Kiul Passenger,PASSENGER,MAIN,BARH,KIUL,,18:25,daily,representative
+53247,Bakhtiyarpur – Kiul Passenger,PASSENGER,MAIN,BKP,KIUL,,12:20,daily,representative
+53248,Kiul – Bakhtiyarpur Passenger,PASSENGER,MAIN,KIUL,BKP,,15:35,daily,representative
+63235,Patna Saheb – Bakhtiyarpur MEMU,PASSENGER,MAIN,PNC,BKP,,06:55,daily,representative
+63236,Bakhtiyarpur – Patna Saheb MEMU,PASSENGER,MAIN,BKP,PNC,,20:45,daily,representative
+53249,Jhajha – Jamalpur Passenger,PASSENGER,JMP,KIUL,JMP,JAJ,11:10,daily,representative
+53250,Jamalpur – Jhajha Passenger,PASSENGER,JMP,JMP,KIUL,JAJ,16:55,daily,representative
+53251,Jhajha – Gaya Passenger,PASSENGER,GAYA,KIUL,GAYA,JAJ,08:15,MoTuWeThFrSa,representative
+53252,Gaya – Jhajha Passenger,PASSENGER,GAYA,GAYA,KIUL,JAJ,17:40,MoTuWeThFrSa,representative
+63237,Ara – Sasaram MEMU,PASSENGER,SSM,ARA,SSM,,12:05,daily,representative
+63238,Sasaram – Ara MEMU,PASSENGER,SSM,SSM,ARA,,20:20,daily,representative
+#
+# ===========================================================================
+# PATNA – GAYA LINE (PNBE) — South Bihar onto the trunk at Patna Jn itself
+#
+# This line leaves the main line at the busiest point of the division, so its
+# traffic contends directly with the Delhi road in the Patna throat.
+# ===========================================================================
+#
+13287,Durg – Rajendra Nagar South Bihar Express,MAIL_EXP,PTG,GAYA,PNBE,,04:35,daily,named
+13288,Rajendra Nagar – Durg South Bihar Express,MAIL_EXP,PTG,PNBE,GAYA,,22:45,daily,named
+12365,Ranchi – Patna Jan Shatabdi,MAIL_EXP,PTG,GAYA,PNBE,,12:40,MoTuWeThFrSa,named
+12366,Patna – Ranchi Jan Shatabdi,MAIL_EXP,PTG,PNBE,GAYA,,15:25,MoTuWeThFrSa,named
+18621,Patna – Hatia Express,MAIL_EXP,PTG,PNBE,GAYA,,21:15,daily,named
+18622,Hatia – Patna Express,MAIL_EXP,PTG,GAYA,PNBE,,06:25,daily,named
+12295,Danapur – SMVT Bengaluru Sanghamitra Express,MAIL_EXP,PTG,PNBE,GAYA,DNR,19:35,daily,named
+12296,SMVT Bengaluru – Danapur Sanghamitra Express,MAIL_EXP,PTG,GAYA,PNBE,DNR,08:50,daily,named
+12791,Danapur – Secunderabad Express,MAIL_EXP,PTG,PNBE,GAYA,DNR,16:05,TuThSu,named
+12792,Secunderabad – Danapur Express,MAIL_EXP,PTG,GAYA,PNBE,DNR,10:30,MoWeSa,named
+13351,Dhanbad – Alappuzha Express,MAIL_EXP,PTG,GAYA,PNBE,,02:20,We,named
+13352,Alappuzha – Dhanbad Express,MAIL_EXP,PTG,PNBE,GAYA,,23:55,Sa,named
+63281,Patna – Gaya MEMU,PASSENGER,PTG,PNBE,GAYA,,06:10,daily,representative
+63282,Gaya – Patna MEMU,PASSENGER,PTG,GAYA,PNBE,,09:20,daily,representative
+63283,Patna – Gaya MEMU,PASSENGER,PTG,PNBE,GAYA,,13:45,daily,representative
+63284,Gaya – Patna MEMU,PASSENGER,PTG,GAYA,PNBE,,17:10,daily,representative
+63285,Patna – Jehanabad MEMU,PASSENGER,PTG,PNBE,JHD,,18:25,daily,representative
+63286,Jehanabad – Patna MEMU,PASSENGER,PTG,JHD,PNBE,,20:40,daily,representative
+63287,Patna – Taregna MEMU,PASSENGER,PTG,PNBE,TEA,,11:05,MoTuWeThFrSa,representative
+63288,Taregna – Patna MEMU,PASSENGER,PTG,TEA,PNBE,,07:40,MoTuWeThFrSa,representative

@@ -1,6 +1,7 @@
-# SAMANVAY
+# TRACKSEN
 
-**AI-powered automatic block planning for Indian Railways** — SIH 2026, PS 26027, Ministry of Railways.
+**AI-Powered Railway Maintenance Intelligence & Planning** — SIH 2026, PS 26027,
+Ministry of Railways.
 
 Three departments plan maintenance blocks independently. Engineering works out of TMS,
 Signal & Telecom out of SMMS, Traction Distribution out of TDMS. All three raise demands
@@ -8,12 +9,17 @@ into BDMS for the same scarce block sections, and none of them can see the other
 queues. The result is three separate line closures where one would have done, and a
 critical defect waiting behind routine work that asked first.
 
-SAMANVAY is a decision-support layer over those existing systems. It does not replace
+TRACKSEN is a decision-support layer over those existing systems. It does not replace
 any of them and it **never grants a block** — it produces a recommended plan, and the
 competent authority sanctions.
 
-**Build status:** see [STATUS.md](STATUS.md) — ~95% against the problem statement's four
-stated requirements, ~95% as a prototype, ~55% as something pilotable.
+**Build status:** [STATUS.md](STATUS.md) for what is built against the problem statement.
+[AUDIT.md](AUDIT.md) for what is broken or unfinished, which is the more useful document
+if you are deciding whether to trust a number on a screen.
+
+TRACKSEN is not an Indian Railways product and is not connected to any live railway
+system. The demonstration runs on synthetic operational data over a real network
+topology; every screen says so.
 
 ---
 
@@ -24,7 +30,7 @@ pip install -r requirements.txt
 ```
 
 ```bash
-python scripts/run_pipeline.py --days 7 --tasks 200 --time-limit 45
+python scripts/run_pipeline.py --days 7 --tasks 600 --monthly --validate --time-limit 240
 ```
 
 That generates the estate, fits the models, solves the week, schedules the same tasks
@@ -48,24 +54,28 @@ python scripts/run_pipeline.py --clubbing 40 --traffic 0.12 --corridor 60 --over
 
 ## What it produces
 
-Measured over a 7-day horizon, 200 pending tasks, 7 block sections of the
-Ahmedabad–Vadodara corridor, against an FCFS baseline on the identical task population:
+Measured over a 7-day horizon, 600 pending tasks, the **Danapur division** of East
+Central Railway, against an FCFS baseline on the identical task population:
 
-| Measure | Baseline | SAMANVAY | |
+| Measure | Baseline | TRACKSEN | |
 |---|---:|---:|---|
-| **Risk retired per block-hour** | 15.13 | **28.12** | **+86%** |
-| Blocks used | 102 | 80 | -22% |
-| Block hours consumed | 279.5 | 210.5 | -25% |
-| Clubbing ratio (depts per block) | 1.00 | 1.35 | +35% |
-| Line closures saved | 0 | 28 | - |
-| Traffic cost (wtd detention min) | 18,228 | 13,734 | -25% |
-| Corridor adherence | 20% | 61% | +205% |
-| Unplanned failures | 41 | 36 | -12% |
-| High-criticality unplanned failures | 24 | 20 | -17% |
-| Overdue task-days | 1,239 | 1,264 | **+2% worse** |
+| **Risk retired per block-hour** | 8.5 | **19.4** | **+128%** |
+| Blocks used | 189 | 146 | −23% |
+| Block hours consumed | 623.0 | 450.0 | −28% |
+| Clubbing ratio (depts per block) | 1.00 | 1.32 | +32% |
+| Line closures saved | 0 | 47 | — |
+| Traffic cost (wtd detention min) | 72,730 | 46,673 | −36% |
+| Corridor adherence | 38% | 73% | +92% |
+| Unplanned failures | 73 | 61 | −16% |
+| High-criticality unplanned failures | 24 | 16 | −33% |
+| Overdue task-days | 3,903 | 3,965 | **+2% worse** |
 
-Both plans complete the same number of tasks (105 each). The gain is not in
-doing more — it is in doing the *right* work, in *fewer* closures, at *cheaper* hours.
+Solver: weekly `FEASIBLE` at a **1.1% optimality gap**, monthly at **5.8%**, both in
+240 s. Close enough to optimal that the comparison is about the formulation, not about
+how long the solver was left running.
+
+The gain is not in doing more work. It is in doing the *right* work, in *fewer* closures,
+at *cheaper* hours.
 
 **The overdue regression is real and is not a bug.** The optimiser ranks by criticality,
 not by age, so it will pass over a long-overdue low-consequence job in favour of a newer
@@ -84,12 +94,11 @@ a tamping machine to 11:15 on the 24th four weeks out — they commit it to *a c
 the 24th*. The monthly solve therefore drops the fine time grid and allocates the mandated
 corridor itself, one slot per section, line and day.
 
-Over 30 days on this section: **95 of 420 corridor slots**
-allocated, **108 tasks placed**, backlog burning down
-**190 → 92**.
+Over 30 days on this division: **201 of 900 corridor slots** allocated, **237 tasks
+placed**, backlog burning down **577 → 363**.
 
-**80 tasks cannot fit a corridor at all** — their P90 exceeds
-180 minutes. On the real railway these go up as extended or mega blocks
+**311 tasks cannot fit a corridor at all** — their P90 plus the setup and restoration
+their withdrawal needs exceeds 180 minutes. On the real railway these go up as extended or mega blocks
 negotiated separately with operations, and the monthly plan names them rather than quietly
 leaving them unscheduled. That list is itself an output: it is the division's extended-block
 demand for the month.
@@ -103,8 +112,8 @@ In the UI, **Week / Month** switches horizons; `?view=month` links straight to i
 ```
 samanvay/
   domain.py          Unified Task Model — every task keyed by (section, line, chainage)
-  network.py         Ahmedabad–Vadodara topology, working timetable, goods forecast,
-                     mandated corridor windows
+  network.py         Danapur division topology (main line + 8 converging branches),
+                     coaching timetable read from data/, goods forecast, corridor windows
   generator.py       Synthetic TMS / SMMS / TDMS feeds + historical blocks and defects
   models/
     traffic.py       Traffic cost surface; per-section consequence weighting
@@ -230,7 +239,7 @@ Neither raises an exception. Both are covered by tests and by the mutation check
 
 ## Approval workflow and audit trail
 
-SAMANVAY produces the plan. It does not sanction it — and `samanvay/governance/` is where
+TRACKSEN produces the plan. It does not sanction it — and `samanvay/governance/` is where
 that stops being a sentence in a README and becomes a rule the code enforces.
 
 The route a block demand actually travels:
@@ -285,7 +294,7 @@ and leaving the seam visible is better than implying an identity system that is 
 ## Tests
 
 ```bash
-python -m pytest              # 118 tests, ~80 s
+python -m pytest              # 152 tests, ~40 s
 python scripts/mutation_check.py
 ```
 
@@ -324,12 +333,17 @@ straight through. It now asserts an independent floor.
   those rows are excluded rather than labelled zero. That biases the sample toward
   assets left alone longer, and is documented in `_label_within_horizon`. Cox uses the
   full sample, censoring included — which is why it is there.
-- **The optimality gap is time-limit dependent**, and the figures above come from a 90 s
-  solve. Measured on this instance: 20 s -> 25.1% gap, 90 s -> 7.4%. Reported results are
-  a floor, not a ceiling. The gap prints on every run, so check it before quoting.
-- **Consequence weighting is weak on this topology** (0.87–0.98 across sections). Most
-  traffic on a single trunk corridor runs through, so exposure genuinely is similar
-  section to section. The term will discriminate properly across a division with branch
+- **The optimality gap is time-limit dependent**, and the figures above come from a 240 s
+  solve: **weekly 1.1%, monthly 5.8%**. Both were far worse until the model stopped
+  offering the solver work it could never place — a task whose P90 plus its withdrawal
+  overruns the corridor was being handed over as though it fitted, and its criticality
+  inflated the objective's upper bound. The gap prints on every run; check it before
+  quoting.
+- **Consequence weighting now discriminates** (0.698–1.000 across the planned road).
+  On the earlier single-corridor topology it did not (0.87–0.98) because all traffic ran
+  through. On a division it separates properly: the Patna throat sections carry the most
+  exposure, Kiul–Jhajha the least, which is what a P.Way officer would tell you. The term
+  behaves as intended across a division with branch
   lines and mixed route classifications.
 - Cancellation risk is near-irreducible on this data (see above). It ranks fragile
   slots against robust ones and must not be read as a per-block prediction.
@@ -364,7 +378,7 @@ because nothing off the shelf draws a train graph.
 
 - **Time–distance chart.** Time across, chainage down, stations on the left gutter.
   Train paths are the diagonals, blocks are rectangles, the mandated corridor is the
-  shaded band. `Both` overlays UP and DN on half-bands; `SAMANVAY / Baseline` swaps the
+  shaded band. `Both` overlays UP and DN on half-bands; `TRACKSEN / Baseline` swaps the
   plan underneath the same traffic, which is the comparison worth showing.
 - **Unified priority queue.** All three departments in one ranking, each row carrying
   its SHAP attribution and its demanded-vs-P90 duration.
@@ -426,5 +440,19 @@ nightly re-solve.
 
 ## Not built yet
 
-Rolling-horizon re-solve with warm start (the hook exists in `BlockOptimiser.solve`,
-untested). Monthly corridor-slot horizon. FastAPI service. Held-out model validation.
+See [AUDIT.md](AUDIT.md) for the full list with severities. The short version:
+
+- **Real execution feedback.** Nothing ingests what actually happened — actual durations,
+  overruns, cancellations, failures — so the models cannot be monitored for drift or
+  retrained against outcomes.
+- **Authentication.** `_actor(name, role)` takes the caller's word for their role. The
+  workflow rules are real; the identity behind them is not. Production blocker.
+- **Persistence beyond the audit log.** Approvals replay from the log on restart, but the
+  plan *content* they approved is not stored — only the decision is.
+- **Published timetable times.** The coaching timetable carries real train numbers, names
+  and routes, but approximate times. `scripts/import_railpull.py` converts a real NTES
+  export into the same schema and is verified against railpull's exporter, but the crawl
+  has not been run.
+- **Branch block planning.** `PLANNED_ROUTES = ["MAIN"]`; the eight branches are modelled
+  for the traffic they put onto the main line and the junction throats they share with
+  it, not as places work is scheduled.

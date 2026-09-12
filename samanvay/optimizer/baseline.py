@@ -60,8 +60,11 @@ def schedule_fcfs(
             if not _eligible(task, c):
                 continue
 
-            used_min = task.p90_duration_min or task.demanded_duration_min
-            start, end = c.start_min, c.start_min + used_min
+            # Reserve precisely the same candidate possession the CP-SAT plan uses.
+            # Using only the task's P90 here made the FCFS baseline able to pack work
+            # into time that the optimiser had correctly held unavailable, so the
+            # comparison was not evaluating like-for-like schedules.
+            start, end = c.start_min, c.end_min
 
             # Line exclusivity.
             key = (c.section_id, c.line)
@@ -87,7 +90,7 @@ def schedule_fcfs(
                 )
             dept_day_count[dkey] = dept_day_count.get(dkey, 0) + 1
 
-            cost = traffic.cost_of_block(c.section_id, c.line, start, end)
+            cost = c.traffic_cost
             blocks.append(
                 ScheduledBlock(
                     id=f"F{c.id}-{task.id}",

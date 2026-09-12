@@ -9,9 +9,19 @@ from __future__ import annotations
 
 from typing import Any
 
-from .domain import Line, MaintenanceTask, Plan
+from .domain import Line, MaintenanceTask, Plan, TrainClass
 from .evaluate import PlanMetrics
-from .network import SECTIONS, STATIONS
+from .network import (
+    BOOKED_SERVICES,
+    TIMETABLE_FILE,
+    TIMETABLE_IS_IMPORTED,
+    BRANCHES,
+    JUNCTIONS,
+    PLANNED_ROUTES,
+    ROUTES,
+    SECTIONS,
+    STATIONS,
+)
 from .optimizer.cpsat import (
     MACHINE_POSITIONING_MIN,
     OptimiserWeights,
@@ -21,8 +31,38 @@ from .optimizer.cpsat import (
 SECTION_INDEX = {s.id: i for i, s in enumerate(SECTIONS)}
 CLASS_INDEX = {"PREMIER": 0, "MAIL_EXP": 1, "PASSENGER": 2, "GOODS": 3}
 
-# Mirrored to the client so it prices windows exactly as the solver did.
-DETENTION_WEIGHTS = [4.0, 2.5, 1.5, 1.0]
+# How each train in the payload came to be there. The UI shows this on the path tooltip
+# so nobody reads a forecast goods path as a booked one, or a stand-in MEMU number as a
+# verified one. See data/timetable_danapur.csv for what the two coaching values mean.
+PROVENANCE_INDEX = {"named": 0, "representative": 1, "forecast": 2, "imported": 3}
+SERVICE_PROVENANCE = {s.train_no: s.provenance for s in BOOKED_SERVICES}
+
+
+def dump_trains(paths: list) -> tuple[list[list], dict[str, int]]:
+    """The roster behind the path array.
+
+    A path is one section occupation; a train has dozens of them. Carrying the number and
+    name on every path would be most of plan.json, so identity is interned here and each
+    path keeps an index into this list.
+    """
+    index: dict[str, int] = {}
+    roster: list[list] = []
+    for p in paths:
+        if p.train_no in index:
+            continue
+        index[p.train_no] = len(roster)
+        roster.append([
+            p.train_no,
+            p.train_name,
+            PROVENANCE_INDEX[SERVICE_PROVENANCE.get(p.train_no, "forecast")],
+        ])
+    return roster, index
+
+# Mirrored to the client so it prices windows exactly as the solver did. Derived from
+# the enum rather than written out: this list was once a hand-kept copy, and it silently
+# went stale the moment the premier weight changed, leaving what-if pricing the client
+# showed disagreeing with what the solver had actually optimised.
+DETENTION_WEIGHTS = [TrainClass(c).detention_weight for c in CLASS_INDEX]
 REGULATION_OVERHEAD_MIN = 10
 
 
@@ -92,6 +132,7 @@ def plan_payload(
     monthly: Any = None,
     validation: dict | None = None,
 ) -> dict[str, Any]:
+    train_roster, train_index = dump_trains(paths)
     return {
         "meta": {
             "horizon_days": horizon_days,
@@ -104,10 +145,41 @@ def plan_payload(
         "model_checks": model_checks,
         "validation": validation,
         "metrics": {k: v.__dict__ for k, v in metrics.items()},
-        "stations": [{"code": s.code, "name": s.name, "km": s.km} for s in STATIONS],
+        "stations": [
+            {"code": s.code, "name": s.name, "km": s.km,
+             "junction": JUNCTIONS.get(s.code)}
+            for s in STATIONS
+        ],
+        "branches": [
+            {"junction": b.junction, "name": b.name, "side": b.side, "note": b.note,
+             "modelled": b.modelled}
+            for b in BRANCHES
+        ],
+        # Routes blocks are planned on. The rest are modelled for the traffic they put
+        # onto the planned road and the junction throats they share with it.
+        "plannedRoutes": list(PLANNED_ROUTES),
+        # Where the coaching timetable came from. The UI must not describe imported
+        # times as approximate, nor approximate times as booked.
+        "timetable": {
+            "file": TIMETABLE_FILE.name,
+            "imported": TIMETABLE_IS_IMPORTED,
+            "services": len(BOOKED_SERVICES),
+        },
+        "routes": [
+            {
+                "id": r.id, "name": r.name, "lengthKm": r.length_km,
+                "planned": r.id in PLANNED_ROUTES,
+                "stations": [
+                    {"code": st.code, "name": st.name, "km": st.km,
+                     "junction": JUNCTIONS.get(st.code)}
+                    for st in r.stations
+                ],
+            }
+            for r in ROUTES
+        ],
         "sections": [
             {"id": s.id, "a": s.from_station, "b": s.to_station,
-             "km0": s.km_start, "km1": s.km_end}
+             "km0": s.km_start, "km1": s.km_end, "route": s.route}
             for s in SECTIONS
         ],
         "corridors": [
@@ -118,11 +190,13 @@ def plan_payload(
         "regulationOverheadMin": REGULATION_OVERHEAD_MIN,
         "maxBlocksPerDeptPerDay": weights.max_blocks_per_dept_per_day,
         "machinePositioningMin": MACHINE_POSITIONING_MIN,
-        # Compact: [section, line(0=UP,1=DN), class, enter, exit, probability]
+        # [train_no, name, provenance(0=named,1=representative,2=forecast)]
+        "trains": train_roster,
+        # Compact: [section, line(0=UP,1=DN), class, enter, exit, probability, train]
         "paths": [
             [SECTION_INDEX[p.section_id], 0 if p.line is Line.UP else 1,
              CLASS_INDEX[p.train_class.value], p.enter_min, p.exit_min,
-             round(p.probability, 2)]
+             round(p.probability, 2), train_index[p.train_no]]
             for p in paths
         ],
         "blocks": dump_blocks(plan),

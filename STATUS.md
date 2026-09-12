@@ -1,8 +1,11 @@
-# SAMANVAY — Build Status
+# TRACKSEN — Build Status
 
 *Audited against the repository, not from memory. Every figure below is reproducible —
-see "Check these claims yourself". Last updated 11 September 2026.*
-**~5,408 lines Python · ~2,228 lines TypeScript/CSS · ~1,375 lines of tests · 118 tests passing.**
+see "Check these claims yourself". Last updated 12 September 2026.*
+**~6,800 lines Python · ~6,100 lines TypeScript/CSS · ~1,830 lines of tests · 153 tests passing.**
+
+> This document says what is **built**. [AUDIT.md](AUDIT.md) says what is **broken or
+> unfinished**, with severities. Read that one before quoting a number off a screen.
 
 ---
 
@@ -14,7 +17,7 @@ A single percentage would be misleading, so here are the three that matter.
 |---|---:|---|
 | **Demo / prototype for the finals** | **~95%** | Runs end to end, validated, tested, UI a judge can drive |
 | **The problem statement's four stated requirements** | **~95%** | All four met, plus the governance the PS implies |
-| **A system that could be piloted on a division** | **~55%** | Connectors, approvals and audit exist; no persistence, no real identity |
+| **A system that could be piloted on a division** | **~55%** | Connectors, approvals and audit exist; no persistence, no real identity, approximate timetable |
 
 **If someone asks one number, say ~95%** — that is the honest answer against what
 PS 26027 actually asked for, and it is defensible line by line below.
@@ -68,22 +71,21 @@ one constraint (≤1 task per department per block) plus an objective bonus; pla
 staff caps, night-work rules, corridor policy, statutory deadlines; FCFS baseline under
 identical physical constraints; pinned placements and re-solve.
 
-Measured: risk retired per block-hour **15.13→28.12 (+86%)**,
-blocks **−22%**, corridor adherence **20%→61%**,
-high-criticality failures **24→20**.
+Measured on the Danapur division, 7 days, 600 tasks: risk retired per block-hour
+**8.5→19.4 (+128%)**, blocks **−23%**, corridor adherence **38%→73%**,
+traffic cost **−36%**, high-criticality unplanned failures **24→16**.
 
 **Not done**
-- Optimality gap is time-dependent: **25.1% at 20 s, 7.4% at 90 s**. Not tuned; no ALNS fallback.
+- Optimality gap at 240 s: **weekly 1.1%, monthly 5.8%** — both near optimal. Not tuned
+  further; no ALNS fallback.
 - Rolling nightly re-solve against realised outcomes does not exist.
 - No sensitivity analysis across weight settings.
 
 ### 4. Weekly *and* monthly horizons — **85%**
 
 **Done** — weekly at 15-minute granularity; monthly at corridor-slot granularity
-(93/420 slots allocated over 30 days, backlog
-187 → 93). Work too long for a corridor
-(81 tasks) is surfaced as an extended-block demand list rather than
-silently dropped.
+(201/900 slots allocated over 30 days, backlog 577 → 363). Work too long for a corridor
+(311 tasks) is surfaced as an extended-block demand list rather than silently dropped.
 
 **Not done** — the two horizons are solved independently. A proper rolling scheme would nest
 the week inside the month's allocation and re-solve nightly.
@@ -119,7 +121,7 @@ the divisional directory. And there is no approvals UI; the workflow is API-only
 | Session, pinning, re-solve | ✅ | `session.py`, `scripts/serve.py` |
 | Held-out validation | ✅ | `validation.py`, `scripts/validate.py` |
 | **Approval workflow + audit trail** | ✅ | `governance/workflow.py`, `governance/audit.py` |
-| **Test suite (118 tests)** | ✅ | `tests/`, `scripts/mutation_check.py` |
+| **Test suite (152 tests)** | ✅ | `tests/`, `scripts/mutation_check.py` |
 | Time–distance chart, month view | ✅ | `web/app/components/` |
 | What-if simulator | ✅ | `web/app/components/WhatIfPanel.tsx`, `lib/whatif.ts` |
 | **Persistence** | ❌ | — |
@@ -128,7 +130,7 @@ the divisional directory. And there is no approvals UI; the workflow is API-only
 
 ### On the tests
 
-118 tests, ~80 s. They cover governance (only the DRM sanctions, heads concur only
+152 tests, ~40 s. They cover governance (only the DRM sanctions, heads concur only
 for their own department, the sanction gate, tamper detection on the audit chain),
 ingestion (round-trip fidelity, metres→km conversion,
 the inverted SMMS priority scale, degradation, read-only discipline, rejection by name),
@@ -187,10 +189,10 @@ straight through. It now asserts an independent floor.
 Nothing above should be taken on trust. Every number in this document comes from one of:
 
 ```bash
-python -m pytest                    # 118 tests, ~80 s
+python -m pytest                    # 152 tests, ~40 s
 python scripts/mutation_check.py    # 11/11 — proves the tests can fail
 python scripts/validate.py          # held-out model performance, 5-fold
-python scripts/run_pipeline.py --days 7 --tasks 200 --time-limit 90 --monthly --validate
+python scripts/run_pipeline.py --days 7 --tasks 600 --time-limit 240 --monthly --validate
 python scripts/ingest.py            # native schemas -> UTM -> plan
 python scripts/serve.py             # then POST the approval route
 ```
@@ -204,13 +206,18 @@ right and this file is stale.
 ## Disclose these before someone finds them
 
 - **No live railway data.** Everything synthetic, modelled on published intervals.
-- **Optimality gap depends on solver time** (25% at 20 s, 7% at 90 s) — figures are a floor.
+- **Optimality gap at 240 s: weekly 1.1%, monthly 5.8%.** Both near optimal.
 - **Overdue task-days get ~2% worse**, because criticality outranks age. A tunable trade-off.
 - **Cancellation risk is near the information ceiling** — a weak prior, not a prediction.
-- **Consequence weighting barely discriminates** (0.87–0.98) on a single trunk corridor.
+- **Consequence weighting discriminates properly now** (0.698–1.000 across the planned
+  road) — it did not on the earlier single-corridor topology.
+- **The coaching timetable carries real trains but approximate times.** 212 services with
+  real numbers, names and routes; the times and running days are plausible, not booked.
+  `scripts/import_railpull.py` swaps in real NTES data; the crawl has not been run.
+- **Only the main line is planned** — 15 of 42 sections. The eight branches are modelled
+  for traffic and junction contention, not as places work is scheduled.
 - **What-if deferral risk uses an exponential-hazard approximation** of the Cox model.
-- **Fixed seed** — the service always plans the same 7-day,
-  200-task world.
+- **Fixed seed** — the service always plans the same 7-day, 200-task world.
 
 ---
 
@@ -222,8 +229,9 @@ cross-departmental clubbing across two horizons, an approval route that refuses 
 reaching past their authority, and a UI a planner can argue with.
 
 What remains is narrower than it was and mostly unglamorous: storage, a real identity
-binding, an approvals screen, and pointing the connectors — which exist and are tested —
-at something other than a mock.
+binding, pointing the connectors — which exist and are tested — at something other than a
+mock, and running the NTES crawl so the timetable carries booked times rather than
+plausible ones. [AUDIT.md](AUDIT.md) lists all of it with severities.
 
 **The honest framing for a judge.** Every mechanism the problem statement asks for exists
 and is tested. Three of them are wired to stand-ins rather than the real thing: the source

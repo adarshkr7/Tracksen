@@ -1,7 +1,7 @@
-# SAMANVAY — Implementation Deep-Dive Speech
-Hello
+# TRACKSEN — Implementation Deep-Dive Speech
+
 **Length:** ~1,150 words ≈ **6½–7 minutes** at a deliberate technical pace.
-**Position:** follows the high-level pitch. Assumes the audience already knows *what* SAMANVAY does.
+**Position:** follows the high-level pitch. Assumes the audience already knows *what* TRACKSEN does.
 **To cut to 4 minutes:** drop movement 4 (stability/learning) and compress movement 6 to its last two sentences.
 **Delivery cues** are in brackets — strip them before printing.
 
@@ -9,7 +9,7 @@ Hello
 
 ### [Bridge — 0:20]
 
-You've heard what SAMANVAY does. Let me take you underneath it, and show you how it actually works — because the idea is easy to say, and the engineering is where it either holds or falls apart.
+You've heard what TRACKSEN does. Let me take you underneath it, and show you how it actually works — because the idea is easy to say, and the engineering is where it either holds or falls apart.
 
 ### 1. Integration — the unglamorous foundation [→ 1:20]
 
@@ -59,7 +59,7 @@ And the loop closes. Every block that runs returns its actual start, actual end,
 
 Now the most important sentence in this presentation. [*pause*]
 
-**SAMANVAY never grants a block.**
+**TRACKSEN never grants a block.**
 
 It produces a recommended plan. It shows the time–distance chart, the ranked queue, and the reasoning. Departments concur. The competent authority sanctions — exactly as they do today, under the same rules, with the same accountability.
 
@@ -73,6 +73,6 @@ And to be straight with you: we do not have live railway data. What we have is a
 
 ### Close [→ 6:40]
 
-So that's SAMANVAY underneath. One key that puts three departments into the same coordinate system. Four models that say what matters and what it costs. And a solver that finds the coordination no single department could see on its own.
+So that's TRACKSEN underneath. One key that puts three departments into the same coordinate system. Four models that say what matters and what it costs. And a solver that finds the coordination no single department could see on its own.
 
 [*slow, land it*] We are not automating the decision. We are making sure the person who makes it can finally see the whole section.

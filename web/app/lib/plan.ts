@@ -3,8 +3,27 @@
 export type Dept = "ENGG" | "S&T" | "TRD";
 export type LineName = "UP" | "DN";
 
-export interface Station { code: string; name: string; km: number }
-export interface Section { id: string; a: string; b: string; km0: number; km1: number }
+export interface Station {
+  code: string; name: string; km: number;
+  /** Set when the station is a junction; describes what joins there. */
+  junction?: string | null;
+}
+
+/** A line joining or leaving the corridor at a junction. */
+export interface Branch {
+  junction: string; name: string; side: "N" | "S" | string; note: string;
+  modelled?: boolean;
+}
+export interface Section {
+  id: string; a: string; b: string; km0: number; km1: number;
+  /** Which route the section belongs to; chainage is measured per route. */
+  route?: string;
+}
+
+/** A route: the main line, or a modelled branch with its own chainage origin. */
+export interface RouteInfo {
+  id: string; name: string; lengthKm: number; stations: Station[];
+}
 
 export interface Block {
   id: string;
@@ -65,8 +84,43 @@ export interface Metrics {
   critical_unplanned_failures: number;
 }
 
-/** [sectionIdx, line(0=UP,1=DN), classIdx, enterMin, exitMin, probability] */
-export type PathRow = [number, number, number, number, number, number];
+/** [sectionIdx, line(0=UP,1=DN), classIdx, enterMin, exitMin, probability, trainIdx] */
+export type PathRow = [number, number, number, number, number, number, number];
+
+/**
+ * [trainNo, name, provenance] — the roster the paths index into.
+ *
+ * Identity is interned rather than repeated on every path: one train occupies dozens of
+ * sections, and carrying its number and name on each would be most of plan.json.
+ */
+export type TrainRow = [string, string, number];
+
+/**
+ * How a train came to be in the plan. Shown on the path tooltip, because the three are
+ * not equally trustworthy and the chart should not let a forecast read as a booking.
+ */
+export const PROVENANCE = [
+  {
+    label: "Booked service",
+    note: "Real train; times approximate, not from the WTT",
+    color: "var(--ok)",
+  },
+  {
+    label: "Representative service",
+    note: "Stands in for stopping traffic; number not individually verified",
+    color: "var(--info)",
+  },
+  {
+    label: "Forecast path",
+    note: "Goods is not booked — this path carries the chance it runs at all",
+    color: "var(--ink-3)",
+  },
+  {
+    label: "Imported from NTES",
+    note: "Number, time and running days as published — not an estimate",
+    color: "var(--ok)",
+  },
+] as const;
 /** [sectionIdx, day, startMin, endMin] */
 export type CorridorRow = [number, number, number, number];
 
@@ -115,9 +169,14 @@ export interface PlanData {
   validation: Validation | null;
   metrics: { baseline: Metrics; optimised: Metrics };
   stations: Station[];
+  branches?: Branch[];
+  routes?: RouteInfo[];
   sections: Section[];
   corridors: CorridorRow[];
   trainClasses: string[];
+  /** Which coaching timetable is in force, and whether its times are published. */
+  timetable?: { file: string; imported: boolean; services: number };
+  trains: TrainRow[];
   paths: PathRow[];
   blocks: Block[];
   baselineBlocks: Block[];
@@ -143,6 +202,16 @@ export const DEPT_FULL: Record<Dept, string> = {
   TRD: "Traction Distribution",
 };
 
+/** Short form for dense tables and chart legends. */
+export const DEPT_NAME: Record<Dept, string> = {
+  ENGG: "Engineering", "S&T": "S&T", TRD: "Traction",
+};
+
+/** The block each department takes when it occupies a section. */
+export const DEPT_BLOCK: Record<Dept, string> = {
+  ENGG: "Traffic block", "S&T": "Disconnection", TRD: "Power block",
+};
+
 export const DEPT_SYSTEM: Record<Dept, string> = {
   ENGG: "TMS",
   "S&T": "SMMS",
@@ -150,10 +219,28 @@ export const DEPT_SYSTEM: Record<Dept, string> = {
 };
 
 /** Muted enough that train paths stay behind the blocks, distinct enough to read. */
-export const CLASS_COLOR = ["var(--accent)", "#6f6e69", "#9b988f", "#c2bfb4"];
-export const CLASS_WIDTH = [1.4, 1.0, 0.8, 0.6];
+export const CLASS_COLOR = ["var(--rail)", "#42566b", "#8496a8", "#b9c4cf"];
+
+/**
+ * Hairlines. Around 250 trains cross the main line on a working day, and at any width
+ * that reads comfortably on its own they merge into a wash in the busy hours — you
+ * cannot see a block through them, let alone pick one out. Drawn thin, the chart stays
+ * legible and an individual path is recovered by hovering it instead.
+ */
+export const CLASS_WIDTH = [0.9, 0.65, 0.5, 0.35];
+export const CLASS_LABEL = ["Premier", "Mail / Express", "Passenger", "Goods"];
 
 export const MIN_PER_DAY = 1440;
+
+/** Roles the approval route recognises; the backend enforces what each may do. */
+export const ROLES = [
+  "JE", "Sr.DEN", "Sr.DSTE", "Sr.DEE/TrD", "Sr.DOM", "DRM", "Viewer",
+] as const;
+
+/** Which department each head may concur for — mirrors CONCURRENCE_AUTHORITY. */
+export const ROLE_DEPARTMENT: Record<string, Dept | undefined> = {
+  "Sr.DEN": "ENGG", "Sr.DSTE": "S&T", "Sr.DEE/TrD": "TRD",
+};
 
 export function hhmm(minuteOfDay: number): string {
   const m = ((minuteOfDay % MIN_PER_DAY) + MIN_PER_DAY) % MIN_PER_DAY;

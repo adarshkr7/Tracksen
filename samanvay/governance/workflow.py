@@ -7,7 +7,7 @@ The route a real block demand travels, and the one modelled here:
             -> Sr.DOM clears the traffic impact
                 -> DRM sanctions
 
-SAMANVAY produces the plan. It does not sanction it, and this module is where that
+TRACKSEN produces the plan. It does not sanction it, and this module is where that
 stops being a sentence in a README and becomes a rule the code enforces:
 
   * **Only the DRM can sanction.** Every other role attempting it raises.
@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from ..domain import Department
-from .audit import Action, AuditLog
+from .audit import Action, AuditEntry, AuditLog
 
 
 class Role(str, Enum):
@@ -103,6 +103,10 @@ class PlanApproval:
     state: PlanState = PlanState.DRAFT
     concurrences: dict[Department, Concurrence] = field(default_factory=dict)
     operations_cleared_by: str | None = None
+    # Fingerprint of the plan content this approval refers to. Set on create, replaced on
+    # every modify, and recorded again at sanction -- so what was signed is recoverable.
+    plan_hash: str | None = None
+    sanctioned_hash: str | None = None
     sanctioned_by: str | None = None
     sanctioned_at: str | None = None
     superseded_by: str | None = None
@@ -153,6 +157,125 @@ class ApprovalWorkflow:
     def __init__(self, log: AuditLog):
         self.log = log
         self.plans: dict[str, PlanApproval] = {}
+        self._restore_from_audit()
+
+    def _restore_from_audit(self) -> None:
+        """Rebuild the current workflow state from the durable audit history.
+
+        The audit log already survives a service restart, but until this replay existed
+        the in-memory approval state did not.  A restarted service could therefore
+        verify a sanction while refusing to find the sanctioned plan it described.
+        Replay is deliberately side-effect free: it never calls transition methods and
+        never appends a second copy of a historic event.
+        """
+        chain = self.log.verify()
+        if not chain.intact:
+            raise WorkflowError(f"cannot restore workflow: {chain}")
+
+        for entry in self.log:
+            self._apply_audit_entry(entry)
+
+    def _restore_plan(self, entry: AuditEntry) -> PlanApproval:
+        try:
+            return self.plans[entry.plan_id]
+        except KeyError as exc:
+            raise WorkflowError(
+                f"cannot restore audit entry {entry.seq}: unknown plan {entry.plan_id}"
+            ) from exc
+
+    def _apply_audit_entry(self, entry: AuditEntry) -> None:
+        """Apply one previously verified entry without performing authorization checks."""
+        try:
+            action = Action(entry.action)
+        except ValueError as exc:
+            raise WorkflowError(
+                f"cannot restore audit entry {entry.seq}: unknown action {entry.action!r}"
+            ) from exc
+
+        # Denied attempts are important evidence, but never changed plan state.
+        if action is Action.DENIED:
+            return
+
+        if action is Action.CREATE:
+            if entry.plan_id in self.plans:
+                raise WorkflowError(
+                    f"cannot restore audit entry {entry.seq}: duplicate plan {entry.plan_id}"
+                )
+            try:
+                departments = {Department(d) for d in entry.detail["departments"]}
+            except (KeyError, TypeError, ValueError) as exc:
+                raise WorkflowError(
+                    f"cannot restore audit entry {entry.seq}: invalid CREATE departments"
+                ) from exc
+            self.plans[entry.plan_id] = PlanApproval(
+                plan_id=entry.plan_id, departments=departments,
+                plan_hash=entry.detail.get("plan_hash") or None,
+            )
+            return
+
+        plan = self._restore_plan(entry)
+
+        if action is Action.MODIFY:
+            plan.concurrences.clear()
+            plan.operations_cleared_by = None
+            plan.state = PlanState.DRAFT
+            plan.revision = int(entry.detail.get("revision", plan.revision + 1))
+            if entry.detail.get("plan_hash"):
+                plan.plan_hash = entry.detail["plan_hash"]
+            return
+
+        if action in (Action.CONCUR, Action.WITHHOLD):
+            try:
+                department = Department(entry.detail["department"])
+            except (KeyError, ValueError) as exc:
+                raise WorkflowError(
+                    f"cannot restore audit entry {entry.seq}: invalid concurrence department"
+                ) from exc
+            granted = action is Action.CONCUR
+            plan.concurrences[department] = Concurrence(
+                department=department,
+                granted=granted,
+                actor=entry.actor,
+                role=entry.role,
+                timestamp=entry.timestamp,
+                remarks=str(entry.detail.get("remarks", "")),
+            )
+            plan.state = (
+                PlanState.OPERATIONS_REVIEW if plan.fully_concurred
+                else PlanState.UNDER_CONCURRENCE
+            )
+            return
+
+        if action is Action.CLEAR:
+            plan.operations_cleared_by = entry.actor
+            plan.state = PlanState.OPERATIONS_REVIEW
+            return
+
+        if action is Action.SANCTION:
+            plan.state = PlanState.SANCTIONED
+            plan.sanctioned_by = entry.actor
+            plan.sanctioned_at = entry.timestamp
+            plan.revision = int(entry.detail.get("revision", plan.revision))
+            plan.sanctioned_hash = entry.detail.get("plan_hash") or plan.plan_hash
+            return
+
+        if action is Action.RETURN:
+            plan.state = PlanState.RETURNED
+            return
+
+        if action is Action.SUPERSEDE:
+            plan.state = PlanState.SUPERSEDED
+            plan.superseded_by = str(entry.detail.get("superseded_by", "")) or None
+            return
+
+        if action is Action.CANCEL:
+            plan.state = PlanState.CANCELLED
+            return
+
+        # RESOLVE is a valid historical marker, but the present service currently
+        # records re-solves as MODIFY. It carries no state of its own.
+        if action is Action.RESOLVE:
+            return
 
     # ------------------------------------------------------------------ #
 
@@ -181,16 +304,19 @@ class ApprovalWorkflow:
     # ------------------------------------------------------------------ #
 
     def create(self, plan_id: str, departments: set[Department], actor: Actor,
-               **detail) -> PlanApproval:
+               plan_hash: str | None = None, **detail) -> PlanApproval:
         if plan_id in self.plans:
             raise WorkflowError(f"plan {plan_id} already exists")
-        approval = PlanApproval(plan_id=plan_id, departments=set(departments))
+        approval = PlanApproval(plan_id=plan_id, departments=set(departments),
+                                plan_hash=plan_hash)
         self.plans[plan_id] = approval
         self._record(actor, Action.CREATE, plan_id,
-                     departments=sorted(d.value for d in departments), **detail)
+                     departments=sorted(d.value for d in departments),
+                     plan_hash=plan_hash, **detail)
         return approval
 
-    def modify(self, plan_id: str, actor: Actor, *, note: str = "", **detail) -> PlanApproval:
+    def modify(self, plan_id: str, actor: Actor, *, note: str = "",
+               plan_hash: str | None = None, **detail) -> PlanApproval:
         """A human changed the plan. Illegal once sanctioned -- supersede instead."""
         a = self._require(plan_id)
         if a.state is PlanState.SANCTIONED:
@@ -208,8 +334,10 @@ class ApprovalWorkflow:
         a.operations_cleared_by = None
         a.state = PlanState.DRAFT
         a.revision += 1
+        if plan_hash is not None:
+            a.plan_hash = plan_hash
 
-        self._record(actor, Action.MODIFY, plan_id, note=note,
+        self._record(actor, Action.MODIFY, plan_id, note=note, plan_hash=a.plan_hash,
                      revision=a.revision, invalidated_concurrences=invalidated, **detail)
         return a
 
@@ -266,8 +394,11 @@ class ApprovalWorkflow:
         a.state = PlanState.SANCTIONED
         a.sanctioned_by = actor.name
         a.sanctioned_at = dt.datetime.now(dt.timezone.utc).isoformat()
+        # The hash goes into the sanction entry itself, not just the plan's state: this
+        # is the line of the trail that says what the DRM actually put their name to.
+        a.sanctioned_hash = a.plan_hash
         self._record(actor, Action.SANCTION, plan_id, remarks=remarks,
-                     revision=a.revision)
+                     revision=a.revision, plan_hash=a.plan_hash)
         return a
 
     def return_for_revision(self, plan_id: str, actor: Actor, remarks: str) -> PlanApproval:
@@ -316,6 +447,8 @@ class ApprovalWorkflow:
                 for d, c in a.concurrences.items()
             },
             "operations_cleared_by": a.operations_cleared_by,
+            "plan_hash": a.plan_hash,
+            "sanctioned_hash": a.sanctioned_hash,
             "sanctioned_by": a.sanctioned_by,
             "sanctioned_at": a.sanctioned_at,
             "ready_for_sanction": a.ready_for_sanction,

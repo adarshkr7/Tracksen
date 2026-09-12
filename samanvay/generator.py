@@ -29,7 +29,15 @@ from .domain import (
     MachineType,
     MaintenanceTask,
 )
-from .network import SECTIONS, section_for_chainage
+from .network import (
+    JUNCTIONS,
+    MAIN,
+    PLANNED_ROUTES,
+    ROUTES,
+    junction_km,
+    lines_of,
+    section_for_chainage,
+)
 
 # --------------------------------------------------------------------------- #
 # Work catalogue
@@ -117,36 +125,84 @@ DUE_INTERVAL_DAYS = {
 # Assets
 # --------------------------------------------------------------------------- #
 
-def generate_assets(rng: random.Random, per_km: float = 1.6) -> list[Asset]:
-    """Populate the road with assets at plausible densities."""
+# Within this distance of a junction, the asset mix changes: turnouts and point
+# machines cluster in the throat, and there are far more of them per kilometre.
+JUNCTION_RADIUS_KM = 2.5
+JUNCTION_DENSITY = 3.0
+
+
+# Assets per kilometre of plain line. This is a notional density -- the ten asset classes
+# aggregate what a real register itemises -- but it has to be high enough on a double-line
+# trunk that the defect history it generates can actually train a model. It was 1.6 when
+# the estate spanned every branch as well; restricting the population to the main line
+# alone halved the training set and the criticality model's rank correlation with it.
+ASSETS_PER_KM = 4.0
+
+
+def generate_assets(rng: random.Random, per_km: float = ASSETS_PER_KM) -> list[Asset]:
+    """Populate the planned road with assets at plausible densities.
+
+    Plain line is one mix; a junction throat is another. Hathidah, where the Barauni line
+    comes in over Rajendra Setu, carries several times the turnout and point-machine count
+    of open track, and those are exactly the assets that generate disconnections.
+    Modelling that is what makes the busy part of the road look busy.
+
+    Only PLANNED_ROUTES are populated. Branch assets would generate branch work, and this
+    division's demonstration plans the main line -- the branches are here for the traffic
+    they put onto it and the throats they share with it.
+    """
     assets: list[Asset] = []
     counter = 0
-    total_km = SECTIONS[-1].km_end
-
-    n = int(total_km * per_km)
     classes = list(AssetClass)
     # Track assets outnumber signalling and OHE point assets along plain line.
     weights = [22, 18, 5, 7, 9, 5, 12, 9, 8, 5]
+    # In a junction throat the mix tips hard towards turnouts and point machines.
+    junction_weights = [12, 8, 26, 24, 14, 8, 7, 4, 4, 3]
 
-    for _ in range(n):
-        km = round(rng.uniform(0.0, total_km), 3)
-        sec = section_for_chainage(km)
-        aclass = rng.choices(classes, weights=weights, k=1)[0]
-        line = rng.choice([Line.UP, Line.DN])
-        counter += 1
-        assets.append(
-            Asset(
-                id=f"A{counter:05d}",
-                asset_class=aclass,
-                section_id=sec.id,
-                line=line,
-                chainage_km=km,
-                age_years=round(rng.triangular(0.5, 38.0, 12.0), 1),
-                gmt=round(rng.uniform(18.0, 62.0), 1),
-                curvature_deg=round(max(0.0, rng.gauss(0.6, 1.1)), 2),
-                gradient_permille=round(abs(rng.gauss(0.0, 3.2)), 2),
+    for route in (r for r in ROUTES if r.id in PLANNED_ROUTES):
+        total_km = route.length_km
+        route_lines = lines_of(route.id)
+        junction_kms = [
+            junction_km(st.code, route.id)
+            for st in route.stations if st.code in JUNCTIONS
+        ]
+
+        def near_junction(km: float, js=junction_kms) -> bool:
+            return any(abs(km - j) <= JUNCTION_RADIUS_KM for j in js)
+
+        n = int(total_km * per_km)
+        extra = int(len(junction_kms) * 2 * JUNCTION_RADIUS_KM * per_km
+                    * (JUNCTION_DENSITY - 1))
+
+        for i in range(n + extra):
+            if i < n or not junction_kms:
+                km = round(rng.uniform(0.0, total_km), 3)
+            else:
+                # Top-up population, placed inside a junction throat.
+                j = rng.choice(junction_kms)
+                km = round(min(total_km, max(0.0,
+                           j + rng.uniform(-JUNCTION_RADIUS_KM, JUNCTION_RADIUS_KM))), 3)
+            sec = section_for_chainage(km, route.id)
+            aclass = rng.choices(
+                classes,
+                weights=junction_weights if near_junction(km) else weights,
+                k=1,
+            )[0]
+            line = rng.choice(route_lines)
+            counter += 1
+            assets.append(
+                Asset(
+                    id=f"A{counter:05d}",
+                    asset_class=aclass,
+                    section_id=sec.id,
+                    line=line,
+                    chainage_km=km,
+                    age_years=round(rng.triangular(0.5, 38.0, 12.0), 1),
+                    gmt=round(rng.uniform(18.0, 62.0), 1),
+                    curvature_deg=round(max(0.0, rng.gauss(0.6, 1.1)), 2),
+                    gradient_permille=round(abs(rng.gauss(0.0, 3.2)), 2),
+                )
             )
-        )
     return assets
 
 

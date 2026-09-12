@@ -1,0 +1,246 @@
+"use client";
+
+/**
+ * Shared primitives.
+ *
+ * Kept deliberately plain: flat surfaces, 1px rules, 4px corners. Colour is reserved
+ * for operational meaning — a badge is coloured because it carries a status, never
+ * because a card needed brightening.
+ */
+
+import { Band, BAND_COLOR, BAND_LABEL } from "./PlanProvider";
+import { DEPT_BLOCK, DEPT_COLOR, DEPT_NAME, DEPT_SYSTEM, Dept } from "../lib/plan";
+
+export { DEPT_BLOCK, DEPT_COLOR, DEPT_NAME, DEPT_SYSTEM };
+
+/* ------------------------------------------------------------------ */
+
+export function Card({ title, subtitle, right, children, className = "", pad = true }: {
+  title?: string; subtitle?: string; right?: React.ReactNode;
+  children: React.ReactNode; className?: string; pad?: boolean;
+}) {
+  return (
+    <section className={`card ${className}`}>
+      {title && (
+        <header className="card-head">
+          <div className="min-w-0">
+            <h2 className="sig" style={{ color: "var(--ink-2)" }}>{title}</h2>
+            {subtitle && (
+              <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--ink-3)" }}>
+                {subtitle}
+              </p>
+            )}
+          </div>
+          {right && <div className="ml-auto flex items-center gap-2">{right}</div>}
+        </header>
+      )}
+      <div className={pad ? "p-3.5" : ""}>{children}</div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+export function Metric({
+  label, value, unit, delta, hint, tone = "ink", compare,
+}: {
+  label: string; value: string; unit?: string;
+  delta?: { pct: number; better: boolean };
+  hint?: string; tone?: "ink" | "ok" | "warn" | "crit" | "rail"; compare?: string;
+}) {
+  const colour = {
+    ink: "var(--ink)", ok: "var(--ok)", warn: "var(--warn)",
+    crit: "var(--crit)", rail: "var(--rail)",
+  }[tone];
+
+  return (
+    <div className="px-3.5 py-3" style={{ background: "var(--surface)" }} title={hint}>
+      <div className="sig">{label}</div>
+      <div className="flex items-baseline gap-1.5 mt-1.5">
+        <span className="tnum font-semibold leading-none text-[22px]" style={{ color: colour }}>
+          {value}
+        </span>
+        {unit && (
+          <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>{unit}</span>
+        )}
+        {delta && Math.abs(delta.pct) >= 0.5 && (
+          <span className="tnum text-[11px] font-semibold ml-0.5"
+            style={{ color: delta.better ? "var(--ok)" : "var(--crit)" }}>
+            {delta.pct > 0 ? "▲" : "▼"} {Math.abs(delta.pct).toFixed(0)}%
+          </span>
+        )}
+      </div>
+      {compare && (
+        <div className="text-[10.5px] tnum mt-1" style={{ color: "var(--ink-3)" }}>
+          {compare}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function MetricRow({ children, cols = 4 }: {
+  children: React.ReactNode; cols?: number;
+}) {
+  // A fixed column count rather than auto-fit: auto-fit strands the last tile on its
+  // own row whenever the count does not divide evenly, which reads as a layout fault.
+  return (
+    <div
+      className="grid gap-px card overflow-hidden metric-row"
+      style={{ background: "var(--line)", ["--cols" as string]: cols }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+export function Badge({ children, color, bg, title }: {
+  children: React.ReactNode; color?: string; bg?: string; title?: string;
+}) {
+  return (
+    <span
+      title={title}
+      className="inline-flex items-center rounded-[3px] px-1.5 py-[2px]
+                 text-[10px] font-semibold tracking-[0.03em] whitespace-nowrap"
+      style={{
+        color: color ?? "var(--ink-2)",
+        background: bg ?? "var(--surface-3)",
+        border: `1px solid ${color ? `${color}33` : "transparent"}`,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+export function DeptBadge({ dept, showSystem = false }: {
+  dept: Dept; showSystem?: boolean;
+}) {
+  return (
+    <Badge color={DEPT_COLOR[dept]} bg="var(--surface-2)"
+      title={`${DEPT_NAME[dept]} — plans in ${DEPT_SYSTEM[dept]}`}>
+      {DEPT_NAME[dept]}{showSystem && ` · ${DEPT_SYSTEM[dept]}`}
+    </Badge>
+  );
+}
+
+export function PriorityBadge({ band: b }: { band: Band }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      <i className="lamp" style={{
+        background: BAND_COLOR[b],
+        boxShadow: `0 0 0 2px ${BAND_COLOR[b]}22`,
+      }} />
+      <span className="text-[11px] font-medium" style={{ color: BAND_COLOR[b] }}>
+        {BAND_LABEL[b]}
+      </span>
+    </span>
+  );
+}
+
+export function Lamp({ state, live = false, label }: {
+  state: "ok" | "warn" | "crit" | "off"; live?: boolean; label?: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      <i className={`lamp lamp-${state}${live ? " lamp-live" : ""}`} />
+      {label && <span className="text-[11px]" style={{ color: "var(--ink-2)" }}>{label}</span>}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+export function Bar({ value, max = 100, color }: {
+  value: number; max?: number; color?: string;
+}) {
+  const pct = Math.max(0, Math.min(100, (value / max) * 100));
+  return (
+    <div className="h-[4px] rounded-full w-full" style={{ background: "var(--surface-3)" }}>
+      <div className="h-full rounded-full"
+        style={{ width: `${pct}%`, background: color ?? "var(--rail)" }} />
+    </div>
+  );
+}
+
+export function Button({
+  children, onClick, variant = "default", disabled, title, type = "button",
+}: {
+  children: React.ReactNode; onClick?: () => void;
+  variant?: "default" | "primary" | "danger" | "quiet";
+  disabled?: boolean; title?: string; type?: "button" | "submit";
+}) {
+  const style: React.CSSProperties = {
+    primary: { background: "var(--rail)", color: "#fff", borderColor: "var(--rail)" },
+    danger: { background: "var(--crit-bg)", color: "var(--crit)", borderColor: "#00000018" },
+    quiet: { background: "transparent", color: "var(--ink-2)", borderColor: "transparent" },
+    default: { background: "var(--surface)", color: "var(--ink)", borderColor: "var(--line-2)" },
+  }[variant];
+
+  return (
+    <button
+      type={type} onClick={onClick} disabled={disabled} title={title}
+      className="rounded-[3px] border px-2.5 py-[5px] text-[11.5px] font-medium
+                 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      style={style}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+export function Empty({ title, children }: {
+  title: string; children?: React.ReactNode;
+}) {
+  return (
+    <div className="px-4 py-10 text-center">
+      <p className="text-[13px] font-medium" style={{ color: "var(--ink-2)" }}>{title}</p>
+      {children && (
+        <div className="text-[11.5px] mt-1.5 max-w-lg mx-auto leading-relaxed"
+          style={{ color: "var(--ink-3)" }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function PageHead({ title, subtitle, right }: {
+  title: string; subtitle?: string; right?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
+      <div>
+        <h1 className="text-[19px] font-semibold leading-none tracking-[-0.01em]"
+          style={{ color: "var(--ink)" }}>
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="text-[12px] mt-1.5" style={{ color: "var(--ink-3)" }}>{subtitle}</p>
+        )}
+      </div>
+      {right && <div className="flex items-center gap-2">{right}</div>}
+    </div>
+  );
+}
+
+/** Shown wherever a figure could be mistaken for live railway data. */
+export function DemoNote({ children }: { children?: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-[3px] px-3 py-2 text-[11px] leading-relaxed"
+      style={{ background: "var(--warn-bg)", color: "#6b3d00",
+               border: "1px solid #e8c990" }}>
+      <Badge color="var(--warn)" bg="#fff">DEMO DATA</Badge>
+      <span>
+        {children ?? (
+          <>Synthetic railway operations data modelled on published maintenance
+          intervals. TRACKSEN is not connected to live Indian Railways systems.</>
+        )}
+      </span>
+    </div>
+  );
+}

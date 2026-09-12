@@ -31,6 +31,10 @@ from samanvay.ingestion import (
 )
 from samanvay.ingestion.adapters import normalise_smms, normalise_tms
 from samanvay.ingestion.sources import SMMS_PRIORITY, TMS_SEVERITY, day_to_date
+from samanvay.network import SECTIONS
+
+# Derived, not hardcoded: these fixtures must not care which corridor is the sample.
+A_SECTION = SECTIONS[0].id
 
 
 @pytest.fixture(scope="module")
@@ -85,7 +89,7 @@ def test_each_system_is_read_through_a_different_mode(exported):
 
 def test_smms_chainage_is_converted_from_metres():
     raw = {
-        "fault_ref": "X1", "section": "ADI-MAN", "line": "UP", "chainage_m": 3500,
+        "fault_ref": "X1", "section": A_SECTION, "line": "UP", "chainage_m": 3500,
         "equipment_id": "A1", "equipment_class": "POINT_MACHINE",
         "activity": "Point machine overhaul", "priority": "P3", "is_fault": 1,
         "reported_on": day_to_date(0).isoformat(), "due_on": day_to_date(10).isoformat(),
@@ -108,7 +112,7 @@ def test_smms_priority_scale_is_inverted_relative_to_tms():
 
 def test_the_most_urgent_record_from_each_system_maps_to_the_same_severity():
     base_smms = {
-        "fault_ref": "X1", "section": "ADI-MAN", "line": "UP", "chainage_m": 1000,
+        "fault_ref": "X1", "section": A_SECTION, "line": "UP", "chainage_m": 1000,
         "equipment_id": "A1", "equipment_class": "POINT_MACHINE",
         "activity": "Point machine overhaul", "priority": "P1", "is_fault": 1,
         "reported_on": day_to_date(0).isoformat(), "due_on": day_to_date(5).isoformat(),
@@ -116,7 +120,7 @@ def test_the_most_urgent_record_from_each_system_maps_to_the_same_severity():
         "qty": 1.0, "night_ok": 0,
     }
     base_tms = {
-        "DEFECT_ID": "Y1", "SECTION_CD": "ADI-MAN", "LINE_CD": "UP", "KM": "1.000",
+        "DEFECT_ID": "Y1", "SECTION_CD": A_SECTION, "LINE_CD": "UP", "KM": "1.000",
         "ASSET_NO": "A2", "ASSET_TYP": "RAIL", "WORK_DESC": "Rail flaw attention (USFD)",
         "SEVERITY_CD": "S5", "IS_DEFECT": "Y",
         "RAISED_DT": day_to_date(0).strftime("%d-%m-%Y"),
@@ -204,7 +208,7 @@ def test_a_malformed_record_is_rejected_by_name(tmp_path):
     """Silently dropping rows is how a division loses its worst defects for a year."""
     bad = [{
         "ohEid": "BROKEN-1",
-        "location": {"section": "ADI-MAN", "line": "UP", "km": 2.0},
+        "location": {"section": A_SECTION, "line": "UP", "km": 2.0},
         "assetRef": "A9", "assetKind": "OHE_MAST", "job": "OHE mast / bracket attention",
         "criticality": 3, "reactive": True,
         "raisedIso": "not-a-date", "dueIso": "2026-09-10T00:00:00Z",
@@ -239,7 +243,7 @@ def test_duplicates_are_counted_not_silently_merged(tmp_path, dataset):
 
 def test_unknown_priority_code_is_rejected():
     raw = {
-        "fault_ref": "X9", "section": "ADI-MAN", "line": "UP", "chainage_m": 1000,
+        "fault_ref": "X9", "section": A_SECTION, "line": "UP", "chainage_m": 1000,
         "equipment_id": "A1", "equipment_class": "POINT_MACHINE",
         "activity": "Point machine overhaul", "priority": "URGENT", "is_fault": 1,
         "reported_on": day_to_date(0).isoformat(), "due_on": day_to_date(5).isoformat(),

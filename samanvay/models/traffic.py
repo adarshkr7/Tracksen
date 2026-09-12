@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from ..domain import MINUTES_PER_DAY, Line, TrainPath
+from ..domain import MINUTES_PER_DAY, Line, TrainClass, TrainPath
 
 # A train that has to be regulated round a block does not lose only the minutes of
 # overlap -- it loses the stop, the restart and the path behind it.
@@ -72,6 +72,31 @@ class TrafficModel:
                         end_min: int) -> int:
         """Head count, for reporting. Expected, so it is fractional in truth."""
         return len(self.paths_in_window(section_id, line, start_min, end_min))
+
+    def fouls_premier(self, section_id: str, line: Line, start_min: int,
+                      end_min: int) -> bool:
+        """Whether this window would stand in front of a premier path.
+
+        Rajdhani, Vande Bharat, Shatabdi and Duronto paths are protected: a division
+        does not ask for a block across one and would not be given it. Pricing that as
+        merely expensive is not the same thing -- a large enough saving elsewhere would
+        buy it -- so windows that foul one are withheld from the solver entirely rather
+        than offered at a high price.
+        """
+        return bool(self.premier_in_window(section_id, line, start_min, end_min))
+
+    def premier_in_window(self, section_id: str, line: Line, start_min: int,
+                          end_min: int) -> list[TrainPath]:
+        """The protected paths a window would stand in front of.
+
+        Returned rather than merely counted so a refusal can name the train. "Rejected:
+        fouls a premier path" tells a planner nothing they can act on; "would stand in
+        front of 12309 Rajdhani at 19:15" tells them where to drag it instead.
+        """
+        return [
+            p for p in self.paths_in_window(section_id, line, start_min, end_min)
+            if p.train_class is TrainClass.PREMIER
+        ]
 
     # ------------------------------------------------------------------ #
     # The surface, for display and for coarse monthly planning
