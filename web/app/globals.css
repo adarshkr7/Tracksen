@@ -181,7 +181,10 @@ table.ops tbody tr:last-child td { border-bottom: none; }
 
 /* Chart primitives shared by the schematic and the time-distance chart */
 .corridor-band { fill: var(--rail); opacity: 0.06; }
-.train-paths   { opacity: 0.5; }
+/* Raised from 0.5 when the paths stopped being texture. They used to be four greys
+   whose only job was to show where the traffic was dense; now each carries which train
+   it is, and a colour you cannot name is not carrying anything. */
+.train-paths   { opacity: 0.72; }
 .block-fill    { fill-opacity: 0.28; }
 .block-fill.clubbed { fill-opacity: 0.36; }
 .block-fill.active  { fill-opacity: 0.5; }

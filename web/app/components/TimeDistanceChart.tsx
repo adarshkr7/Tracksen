@@ -3,11 +3,12 @@
 import { useCallback, useId, useMemo, useRef, useState } from "react";
 import {
   Block,
-  CLASS_COLOR,
   CLASS_LABEL,
-  CLASS_WIDTH,
   CorridorRow,
   DEPT_COLOR,
+  LIVERY_COLOR,
+  LIVERY_LABEL,
+  LIVERY_WIDTH,
   LineName,
   MIN_PER_DAY,
   PROVENANCE,
@@ -16,6 +17,7 @@ import {
   Station,
   TrainRow,
   hhmm,
+  liveryOf,
 } from "../lib/plan";
 import { snap } from "../lib/whatif";
 import { ChainageZoomBar, useChainageZoom } from "./ChainageZoom";
@@ -48,7 +50,8 @@ const PLOT_H = VB_H - M.top - M.bottom;
 interface TrainRun {
   key: string;
   train: number;          // index into trains[]
-  cls: number;
+  cls: number;            // the solver's priority class
+  liv: number;            // how it is drawn: its series, not its price
   prob: number;
   points: string;
   from: string;
@@ -172,6 +175,7 @@ export default function TimeDistanceChart({
           key: `${train}-${part++}`,
           train,
           cls: first[2],
+          liv: liveryOf(first[2], trains?.[train]?.[1] ?? ""),
           prob: first[5],
           points: pts.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(" "),
           from: first[1] === 0 ? fs.a : fs.b,
@@ -203,7 +207,7 @@ export default function TimeDistanceChart({
       flush();
     }
     return out;
-  }, [paths, onRoute, both, lineIdx, dayStart, sections, maxKm, viewKm0, viewKm1]);
+  }, [paths, onRoute, both, lineIdx, dayStart, sections, trains, maxKm, viewKm0, viewKm1]);
 
   const visibleBlocks = useMemo(
     () =>
@@ -381,8 +385,8 @@ export default function TimeDistanceChart({
                 key={r.key}
                 points={r.points}
                 fill="none"
-                stroke={on ? "var(--rail)" : CLASS_COLOR[r.cls]}
-                strokeWidth={on ? CLASS_WIDTH[r.cls] + 1.8 : CLASS_WIDTH[r.cls]}
+                stroke={on ? "var(--rail)" : LIVERY_COLOR[r.liv]}
+                strokeWidth={on ? LIVERY_WIDTH[r.liv] + 1.8 : LIVERY_WIDTH[r.liv]}
                 strokeOpacity={on ? 1 : r.prob * 0.85}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -513,12 +517,23 @@ export default function TimeDistanceChart({
               <span className="tnum font-medium" style={{ color: "var(--ink)" }}>
                 {no}
               </span>
-              <span className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>
-                {CLASS_LABEL[run.cls]}
+              <span className="text-[10.5px] font-medium"
+                style={{ color: LIVERY_COLOR[run.liv] }}>
+                {LIVERY_LABEL[run.liv]}
               </span>
             </div>
             {name && (
               <div className="mb-1" style={{ color: "var(--ink)" }}>{name}</div>
+            )}
+            {/* Colour is the series; price and protection are the class. Where the two
+                disagree -- a Garib Rath is drawn premium and priced as an express -- say
+                so, rather than letting the livery imply a fence the train is not behind. */}
+            {(run.cls === 0 || LIVERY_LABEL[run.liv] !== CLASS_LABEL[run.cls]) && (
+              <div className="text-[10.5px] mb-1" style={{ color: "var(--ink-3)" }}>
+                {run.cls === 0
+                  ? "Premier — a block may not foul this path"
+                  : `Priced as ${CLASS_LABEL[run.cls]} — not behind the premier fence`}
+              </div>
             )}
             <div className="tnum mb-1.5">
               {run.from}–{run.to} · {hhmm(run.enter)}–{hhmm(run.exit)}

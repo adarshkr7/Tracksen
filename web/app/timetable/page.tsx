@@ -8,7 +8,7 @@ import MonthView from "../components/MonthView";
 import TimeDistanceChart from "../components/TimeDistanceChart";
 import { usePlan } from "../components/PlanProvider";
 import { Card, Chip, DemoNote, Empty, Metric, MetricRow, PageHead, Seg } from "../components/ui";
-import { Block, CLASS_COLOR, CLASS_LABEL, LineName, dayLabel } from "../lib/plan";
+import { Block, LIVERY_COLOR, LIVERY_LABEL, LineName, dayLabel } from "../lib/plan";
 
 /**
  * The control chart.
@@ -90,10 +90,10 @@ function TimetableBody() {
 
           <div className="flex items-center gap-x-5 gap-y-2 flex-wrap px-4 pb-3.5 pt-1 text-[10.5px]"
             style={{ color: "var(--ink-3)" }}>
-            {CLASS_LABEL.map((label, i) => (
+            {LIVERY_LABEL.map((label, i) => (
               <span key={label} className="inline-flex items-center gap-1.5">
                 <i style={{
-                  width: 16, height: 2, background: CLASS_COLOR[i], display: "inline-block",
+                  width: 16, height: 2.5, background: LIVERY_COLOR[i], display: "inline-block",
                 }} />
                 {label}
               </span>
