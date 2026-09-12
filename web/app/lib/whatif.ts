@@ -249,8 +249,19 @@ export function planTotals(
   index: PathIndex,
   conflictedIds: Set<string>,
 ): PlanTotals {
-  const weights = data.detentionWeights ?? [4, 2.5, 1.5, 1];
+  // No literal fallback for the weights. A hardcoded [4, 2.5, 1.5, 1] here was a second
+  // copy of the solver's pricing, and it went stale the moment premier detention was
+  // repriced — the same drift the server side was just fixed for, moved to the client.
+  // What-if exists to show what a move would cost the solver; pricing it off numbers the
+  // solver is not using makes it confidently wrong, which is worse than blank.
+  const weights = data.detentionWeights;
   const overhead = data.regulationOverheadMin ?? 10;
+  if (!weights?.length) {
+    throw new Error(
+      "plan.json carries no detentionWeights — what-if cannot price a move without " +
+      "the solver's own weights. Regenerate it with scripts/run_pipeline.py.",
+    );
+  }
 
   let trafficCost = 0;
   let corridorBlocks = 0;

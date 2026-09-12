@@ -13,6 +13,34 @@ from samanvay.session import Pin
 SOLVE = 8.0
 
 
+def _pin_capacity(session, block) -> int:
+    """The window `_pin_candidates` would mint for this block."""
+    tasks = [session.task_by_id[t] for t in block.task_ids]
+    return max((t.p90_duration_min or t.demanded_duration_min) for t in tasks)
+
+
+def _clear_start(session, block, *offsets: int) -> int:
+    """The first offered shift this block can legally take.
+
+    A fixed offset is not safe to assume any more: premier paths are fenced off, so
+    "move it two hours" can land on a Rajdhani and be refused for a reason that has
+    nothing to do with what the test is checking.
+    """
+    cap = _pin_capacity(session, block)
+    for off in offsets:
+        start = block.start_min + off
+        if start < 0 or start + cap > session.horizon_days * MINUTES_PER_DAY:
+            continue
+        if session.traffic.fouls_premier(block.section_id, block.line, start, start + cap):
+            continue
+        return start
+    raise AssertionError(f"no premier-free shift for block {block.id} among {offsets}")
+
+
+# Shifts to try, in preference order: a couple of hours either way, then further out.
+SHIFTS = (120, 60, 180, -60, -120, 240, 300, -180, 360, 420, -240, 480)
+
+
 def _placement(plan, task_id: str) -> int | None:
     for b in plan.blocks:
         if task_id in b.task_ids:
@@ -22,7 +50,7 @@ def _placement(plan, task_id: str) -> int | None:
 
 def test_a_pin_is_honoured_exactly(session, plan, weights):
     source = plan.blocks[0]
-    target_start = source.start_min + 120
+    target_start = _clear_start(session, source, *SHIFTS)
     pin = Pin(source.id, target_start, source.task_ids)
 
     result = session.solve(weights=weights, pins=[pin], time_limit_s=SOLVE)
@@ -59,7 +87,7 @@ def test_pinned_plans_still_obey_line_exclusivity(session, plan, weights):
     source = plan.blocks[0]
     result = session.solve(
         weights=weights,
-        pins=[Pin(source.id, source.start_min + 60, source.task_ids)],
+        pins=[Pin(source.id, _clear_start(session, source, *SHIFTS), source.task_ids)],
         time_limit_s=SOLVE,
     )
 
@@ -75,7 +103,7 @@ def test_pinning_does_not_lose_tasks(session, plan, weights):
     source = plan.blocks[0]
     result = session.solve(
         weights=weights,
-        pins=[Pin(source.id, source.start_min + 60, source.task_ids)],
+        pins=[Pin(source.id, _clear_start(session, source, *SHIFTS), source.task_ids)],
         time_limit_s=SOLVE,
     )
     scheduled = {t for b in result.plan.blocks for t in b.task_ids}
@@ -86,7 +114,7 @@ def test_pinning_does_not_lose_tasks(session, plan, weights):
 
 def test_pinning_is_reported_in_the_payload(session, plan, weights):
     source = plan.blocks[0]
-    start = source.start_min + 60
+    start = _clear_start(session, source, *SHIFTS)
     result = session.solve(
         weights=weights, pins=[Pin(source.id, start, source.task_ids)], time_limit_s=SOLVE
     )
@@ -97,9 +125,11 @@ def test_pinning_is_reported_in_the_payload(session, plan, weights):
 
 def test_pinned_day_matches_the_requested_day(session, plan, weights):
     source = plan.blocks[0]
-    start = source.start_min + MINUTES_PER_DAY
-    if start + (source.end_min - source.start_min) > session.horizon_days * MINUTES_PER_DAY:
-        return  # not enough horizon left in this fixture to move a day forward
+    day_shifts = tuple(MINUTES_PER_DAY + o for o in (0, 60, 120, -60, 180, -120, 240))
+    try:
+        start = _clear_start(session, source, *day_shifts)
+    except AssertionError:
+        return  # no clear window a day out in this fixture
 
     result = session.solve(
         weights=weights, pins=[Pin(source.id, start, source.task_ids)], time_limit_s=SOLVE
@@ -109,3 +139,53 @@ def test_pinned_day_matches_the_requested_day(session, plan, weights):
     for b in result.plan.blocks:
         if set(b.task_ids) & set(source.task_ids):
             assert b.day == start // MINUTES_PER_DAY
+
+
+def test_a_pin_cannot_be_dragged_across_a_premier_path(session):
+    """The one rule the solver may not trade away has to hold for hand placements too.
+
+    Pins never go through build_candidates, so the fence there does not cover them. A
+    planner dragging a block on the what-if chart would otherwise walk straight past it.
+    """
+    from samanvay.domain import Line, TrainClass
+    from samanvay.session import Pin
+
+    # Find a premier path on a section that actually carries pending work.
+    sections_with_work = {(t.section_id, t.line) for t in session.tasks}
+    target = None
+    for day in range(session.horizon_days):
+        for (sid, line) in sections_with_work:
+            base = day * 24 * 60
+            hits = session.traffic.premier_in_window(sid, line, base, base + 24 * 60)
+            if hits:
+                target = (sid, line, hits[0])
+                break
+        if target:
+            break
+    assert target, "no premier path over any section with work -- fence untestable here"
+
+    sid, line, path = target
+    task = next(t for t in session.tasks if t.section_id == sid and t.line == line)
+
+    # Start the block squarely on top of the train.
+    pin = Pin("B-PREMIER", max(0, path.enter_min - 5), [task.id])
+    extra, pin_cid, rejected = session._pin_candidates([pin])
+
+    assert not extra, "a pin fouling a premier path was turned into a candidate"
+    assert "B-PREMIER" not in pin_cid
+    assert any(path.train_no in r for r in rejected), (
+        f"the refusal should name the train it would detain; got {rejected}"
+    )
+
+
+def test_the_baseline_is_rebuilt_when_the_weights_change(session):
+    """Cached once, it would be measured under limits the new plan never obeyed."""
+    from samanvay.optimizer.cpsat import OptimiserWeights
+
+    tight = session.baseline(OptimiserWeights(max_blocks_per_dept_per_day=2))
+    loose = session.baseline(OptimiserWeights(max_blocks_per_dept_per_day=12))
+
+    assert len(tight.blocks) != len(loose.blocks), (
+        "the baseline ignored a change to the operational limits -- every percentage "
+        "on the comparison screen would be measured off the wrong datum"
+    )

@@ -41,7 +41,7 @@ AUDIT_PATH = Path(__file__).resolve().parents[1] / "out" / "audit.jsonl"
 audit = AuditLog(AUDIT_PATH)
 workflow = ApprovalWorkflow(audit)
 
-app = FastAPI(title="SAMANVAY re-solve", version="1.0")
+app = FastAPI(title="TRACKSEN re-solve", version="1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,6 +67,24 @@ def _actor(name: str | None, role: str | None) -> Actor:
     except ValueError:
         raise HTTPException(status_code=400, detail=f"unknown role {role!r}")
     return Actor(name or "unknown", parsed)
+
+
+def _next_plan_id() -> str:
+    """Allocate an unused plan id.
+
+    The counter lives in memory and the workflow's plans are replayed from the audit log
+    on startup, so a restart used to hand the next caller PLAN-0001 again -- an id that
+    already belonged to somebody. The re-solve path treats an existing id as "modify this
+    plan", so that collision would have wiped a stranger's concurrences and written the
+    change into the audit trail against their plan. Skipping ids already in use is the
+    whole fix.
+    """
+    global _plan_counter
+    while True:
+        _plan_counter += 1
+        plan_id = f"PLAN-{_plan_counter:04d}"
+        if plan_id not in workflow.plans:
+            return plan_id
 
 
 def session() -> PlanningSession:
@@ -103,7 +121,25 @@ class ResolveRequest(BaseModel):
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"ok": True, "ready": _session is not None}
+    """Health, plus the topology this process is actually holding.
+
+    The planning session is built once and reused, so a service left running across a
+    change to the network keeps serving the old one. Publishing the section fingerprint
+    lets the client notice that rather than quietly adopting a different division.
+    """
+    from samanvay.network import ROUTES, SECTIONS, STATIONS
+
+    return {
+        "ok": True,
+        "ready": _session is not None,
+        "topology": {
+            "from": STATIONS[0].code,
+            "to": STATIONS[-1].code,
+            "sections": len(SECTIONS),
+            "routes": [r.id for r in ROUTES],
+            "fingerprint": "|".join(s.id for s in SECTIONS),
+        },
+    }
 
 
 @app.get("/api/plan")
@@ -143,12 +179,12 @@ def resolve(req: ResolveRequest) -> dict:
 
     # A re-solve is a human changing the plan. It is recorded as such, and it resets
     # any concurrence already given -- those were granted to a different plan.
-    global _plan_counter
-    plan_id = req.plan_id or f"PLAN-{_plan_counter:04d}"
+    plan_id = req.plan_id or _next_plan_id()
     if plan_id in workflow.plans:
         try:
             workflow.modify(plan_id, _actor(req.actor, req.role),
                             note=f"re-solved around {len(pins)} pinned block(s)",
+                            plan_hash=result.plan.content_hash(),
                             pinned=[p.block_id for p in pins])
         except WorkflowError as exc:
             raise HTTPException(status_code=409, detail=str(exc))
@@ -186,18 +222,46 @@ def _handle(fn):
         raise HTTPException(status_code=409, detail=str(exc))
 
 
+def _department(value: str) -> Department:
+    """Parse a department code, or refuse it as bad input rather than as a crash.
+
+    `Department("ENG")` raises ValueError, which FastAPI turns into a 500 -- an error
+    that reads as "the service is broken" when the truth is "you sent a code that does
+    not exist". The client cannot tell those apart, so it is worth separating.
+    """
+    try:
+        return Department(value)
+    except ValueError:
+        known = ", ".join(d.value for d in Department)
+        raise HTTPException(
+            status_code=422,
+            detail=f"unknown department {value!r}; expected one of: {known}",
+        )
+
+
 @app.post("/api/plans/{plan_id}/submit")
 def submit(plan_id: str, body: CreateIn) -> dict:
     """Put a plan into the approval route."""
-    depts = {Department(d) for d in body.departments}
+    if body.plan_id != plan_id:
+        raise HTTPException(
+            status_code=422,
+            detail=("plan id in the request body must match the plan id in the URL "
+                    f"({body.plan_id!r} != {plan_id!r})"),
+        )
+    depts = {_department(d) for d in body.departments}
+    # The fingerprint of the plan being submitted. Without it the trail records that a
+    # plan was approved but not which plan, and "PLAN-0007 was sanctioned" could later be
+    # attached to any set of blocks at all.
+    plan_hash = _last_plan.content_hash() if _last_plan is not None else None
     _handle(lambda: workflow.create(
-        plan_id, depts, _actor(body.actor, body.role), note=body.remarks))
+        plan_id, depts, _actor(body.actor, body.role), plan_hash=plan_hash,
+        note=body.remarks))
     return workflow.status(plan_id)
 
 
 @app.post("/api/plans/{plan_id}/concur")
 def concur(plan_id: str, body: ConcurIn) -> dict:
-    dept = Department(body.department)
+    dept = _department(body.department)
     _handle(lambda: workflow.concur(plan_id, _actor(body.actor, body.role), dept,
                                     granted=body.granted, remarks=body.remarks))
     return workflow.status(plan_id)
@@ -238,6 +302,47 @@ def plan_audit(plan_id: str) -> dict:
         "entries": [e.to_dict() for e in audit.for_plan(plan_id)],
         "chain": {"intact": chain.intact, "entries": chain.entries,
                   "broken_at": chain.broken_at, "reason": chain.reason},
+    }
+
+
+@app.get("/api/sources")
+def sources() -> dict:
+    """Live adapter status for TMS / SMMS / TDMS.
+
+    Runs the real ingestion ladder and reports which mode each source answered on and
+    why the better ones were skipped. The feeds are the mock systems written by
+    `export_all()`, so `demo` is true and the UI must say so -- reporting a synthetic
+    feed as a live departmental connection would be the one dishonest thing this panel
+    could do.
+    """
+    from samanvay.generator import generate_dataset
+    from samanvay.ingestion import export_all, ingest
+
+    out_dir = Path(__file__).resolve().parents[1] / "out" / "sources"
+    ds = generate_dataset(n_pending=200, seed=42)
+    specs = export_all(ds.pending, out_dir)
+    result = ingest(specs)
+
+    return {
+        "demo": True,
+        "note": "Synthetic feeds written by export_all(); not live departmental systems.",
+        "sources": [
+            {
+                "system": r.system,
+                "mode": r.mode,
+                "connected": r.mode != "unavailable",
+                "degraded": r.degraded,
+                "attempted": r.attempted,
+                "skipped": r.skipped,
+                "fetched": r.fetched,
+                "accepted": r.accepted,
+                "rejected": [str(x) for x in r.rejected],
+                "duplicates": r.duplicates,
+                "error": r.error,
+            }
+            for r in result.reports
+        ],
+        "unified_tasks": len(result.tasks),
     }
 
 

@@ -70,7 +70,7 @@ reads slide 2.
 ## SLIDE 2 — IDEA TITLE (Proposed Solution)
 
 **Idea title line (put it directly under the "IDEA TITLE" heading, 20–24 pt bold):**
-> **SAMANVAY — one AI-optimised block plan for three departments**
+> **TRACKSEN — one AI-optimised block plan for three departments**
 
 **Left column (text, x 0.4 → 6.6) — keep the three pointer labels as bold mini-headers:**
 
@@ -179,7 +179,7 @@ risk retired per      sanctioned-but-idle      overdue defect
 
 *(≈ 90 words including the stat labels.)*
 
-**Right column visual — baseline vs SAMANVAY KPI bars** (4 bars, paired), or a screenshot of the
+**Right column visual — baseline vs TRACKSEN KPI bars** (4 bars, paired), or a screenshot of the
 time–distance chart if the UI is ready by the 9th. Prefer the screenshot — it proves you built something.
 
 ---

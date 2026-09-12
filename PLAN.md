@@ -1,7 +1,7 @@
 # SIH 2026 — PS 26027 | AI-Powered Automatic Block Planning
 **Ministry of Railways · Software · Transportation & Logistics**
 
-> **Working name: SAMANVAY** (समन्वय — "coordination") — *Unified AI Block Planner for Indian Railways*
+> **TRACKSEN** — *AI-Powered Railway Maintenance Intelligence & Planning*
 > Alternatives: **NIRBAADH** (निर्बाध — "uninterrupted"), **SETU-Block**, **PRAHARI**
 
 **Hard deadline: idea/slide submission — 10 Sep 2026.** Today is 7 Sep. You have ~3 working days.
@@ -33,7 +33,7 @@ Today, three departments each want blocks, independently:
 *constrained scheduling + risk-ranking* problem. That is the pitch.
 
 ### The one-line pitch
-> SAMANVAY ingests defect and overdue-maintenance data from TMS, SMMS and TDMS, overlays the train
+> TRACKSEN ingests defect and overdue-maintenance data from TMS, SMMS and TDMS, overlays the train
 > timetable and goods forecast from COA, scores every pending task for **failure risk × consequence ×
 > urgency**, and solves a **multi-department, multi-section constrained optimisation** to emit a
 > ready-to-sanction weekly and monthly block plan into BDMS — with a human always holding the
@@ -220,7 +220,7 @@ this explicitly on the feasibility slide; it shows you've thought about real dep
 | **Risk Retired per Block-Hour** | Σ criticality of tasks completed ÷ block hours consumed — *headline metric* |
 
 **On impact numbers:** present them as **modelled results from your own simulation**, with the
-assumption stated next to the number, e.g. *"On a 120 km simulated section over 30 days, SAMANVAY raised
+assumption stated next to the number, e.g. *"On a 120 km simulated section over 30 days, TRACKSEN raised
 risk-retired-per-block-hour by X% and cut sanctioned-but-idle block time by Y% versus a
 first-come-first-served baseline."* Run the baseline, measure, quote your number. Do **not** invent a
 national "₹__ crore saved" figure — an IR officer will take it apart in the viva.

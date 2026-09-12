@@ -151,7 +151,7 @@ def main() -> int:
     om = evaluate(plan, ds.pending)
 
     w1, w2, w3 = 34, 13, 13
-    print(f"  {'Measure':<{w1}}{'Baseline':>{w2}}{'SAMANVAY':>{w3}}   Change")
+    print(f"  {'Measure':<{w1}}{'Baseline':>{w2}}{'TRACKSEN':>{w3}}   Change")
     print("  " + "-" * (w1 + w2 + w3 + 18))
     for name, b, o, delta in compare(bm, om):
         print(f"  {name:<{w1}}{b:>{w2}}{o:>{w3}}   {delta}")

@@ -1,17 +1,20 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import {
   Block,
   CLASS_COLOR,
+  CLASS_LABEL,
   CLASS_WIDTH,
   CorridorRow,
   DEPT_COLOR,
   LineName,
   MIN_PER_DAY,
+  PROVENANCE,
   PathRow,
   Section,
   Station,
+  TrainRow,
   hhmm,
 } from "../lib/plan";
 import { snap } from "../lib/whatif";
@@ -22,6 +25,12 @@ import { snap } from "../lib/whatif";
  * This is the artefact railway operating staff already read every day. Train paths
  * are the diagonals; a block is a rectangle, because a block closes a whole section
  * for a stretch of time.
+ *
+ * The chart draws ONE route — the main line by default — because chainage is measured
+ * per route and a branch kilometre is not a main-line kilometre. A branch service still
+ * appears here, but only for the part of its run that is on this road: the Vikramshila
+ * off Jamalpur shows from Kiul westward, which is exactly the part a block has to be
+ * planned around.
  *
  * Blocks are draggable along the time axis. Dragging is deliberately constrained to
  * horizontal movement — the work is at a fixed kilometre, so a block can move in time
@@ -34,14 +43,31 @@ const M = { top: 18, right: 18, bottom: 34, left: 58 };
 const PLOT_W = VB_W - M.left - M.right;
 const PLOT_H = VB_H - M.top - M.bottom;
 
+/** One continuous run of a train across this route, as drawn. */
+interface TrainRun {
+  key: string;
+  train: number;          // index into trains[]
+  cls: number;
+  prob: number;
+  points: string;
+  from: string;
+  to: string;
+  enter: number;          // minutes from horizon start
+  exit: number;
+}
+
 interface Props {
   sections: Section[];
   stations: Station[];
   paths: PathRow[];
+  /** Roster the paths index into. Without it, paths draw but do not identify. */
+  trains?: TrainRow[];
   corridors: CorridorRow[];
   blocks: Block[];
   day: number;
   line: LineName | "BOTH";
+  /** Which route's chainage this chart is in. Sections off it are not drawn. */
+  routeId?: string;
   onSelect?: (b: Block | null) => void;
   selectedId?: string | null;
   /** Proposed starts, keyed by block id. Absent means the block sits where planned. */
@@ -52,13 +78,17 @@ interface Props {
 }
 
 export default function TimeDistanceChart({
-  sections, stations, paths, corridors, blocks, day, line,
-  onSelect, selectedId, moves, onMove, conflictedIds, draggable = false,
+  sections, stations, paths, trains, corridors, blocks, day, line,
+  routeId = "MAIN", onSelect, selectedId, moves, onMove, conflictedIds,
+  draggable = false,
 }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<{ id: string; grabOffsetMin: number } | null>(null);
   const [hover, setHover] = useState<Block | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  const [trainHover, setTrainHover] =
+    useState<{ run: TrainRun; x: number; y: number } | null>(null);
+  const clipId = useId();
 
   const maxKm = stations.length ? stations[stations.length - 1].km : 100;
   const both = line === "BOTH";
@@ -73,21 +103,100 @@ export default function TimeDistanceChart({
     [moves],
   );
 
-  const visiblePaths = useMemo(
-    () =>
-      paths.filter(
-        (p) => (both || p[1] === lineIdx) && p[4] > dayStart && p[3] < dayStart + MIN_PER_DAY,
-      ),
-    [paths, lineIdx, both, dayStart],
-  );
+  /**
+   * Section indices that belong on this chart.
+   *
+   * Branch sections carry their own chainage from their own junction, so section 30 of
+   * the Gaya branch is 30 km from Kiul, not 30 km from Buxar. Drawing it against this
+   * axis would put a Kiul–Gaya passenger train somewhere near Bihiya.
+   */
+  const onRoute = useMemo(() => {
+    const keep = new Set<number>();
+    const tagged = sections.some((s) => s.route);
+    sections.forEach((s, i) => {
+      if (!tagged || s.route === routeId) keep.add(i);
+    });
+    return keep;
+  }, [sections, routeId]);
+
+  /* ---------------- train paths, assembled per train ---------------- */
+
+  /**
+   * Paths arrive one section-occupation at a time. Drawing them as loose segments
+   * makes every train anonymous and impossible to point at, so they are stitched back
+   * into runs here. The join is free information: where a train stands at a station
+   * the run goes flat, which is what a real chart shows.
+   */
+  const runs = useMemo<TrainRun[]>(() => {
+    const byTrain = new Map<number, PathRow[]>();
+    for (const p of paths) {
+      if (!onRoute.has(p[0])) continue;
+      if (!both && p[1] !== lineIdx) continue;
+      if (p[4] <= dayStart || p[3] >= dayStart + MIN_PER_DAY) continue;
+      const t = p[6] ?? -1;
+      const bucket = byTrain.get(t);
+      if (bucket) bucket.push(p);
+      else byTrain.set(t, [p]);
+    }
+
+    const out: TrainRun[] = [];
+    for (const [train, rows] of byTrain) {
+      rows.sort((a, b) => a[3] - b[3]);
+
+      let pts: number[][] = [];
+      let first: PathRow | null = null;
+      let prev: PathRow | null = null;
+      let part = 0;
+
+      const flush = () => {
+        if (pts.length < 2 || !first || !prev) return;
+        const fs = sections[first[0]];
+        const ls = sections[prev[0]];
+        out.push({
+          key: `${train}-${part++}`,
+          train,
+          cls: first[2],
+          prob: first[5],
+          points: pts.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(" "),
+          from: first[1] === 0 ? fs.a : fs.b,
+          to: prev[1] === 0 ? ls.b : ls.a,
+          enter: first[3],
+          exit: prev[4],
+        });
+        pts = [];
+      };
+
+      for (const p of rows) {
+        const sec = sections[p[0]];
+        const up = p[1] === 0;
+        const y1 = y(up ? sec.km0 : sec.km1);
+        const y2 = y(up ? sec.km1 : sec.km0);
+        const x1 = x(p[3] - dayStart);
+        const x2 = x(p[4] - dayStart);
+
+        // A gap in chainage means the train left this road and came back. Two runs.
+        const joins = pts.length > 0 && Math.abs(y1 - pts[pts.length - 1][1]) < 0.75;
+        if (!joins) {
+          flush();
+          first = p;
+          pts = [[x1, y1]];
+        }
+        pts.push([x2, y2]);
+        prev = p;
+      }
+      flush();
+    }
+    return out;
+  }, [paths, onRoute, both, lineIdx, dayStart, sections, maxKm]);
 
   const visibleBlocks = useMemo(
     () =>
       blocks.filter((b) => {
+        if (!onRoute.has(b.sec)) return false;
         if (!both && b.line !== line) return false;
         return Math.floor(startOf(b) / MIN_PER_DAY) === day;
       }),
-    [blocks, line, both, day, startOf],
+    [blocks, line, both, day, startOf, onRoute],
   );
 
   // Blocks whose original position was this day but have been dragged away — drawn
@@ -97,15 +206,16 @@ export default function TimeDistanceChart({
       blocks.filter((b) => {
         const s = startOf(b);
         if (s === b.s) return false;
+        if (!onRoute.has(b.sec)) return false;
         if (!both && b.line !== line) return false;
         return Math.floor(b.s / MIN_PER_DAY) === day;
       }),
-    [blocks, line, both, day, startOf],
+    [blocks, line, both, day, startOf, onRoute],
   );
 
   const visibleCorridors = useMemo(
-    () => corridors.filter((c) => c[1] === day),
-    [corridors, day],
+    () => corridors.filter((c) => c[1] === day && onRoute.has(c[0])),
+    [corridors, day, onRoute],
   );
 
   const active = hover ?? blocks.find((b) => b.id === selectedId) ?? null;
@@ -147,6 +257,20 @@ export default function TimeDistanceChart({
     setDragging(null);
   };
 
+  /* ---------------- train hover ---------------- */
+
+  const trackTrain = (e: React.MouseEvent, run: TrainRun) => {
+    if (dragging) return;
+    const svg = svgRef.current;
+    if (!svg) return;
+    const r = svg.getBoundingClientRect();
+    setTrainHover({
+      run,
+      x: ((e.clientX - r.left) / r.width) * 100,
+      y: ((e.clientY - r.top) / r.height) * 100,
+    });
+  };
+
   /* ---------------- geometry helper ---------------- */
 
   const bandOf = (b: Block) => {
@@ -159,6 +283,8 @@ export default function TimeDistanceChart({
     };
   };
 
+  const hoveredTrain = trainHover?.run.train ?? -1;
+
   return (
     <div className="relative">
       <svg
@@ -168,6 +294,12 @@ export default function TimeDistanceChart({
         role="img"
         aria-label={`Time-distance chart, ${line} line, day ${day + 1}`}
       >
+        <defs>
+          <clipPath id={clipId}>
+            <rect x={M.left} y={M.top} width={PLOT_W} height={PLOT_H} />
+          </clipPath>
+        </defs>
+
         {visibleCorridors.map((c, i) => {
           const sec = sections[c[0]];
           if (!sec) return null;
@@ -214,24 +346,44 @@ export default function TimeDistanceChart({
           </g>
         ))}
 
-        <g className="train-paths">
-          {visiblePaths.map((p, i) => {
-            const sec = sections[p[0]];
-            if (!sec) return null;
-            const up = p[1] === 0;
+        <g className="train-paths" clipPath={`url(#${clipId})`}>
+          {runs.map((r) => {
+            const on = r.train === hoveredTrain;
             return (
-              <line
-                key={i}
-                x1={x(p[3] - dayStart)} y1={y(up ? sec.km0 : sec.km1)}
-                x2={x(p[4] - dayStart)} y2={y(up ? sec.km1 : sec.km0)}
-                stroke={CLASS_COLOR[p[2]]}
-                strokeWidth={CLASS_WIDTH[p[2]]}
-                strokeOpacity={p[5]}
+              <polyline
+                key={r.key}
+                points={r.points}
+                fill="none"
+                stroke={on ? "var(--rail)" : CLASS_COLOR[r.cls]}
+                strokeWidth={on ? CLASS_WIDTH[r.cls] + 1.8 : CLASS_WIDTH[r.cls]}
+                strokeOpacity={on ? 1 : r.prob * 0.85}
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
             );
           })}
         </g>
+
+        {/* Hit targets. A path is under two pixels wide; without these nothing could
+            be pointed at. Drawn before the blocks so a block always wins the hover. */}
+        {trains && (
+          <g clipPath={`url(#${clipId})`}>
+            {runs.map((r) => (
+              <polyline
+                key={`hit-${r.key}`}
+                points={r.points}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={7}
+                strokeLinecap="round"
+                style={{ pointerEvents: "stroke", cursor: "crosshair" }}
+                onMouseEnter={(e) => trackTrain(e, r)}
+                onMouseMove={(e) => trackTrain(e, r)}
+                onMouseLeave={() => setTrainHover(null)}
+              />
+            ))}
+          </g>
+        )}
 
         {/* ---- ghosts: where a moved block used to sit ---- */}
         {ghosts.map((b) => {
@@ -266,7 +418,11 @@ export default function TimeDistanceChart({
           return (
             <g
               key={b.id}
-              onMouseEnter={() => !dragging && setHover(b)}
+              onMouseEnter={() => {
+                if (dragging) return;
+                setHover(b);
+                setTrainHover(null);
+              }}
               onMouseLeave={() => setHover(null)}
               onClick={() => onSelect?.(b)}
               onPointerDown={(e) => onPointerDown(e, b)}
@@ -302,9 +458,59 @@ export default function TimeDistanceChart({
         <rect
           x={M.left} y={M.top} width={PLOT_W} height={PLOT_H}
           fill="none" stroke="var(--line-2)" strokeWidth={1}
+          style={{ pointerEvents: "none" }}
         />
       </svg>
 
+      {/* ---- train tooltip ---- */}
+      {trains && trainHover && !active && !dragging && (() => {
+        const { run } = trainHover;
+        const [no, name, prov] = trains[run.train] ?? ["—", "", 2];
+        const p = PROVENANCE[prov] ?? PROVENANCE[2];
+        const left = Math.min(Math.max(trainHover.x, 2), 66);
+        const below = trainHover.y < 55;
+        return (
+          <div
+            className="absolute z-20 pointer-events-none fade-in rounded-lg border
+                       px-3 py-2 shadow-sm text-[11.5px] leading-relaxed"
+            style={{
+              left: `${left}%`,
+              [below ? "top" : "bottom"]:
+                below ? `calc(${trainHover.y}% + 14px)` : `calc(${100 - trainHover.y}% + 14px)`,
+              maxWidth: "min(300px, 40%)",
+              background: "var(--surface)", borderColor: "var(--line-2)",
+              color: "var(--ink-2)",
+            }}
+          >
+            <div className="flex items-baseline gap-2 mb-0.5">
+              <span className="tnum font-medium" style={{ color: "var(--ink)" }}>
+                {no}
+              </span>
+              <span className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>
+                {CLASS_LABEL[run.cls]}
+              </span>
+            </div>
+            {name && (
+              <div className="mb-1" style={{ color: "var(--ink)" }}>{name}</div>
+            )}
+            <div className="tnum mb-1.5">
+              {run.from}–{run.to} · {hhmm(run.enter)}–{hhmm(run.exit)}
+              {run.prob < 1 && ` · runs ${Math.round(run.prob * 100)}% of days`}
+            </div>
+            <div className="flex items-start gap-1.5 pt-1.5"
+              style={{ borderTop: "1px solid var(--line)" }}>
+              <i className="mt-[5px] shrink-0 rounded-full"
+                style={{ width: 5, height: 5, background: p.color }} />
+              <span className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>
+                <b style={{ color: "var(--ink-2)", fontWeight: 500 }}>{p.label}</b>
+                {" — "}{p.note}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ---- block tooltip ---- */}
       {active && !dragging && (() => {
         const sec = sections[active.sec];
         const s = startOf(active);

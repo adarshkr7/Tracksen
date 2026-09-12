@@ -1,6 +1,6 @@
 """Unified Task Model and the section topology it is keyed against.
 
-Everything in SAMANVAY hangs off one idea: a maintenance task from any of the three
+Everything in TRACKSEN hangs off one idea: a maintenance task from any of the three
 departmental systems is written in the same coordinates -- (section, line, chainage).
 Once that holds, "is this S&T fault near that OHE job?" is arithmetic rather than a
 phone call between two JEs, and clubbing becomes something a solver can find.
@@ -114,6 +114,9 @@ class BlockSection:
     to_station: str
     km_start: float
     km_end: float
+    # Which route the section belongs to. Chainage is measured per route, so a branch
+    # has its own origin rather than continuing the main line's numbering.
+    route: str = "MAIN"
 
     @property
     def length_km(self) -> float:
@@ -213,17 +216,31 @@ class MaintenanceTask:
 # --------------------------------------------------------------------------- #
 
 class TrainClass(str, Enum):
-    """Ordered loosely by the cost of delaying one."""
+    """The running priority order, highest first.
 
-    PREMIER = "PREMIER"      # Rajdhani / Vande Bharat / Shatabdi
+    This is not a smooth scale. Premier traffic -- Rajdhani, Vande Bharat, Shatabdi,
+    Duronto -- sits in a category of its own: those paths are protected, and a section
+    is not handed over in a window one of them is due to run. Everything below premier
+    is a matter of degree; the step up to premier is a matter of kind.
+    """
+
+    PREMIER = "PREMIER"      # Rajdhani / Vande Bharat / Shatabdi / Duronto
     MAIL_EXP = "MAIL_EXP"
     PASSENGER = "PASSENGER"
     GOODS = "GOODS"
 
     @property
     def detention_weight(self) -> float:
-        """Relative cost of one detained minute, premier traffic as the datum."""
-        return {"PREMIER": 4.0, "MAIL_EXP": 2.5, "PASSENGER": 1.5, "GOODS": 1.0}[self.value]
+        """Relative cost of one detained minute, goods as the datum.
+
+        The premier figure is deliberately far above the rest. Detaining a Rajdhani is
+        not three times worse than detaining a passenger train, it is a different order
+        of event, and a weight that merely nudged the solver would let it trade one away
+        for a handful of cheap minutes elsewhere. Premier paths are additionally fenced
+        off outright -- see `TrafficModel.fouls_premier` -- so this weight governs the
+        margin around them rather than the paths themselves.
+        """
+        return {"PREMIER": 12.0, "MAIL_EXP": 2.5, "PASSENGER": 1.5, "GOODS": 1.0}[self.value]
 
 
 @dataclass(frozen=True)
@@ -243,6 +260,7 @@ class TrainPath:
     enter_min: int          # minutes from horizon start
     exit_min: int
     probability: float = 1.0   # < 1.0 for forecast goods paths
+    train_name: str = ""       # as booked; empty for forecast goods paths
 
 
 @dataclass(frozen=True)
@@ -302,6 +320,36 @@ class Plan:
     @property
     def clubbed_blocks(self) -> list[ScheduledBlock]:
         return [b for b in self.blocks if b.is_clubbed]
+
+    def content_hash(self) -> str:
+        """A fingerprint of what this plan actually says to do.
+
+        The audit log records that a plan was concurred with and sanctioned. Without this
+        it records only the *decision*, not the *thing decided*: "PLAN-0007 sanctioned by
+        the DRM" is unfalsifiable if nothing pins down what PLAN-0007 contained. With a
+        content hash in the entry, a plan presented afterwards as the sanctioned one can
+        be checked against what was actually signed.
+
+        Only the operative content goes in -- where each block sits, for how long, on
+        which road, holding which work. Labels, reasons and scores are commentary that
+        can be recomputed; they are excluded so that re-scoring an unchanged plan does
+        not read as a change to it.
+        """
+        import hashlib
+
+        body = "\n".join(
+            "|".join((
+                b.section_id,
+                b.line.value,
+                str(b.start_min),
+                str(b.end_min),
+                ",".join(sorted(b.task_ids)),
+            ))
+            for b in sorted(
+                self.blocks, key=lambda b: (b.start_min, b.section_id, b.line.value)
+            )
+        )
+        return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 
 # --------------------------------------------------------------------------- #

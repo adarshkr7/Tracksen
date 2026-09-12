@@ -96,6 +96,38 @@ def test_block_duration_covers_its_longest_member(plan, session):
         )
 
 
+def test_reported_blocks_match_the_possessions_the_solver_reserved(plan, candidates):
+    """The published plan and the CP-SAT objective must describe the same window."""
+    by_id = {str(c.id): c for c in candidates}
+    for b in plan.blocks:
+        candidate = by_id[b.id]
+        assert b.start_min == candidate.start_min
+        assert b.end_min == candidate.end_min
+        assert b.traffic_cost == candidate.traffic_cost
+
+
+def test_monthly_candidates_respect_the_premier_path_fence():
+    """A faulty master corridor must not bypass the weekly candidate safety rule."""
+    from samanvay.domain import CorridorWindow, TrainClass, TrainPath
+    from samanvay.models.traffic import TrafficModel
+    from samanvay.network import SECTIONS, lines_for_section
+    from samanvay.optimizer.cpsat import build_monthly_candidates
+
+    section = SECTIONS[0]
+    line = lines_for_section(section.id)[0]
+    corridor = CorridorWindow(section.id, 0, 600, 720)
+    traffic = TrafficModel([
+        TrainPath("P-1", TrainClass.PREMIER, section.id, line, 0, 630, 660),
+    ], horizon_days=1)
+
+    candidates, unavailable = build_monthly_candidates(
+        [section.id], 1, traffic, [corridor]
+    )
+
+    assert not [c for c in candidates if c.line is line]
+    assert any("fouls premier" in message for message in unavailable)
+
+
 # --------------------------------------------------------------------------- #
 # Resources
 # --------------------------------------------------------------------------- #
@@ -223,3 +255,82 @@ def test_baseline_is_not_handicapped(plan, baseline):
     # The baseline gives each demand its own block, by construction.
     assert all(len(b.task_ids) == 1 for b in baseline.blocks)
     assert not baseline.clubbed_blocks
+
+
+# --------------------------------------------------------------------------- #
+# What a withdrawal costs inside the possession
+# --------------------------------------------------------------------------- #
+
+def test_clubbing_pays_the_longest_withdrawal_not_the_sum():
+    """One isolation covers every gang under it. Summing would delete the reason to club."""
+    from samanvay.domain import BlockType
+    from samanvay.optimizer.cpsat import RESTORE_MIN, SETUP_MIN, withdrawal_overhead
+
+    both = withdrawal_overhead([BlockType.DISCONNECTION, BlockType.POWER])
+    apart = (withdrawal_overhead([BlockType.DISCONNECTION])
+             + withdrawal_overhead([BlockType.POWER]))
+
+    assert both < apart, "clubbed withdrawals were added up rather than overlapped"
+    assert both == (max(SETUP_MIN[BlockType.DISCONNECTION], SETUP_MIN[BlockType.POWER])
+                    + max(RESTORE_MIN[BlockType.DISCONNECTION],
+                          RESTORE_MIN[BlockType.POWER]))
+
+
+def test_a_plain_traffic_block_loses_nothing_to_setup():
+    from samanvay.domain import BlockType
+    from samanvay.optimizer.cpsat import withdrawal_overhead
+
+    assert withdrawal_overhead([BlockType.TRAFFIC]) == 0
+
+
+def test_every_block_leaves_room_for_its_own_withdrawal(plan, session):
+    """The promise a block makes to the gang: this much time, actually workable.
+
+    Before withdrawal overheads were modelled a block could be granted exactly the P90
+    of its longest job, leaving nothing for isolation or disconnection -- so the plan
+    promised working time the possession did not contain, and the overrun appeared on
+    the ground rather than on the chart.
+    """
+    from samanvay.optimizer.cpsat import withdrawal_overhead
+
+    for b in plan.blocks:
+        tasks = [session.task_by_id[t] for t in b.task_ids]
+        longest = max((t.p90_duration_min or t.demanded_duration_min) for t in tasks)
+        overhead = withdrawal_overhead({t.block_type for t in tasks})
+        possession = b.end_min - b.start_min
+        assert longest + overhead <= possession, (
+            f"block {b.id} on {b.section_id}: {possession} min possession cannot hold "
+            f"{longest} min of work plus {overhead} min of withdrawal"
+        )
+
+
+def test_ohe_work_pays_for_isolation_whatever_it_was_filed_as():
+    """A P.Way gang under live contact wire is not made safe by the demand's wording.
+
+    `requires_power_block` folds in the asset class, so a task on an OHE mast needs the
+    traction current off even when its department raised it as a plain traffic block.
+    These two properties sat unreferenced for most of the project's life — a safety rule
+    that looked implemented and was not.
+    """
+    from samanvay.domain import AssetClass, BlockType, Department, Line, MachineType, MaintenanceTask
+    from samanvay.optimizer.cpsat import withdrawal_overhead, withdrawals_for
+
+    def task(asset_class, block_type):
+        return MaintenanceTask(
+            id="T1", department=Department.ENGINEERING, task_type="x",
+            block_type=block_type, asset_id="A1", asset_class=asset_class,
+            section_id="BXR-DURE", line=Line.UP, chainage_km=1.0,
+            defect_severity=3, due_day=3, demanded_duration_min=60,
+            machine=MachineType.NONE, source_system="TMS", is_defect=True,
+            raised_day=0, gang_size=6, quantity=100.0, night_work_allowed=True,
+        )
+
+    plain = task(AssetClass.RAIL, BlockType.TRAFFIC)
+    ohe = task(AssetClass.OHE_MAST, BlockType.TRAFFIC)
+
+    assert withdrawals_for(plain) == {BlockType.TRAFFIC}
+    assert BlockType.POWER in withdrawals_for(ohe), (
+        "an OHE-mast job filed as a traffic block would be worked under live wire"
+    )
+    assert withdrawal_overhead(withdrawals_for(ohe)) > 0
+    assert withdrawal_overhead(withdrawals_for(plain)) == 0

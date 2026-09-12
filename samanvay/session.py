@@ -14,7 +14,7 @@ the one the original solve answered, and it is the one a human actually asks.
 from __future__ import annotations
 
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import astuple, dataclass, field
 
 from .domain import MaintenanceTask, Plan
 from .evaluate import PlanMetrics, evaluate
@@ -33,6 +33,8 @@ from .optimizer.cpsat import (
     build_candidates,
     build_monthly_candidates,
     needs_extended_block,
+    withdrawal_overhead,
+    withdrawals_for,
 )
 from .serialize import plan_payload
 
@@ -119,17 +121,29 @@ class PlanningSession:
             "cancellation": self.cancellation.training_report,
         }
 
-        self._baseline: Plan | None = None
+        self._baselines: dict[tuple, Plan] = {}
         self._monthly_ctx: tuple | None = None
 
     # ------------------------------------------------------------------ #
 
     def baseline(self, weights: OptimiserWeights) -> Plan:
-        if self._baseline is None:
-            self._baseline = schedule_fcfs(
+        """The FCFS comparison, cached per set of weights.
+
+        Keyed by the weights, not computed once: the baseline obeys the same operational
+        limits as the optimised plan -- how many blocks a department may field in a day,
+        how many tasks fit in one -- so a planner who moves those sliders and re-solves
+        would otherwise be shown a new plan against a baseline built under the old ones,
+        and every percentage on the comparison screen would be measured off the wrong
+        datum.
+        """
+        key = astuple(weights)
+        cached = self._baselines.get(key)
+        if cached is None:
+            cached = schedule_fcfs(
                 self.tasks, self.base_candidates, self.traffic, self.horizon_days, weights
             )
-        return self._baseline
+            self._baselines[key] = cached
+        return cached
 
     def _pin_candidates(
         self, pins: list[Pin]
@@ -158,8 +172,15 @@ class PlanningSession:
                 continue
             section_id, line = next(iter(same_section))
 
+            # The possession has to hold the work AND the withdrawal it needs: a pinned
+            # disconnection is disconnect, work, reconnect and test. Sizing it to the
+            # work alone would hand the gang a window that cannot contain the job, and
+            # `_eligible` would then refuse the planner's own pin for a reason that
+            # looks like a bug rather than like arithmetic.
             capacity = max(
                 (t.p90_duration_min or t.demanded_duration_min) for t in tasks
+            ) + withdrawal_overhead(
+                {bt for t in tasks for bt in withdrawals_for(t)}
             )
             end = pin.start_min + capacity
             if pin.start_min < 0 or end > self.horizon_days * 24 * 60:
@@ -186,6 +207,21 @@ class PlanningSession:
                     section_id, line, pin.start_min, end
                 ),
             )
+
+            # A pin is a placement the planner chose by hand, so it never went through
+            # build_candidates and never met the premier fence there. Without this check
+            # the one rule the solver is not allowed to trade away could be walked
+            # straight past by dragging a block on the what-if chart.
+            fouled = self.traffic.premier_in_window(section_id, line, pin.start_min, end)
+            if fouled:
+                first = min(fouled, key=lambda p: p.enter_min)
+                who = f"{first.train_no} {first.train_name}".strip()
+                rejected.append(
+                    f"{pin.block_id}: would stand in front of {who} at "
+                    f"{first.enter_min % (24 * 60) // 60:02d}:"
+                    f"{first.enter_min % 60:02d} -- premier paths are not blocked"
+                )
+                continue
 
             bad = [t.id for t in tasks if not _eligible(t, cand)]
             if bad:
@@ -246,7 +282,7 @@ class PlanningSession:
 
         opt = BlockOptimiser(weights=weights, time_limit_s=time_limit_s)
         plan = opt.solve(fits, candidates, traffic, self.monthly_days)
-        plan.label = "SAMANVAY monthly (corridor-slot)"
+        plan.label = "TRACKSEN monthly (corridor-slot)"
 
         metrics = evaluate(plan, self.tasks)
 

@@ -77,13 +77,38 @@ def test_pricing_constants_match_the_solver(payload):
 def test_path_rows_are_well_formed(payload):
     n_sections = len(payload["sections"])
     n_classes = len(payload["trainClasses"])
+    n_trains = len(payload["trains"])
     for row in payload["paths"][:500]:
-        assert len(row) == 6
+        assert len(row) == 7
         assert 0 <= row[0] < n_sections
         assert row[1] in (0, 1)
         assert 0 <= row[2] < n_classes
         assert row[3] < row[4], "a path exits before it enters"
         assert 0.0 < row[5] <= 1.0
+        assert 0 <= row[6] < n_trains, "path points outside the train roster"
+
+
+def test_train_roster_labels_provenance_honestly(payload):
+    """The tooltip must not let a forecast goods path read as a booked service."""
+    from samanvay.domain import TrainClass
+
+    goods = payload["trainClasses"].index(TrainClass.GOODS.value)
+    roster = payload["trains"]
+
+    for row in roster:
+        assert row[2] in (0, 1, 2), "unknown provenance code"
+
+    for row in payload["paths"]:
+        number, name, provenance = roster[row[6]]
+        if row[2] == goods:
+            assert provenance == 2, f"goods train {number} claims a booked provenance"
+            assert name == "", "a forecast goods path must not carry a service name"
+        else:
+            assert provenance in (0, 1), f"coaching train {number} marked as forecast"
+            assert name, f"booked service {number} has no name"
+
+    named = [r for r in roster if r[2] == 0]
+    assert named, "no real services in the roster -- the timetable file did not load"
 
 
 def test_task_ids_in_blocks_exist(payload):

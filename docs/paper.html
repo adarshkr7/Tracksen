@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>SAMANVAY: AI-Powered Automatic Block Planning</title>
+<title>TRACKSEN: AI-Powered Automatic Block Planning</title>
 <style>
   @page {
     size: A4;
@@ -248,7 +248,7 @@
 
 <div class="frontmatter">
 
-  <h1 class="title">SAMANVAY: AI-Powered Automatic Block Planning to Maximise<br>Asset Availability for Train Operations on Indian Railways</h1>
+  <h1 class="title">TRACKSEN: AI-Powered Automatic Block Planning to Maximise<br>Asset Availability for Train Operations on Indian Railways</h1>
 
   <p class="subtitle">A Unified, Explainable Decision-Support System for Multi-Department Maintenance Block Scheduling</p>
 
@@ -263,7 +263,7 @@
 
   <div class="abstract">
     <h2>Abstract</h2>
-    <p>Maintenance of fixed railway infrastructure requires a <em>block</em> &mdash; a sanctioned window in which a section of line is withdrawn from traffic. On Indian Railways, three departments plan these windows independently: Engineering through the Track Management System (TMS), Signal &amp; Telecommunications through the Signalling Maintenance and Management System (SMMS), and Traction Distribution through the Traction Distribution Management System (TDMS). Each raises demands into the Block Demand Management System (BDMS), while the Control Office Application (COA) separately holds the traffic picture. Because no layer optimises across the three, blocks are fragmented, placed on scarce paths, and prioritised by arrival order rather than by risk. We present <span class="sc">Samanvay</span>, a decision-support system that unifies defect and overdue-maintenance data from TMS, SMMS and TDMS with corridor windows, timetable paths and a goods-traffic forecast from COA. Every pending task receives a <em>Criticality Index</em> derived from gradient-boosted failure-risk estimation and survival analysis, with per-task attributions from SHAP. A constraint-programming model (OR-Tools CP-SAT) then places blocks to maximise <em>risk retired per block-hour</em> subject to line exclusivity, disconnection nesting, resource availability and corridor policy, emitting weekly plans at 15-minute granularity and monthly plans at corridor-slot granularity. The system is advisory by construction: it recommends, and the competent authority sanctions. We describe the architecture, the learning and optimisation components, the evaluation methodology against a first-come-first-served baseline, and the deployment constraints imposed by the existing legacy estate.</p>
+    <p>Maintenance of fixed railway infrastructure requires a <em>block</em> &mdash; a sanctioned window in which a section of line is withdrawn from traffic. On Indian Railways, three departments plan these windows independently: Engineering through the Track Management System (TMS), Signal &amp; Telecommunications through the Signalling Maintenance and Management System (SMMS), and Traction Distribution through the Traction Distribution Management System (TDMS). Each raises demands into the Block Demand Management System (BDMS), while the Control Office Application (COA) separately holds the traffic picture. Because no layer optimises across the three, blocks are fragmented, placed on scarce paths, and prioritised by arrival order rather than by risk. We present <span class="sc">Tracksen</span>, a decision-support system that unifies defect and overdue-maintenance data from TMS, SMMS and TDMS with corridor windows, timetable paths and a goods-traffic forecast from COA. Every pending task receives a <em>Criticality Index</em> derived from gradient-boosted failure-risk estimation and survival analysis, with per-task attributions from SHAP. A constraint-programming model (OR-Tools CP-SAT) then places blocks to maximise <em>risk retired per block-hour</em> subject to line exclusivity, disconnection nesting, resource availability and corridor policy, emitting weekly plans at 15-minute granularity and monthly plans at corridor-slot granularity. The system is advisory by construction: it recommends, and the competent authority sanctions. We describe the architecture, the learning and optimisation components, the evaluation methodology against a first-come-first-served baseline, and the deployment constraints imposed by the existing legacy estate.</p>
   </div>
 
   <p class="keywords"><b>Keywords:</b> railway maintenance scheduling &middot; possession planning &middot; constraint programming &middot; survival analysis &middot; explainable AI &middot; asset availability &middot; Indian Railways</p>
@@ -327,7 +327,7 @@
 
 <h2 class="sec">2&nbsp;&nbsp;System Architecture</h2>
 
-<p class="noindent">The system is organised as five layers, shown in Figure 1. The design constraint that dominates every other is that the existing estate must not be disturbed: TMS, SMMS, TDMS, COA and BDMS remain the systems of record, and <span class="sc">Samanvay</span> reads from them rather than replacing any part of them.</p>
+<p class="noindent">The system is organised as five layers, shown in Figure 1. The design constraint that dominates every other is that the existing estate must not be disturbed: TMS, SMMS, TDMS, COA and BDMS remain the systems of record, and <span class="sc">Tracksen</span> reads from them rather than replacing any part of them.</p>
 
 <h3 class="sub">2.1&nbsp;&nbsp;Ingestion and normalisation</h3>
 

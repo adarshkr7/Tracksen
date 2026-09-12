@@ -8,3 +8,18 @@ venv/
 *.egg-info/
 out/sources/
 out/audit.jsonl
+
+# Timetable imported from a local railpull crawl. Real NTES data: kept out of the
+# repository because railpull's README warns that redistributing it may run against
+# the operator's terms of use. Re-crawl rather than passing it on.
+data/timetable_danapur.imported.csv
+
+# NOTE on web/public/plan.json (deliberately NOT ignored).
+#
+# It is ~2.7 MB and rewritten on every pipeline run, so committing it does add a blob to
+# history each time. It stays tracked anyway: the client fetches /plan.json at runtime as
+# a static asset, and the build host has no Python or OR-Tools to regenerate it, so
+# ignoring it would leave a clean checkout deploying an app with no data in it. Repo size
+# is the cheaper problem. Regenerate and sync with:
+#     python scripts/run_pipeline.py --days 7 --tasks 600 --monthly --validate
+#     cd web && npm run sync

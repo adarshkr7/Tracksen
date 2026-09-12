@@ -26,6 +26,7 @@ parallel across departments, which is what clubbing means operationally.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Iterable
 
 from ortools.sat.python import cp_model
 
@@ -42,6 +43,13 @@ from ..domain import (
     ScheduledBlock,
 )
 from ..models.traffic import TrafficModel
+from ..network import (
+    JUNCTION_GROUPS,
+    JUNCTION_THROAT_KM,
+    SECTION_BY_ID,
+    junction_km,
+    lines_for_section,
+)
 
 # Capacities a block may be granted for. Real demands are round; so are these.
 CAPACITY_OPTIONS_MIN = [60, 120, 180, 240, 300]
@@ -49,6 +57,61 @@ CAPACITY_OPTIONS_MIN = [60, 120, 180, 240, 300]
 # Plant has to be positioned. Two blocks needing the same machine must be separated by
 # at least this much, network-wide.
 MACHINE_POSITIONING_MIN = 90
+
+# What each kind of withdrawal costs before and after the work itself.
+#
+# These are not the same event. A traffic block hands the line over and takes it back; a
+# disconnection additionally takes signalling out of service and has to be reconnected
+# and tested before the line can be given back; a power block additionally isolates and
+# earths the OHE and has to restore it. Those minutes are inside the possession and are
+# not available for work, which is why a 180-minute corridor does not give a TRD gang
+# 180 minutes of working time.
+#
+# Keyed by BlockType so the value is read off the withdrawal the task actually needs
+# rather than assumed from the department: an S&T job at a location already isolated is
+# a different event from one that is not.
+SETUP_MIN: dict[BlockType, int] = {
+    BlockType.TRAFFIC: 0,          # the hand-over itself, already priced as regulation
+    BlockType.DISCONNECTION: 15,   # disconnect signalling and prove it
+    BlockType.POWER: 20,           # isolate and earth the OHE
+}
+RESTORE_MIN: dict[BlockType, int] = {
+    BlockType.TRAFFIC: 0,
+    BlockType.DISCONNECTION: 20,   # reconnect, test, and take off the disconnection
+    BlockType.POWER: 15,           # remove earths and recharge
+}
+
+
+def withdrawals_for(task: MaintenanceTask) -> set[BlockType]:
+    """Every withdrawal a task actually needs, which is not only the one it is filed as.
+
+    A task carries a nominal `block_type` -- the withdrawal its own department raised the
+    demand under. That is not the whole picture. Work on or beside OHE needs the traction
+    current off whoever asked for the block: a P.Way gang changing a sleeper under live
+    contact wire is not made safe by the demand saying "traffic block". `MaintenanceTask`
+    already knows this (`requires_power_block` folds in the asset class), and this is
+    where that knowledge is spent.
+    """
+    out = {task.block_type}
+    if task.requires_power_block:
+        out.add(BlockType.POWER)
+    if task.requires_disconnection:
+        out.add(BlockType.DISCONNECTION)
+    return out
+
+
+def withdrawal_overhead(block_types: Iterable[BlockType]) -> int:
+    """Setup and restoration minutes a block loses to its withdrawals.
+
+    The MAXIMUM across the withdrawals present, never the sum. One isolation covers
+    every TRD gang working under it, and the disconnection is taken once for the block,
+    not once per job -- which is a real part of why clubbing is worth doing and would be
+    thrown away by adding these up. Different withdrawal types do overlap in practice
+    (the OHE is isolated while signalling is being disconnected), so the block loses the
+    longest of them, not the total.
+    """
+    types = list(block_types) or [BlockType.TRAFFIC]
+    return max(SETUP_MIN[t] for t in types) + max(RESTORE_MIN[t] for t in types)
 
 # Daylight, for work types that cannot be done under lights.
 DAY_START_MIN, DAY_END_MIN = 6 * 60, 18 * 60
@@ -70,7 +133,10 @@ class OptimiserWeights:
     corridor: float = 40.0       # per block placed inside the mandated corridor
 
     max_tasks_per_block: int = 3
-    max_blocks_per_dept_per_day: int = 6
+    # Calibrated for a division, not a single corridor: Danapur works five routes and
+    # thirty-odd block sections, so a department fielding six gangs a day across all of
+    # it would be a staffing figure no division would recognise.
+    max_blocks_per_dept_per_day: int = 12
 
 
 @dataclass
@@ -130,7 +196,9 @@ def build_candidates(
     cid = 0
 
     for sid in section_ids:
-        for line in (Line.UP, Line.DN):
+        # A single-line branch has one road; enumerating a DN line it does not have
+        # would invent capacity the division cannot use.
+        for line in lines_for_section(sid):
             for day in range(horizon_days):
                 starts: list[tuple[int, bool]] = []
 
@@ -155,6 +223,11 @@ def build_candidates(
                         if inside and corr is not None and start + cap > corr.end_min:
                             continue       # a corridor block cannot outrun the corridor
                         if start + cap > horizon_days * MINUTES_PER_DAY:
+                            continue
+                        # A block is not granted across a Rajdhani or a Vande Bharat.
+                        # Withheld rather than priced, so no saving elsewhere can buy
+                        # it: the solver never sees the option.
+                        if traffic.fouls_premier(sid, line, start, start + cap):
                             continue
                         cid += 1
                         out.append(
@@ -189,8 +262,8 @@ def build_monthly_candidates(
     the mandated corridor itself -- which is the unit a division actually plans plant,
     material and staff against.
 
-    Returns the candidates and the ids of sections with no corridor, so a caller can
-    report the gap rather than silently planning nothing there.
+    Returns the candidates and the unavailable section-day slots, so a caller can
+    report a missing or unsafe corridor rather than silently planning nothing there.
     """
     by_key = {(c.section_id, c.day): c for c in corridors}
     out: list[Candidate] = []
@@ -204,7 +277,14 @@ def build_monthly_candidates(
                 missing.append(f"{sid} day {day}")
                 continue
             capacity = corr.end_min - corr.start_min
-            for line in (Line.UP, Line.DN):
+            for line in lines_for_section(sid):
+                # Monthly candidates are built directly from corridor slots rather
+                # than through build_candidates, so the premier-path fence must be
+                # repeated here. A malformed master chart must result in an explicit
+                # unavailable slot, never in a block over a protected train.
+                if traffic.fouls_premier(sid, line, corr.start_min, corr.end_min):
+                    missing.append(f"{sid} {line.value} day {day}: corridor fouls premier path")
+                    continue
                 cid += 1
                 out.append(
                     Candidate(
@@ -233,15 +313,32 @@ def needs_extended_block(task: MaintenanceTask, corridor_min: int) -> bool:
     real railway these go up as a separate extended or mega block negotiated with
     operations. The monthly plan cannot absorb them, so it names them instead of
     quietly leaving them unscheduled.
+
+    The withdrawal counts. A 170-minute disconnection does not fit a 180-minute corridor:
+    disconnecting and reconnecting the signalling costs 35 of those minutes, so the job
+    needs 205. Comparing bare P90 against the corridor handed such tasks to the solver as
+    though they fitted, where they could never be placed -- they came out as "deferred"
+    rather than "needs an extended block", which is the wrong answer operationally, and
+    their criticality inflated the objective's upper bound with work no plan could do.
     """
-    return (task.p90_duration_min or task.demanded_duration_min) > corridor_min
+    need = task.p90_duration_min or task.demanded_duration_min
+    return need + withdrawal_overhead(withdrawals_for(task)) > corridor_min
+
+
+def working_minutes(cand: Candidate, block_types: Iterable[BlockType]) -> int:
+    """Minutes inside the possession actually available for work."""
+    return cand.capacity_min - withdrawal_overhead(block_types)
 
 
 def _eligible(task: MaintenanceTask, cand: Candidate) -> bool:
     """Can this task go in this window at all? Hard rules only."""
     if task.section_id != cand.section_id or task.line != cand.line:
         return False
-    if (task.p90_duration_min or task.demanded_duration_min) > cand.capacity_min:
+    # The withdrawal this task needs eats into the window before work can start. A
+    # 60-minute possession is not 60 minutes of OHE work: twenty of them are isolation
+    # and fifteen are restoration.
+    need = task.p90_duration_min or task.demanded_duration_min
+    if need > working_minutes(cand, withdrawals_for(task)):
         return False
     if not task.night_work_allowed:
         mod = cand.start_min % MINUTES_PER_DAY
@@ -309,6 +406,35 @@ class BlockOptimiser:
                 m.AddImplication(v, use[c.id])
             m.Add(sum(members) >= 1).OnlyEnforceIf(use[c.id])
             m.Add(sum(members) <= w.max_tasks_per_block)
+
+        # ---- the withdrawal has to fit inside the possession ----------- #
+        # `_eligible` already checks a task against its own withdrawal, but clubbing
+        # changes the answer: an hour of track work fits an hour-long block on its own,
+        # and stops fitting the moment a power block is clubbed into it, because the
+        # first twenty minutes are now OHE isolation and the last fifteen are recharging.
+        # Without this the plan would promise gangs working time the possession does not
+        # contain, and the overrun would surface on the ground rather than on the chart.
+        #
+        # setup and restore take the MAXIMUM over the withdrawals present, not the sum.
+        # Only lower bounds are needed: both appear solely on the left of a <= capacity
+        # constraint, so the solver already wants them small and the bounds force them up
+        # exactly as far as the clubbed withdrawals require.
+        max_setup = max(SETUP_MIN.values())
+        max_restore = max(RESTORE_MIN.values())
+        for c in candidates:
+            member_ids = tasks_for_cand[c.id]
+            if not member_ids:
+                continue
+            setup = m.NewIntVar(0, max_setup, f"setup_{c.id}")
+            restore = m.NewIntVar(0, max_restore, f"restore_{c.id}")
+            for tid in member_ids:
+                v = assign[(tid, c.id)]
+                needed = withdrawals_for(task_by_id[tid])
+                m.Add(setup >= max(SETUP_MIN[bt] for bt in needed)).OnlyEnforceIf(v)
+                m.Add(restore >= max(RESTORE_MIN[bt] for bt in needed)).OnlyEnforceIf(v)
+                need = (task_by_id[tid].p90_duration_min
+                        or task_by_id[tid].demanded_duration_min)
+                m.Add(need + setup + restore <= c.capacity_min).OnlyEnforceIf(v)
 
         # ---- one gang per department per block ------------------------- #
         # This single constraint is what makes "clubbing" mean what it should:
@@ -394,6 +520,42 @@ class BlockOptimiser:
             ]
             if len(ivs) > 1:
                 m.AddNoOverlap(ivs)
+
+        # ---- junction throats ------------------------------------------- #
+        # Where routes converge, the throat is one interlocked area. Work in the throat
+        # of one leg cannot proceed while the throat of another is occupied, so a block
+        # on the Barauni branch at Hathidah has to be planned against the main line --
+        # which is precisely the coordination a single-corridor scheduler never has to
+        # do. Only work actually *in* the throat interacts; plain line further out on
+        # either leg is independent.
+        for jn, section_ids in JUNCTION_GROUPS.items():
+            throat_ivs = []
+            for c in candidates:
+                if c.section_id not in section_ids:
+                    continue
+                route = SECTION_BY_ID[c.section_id].route
+                try:
+                    jkm = junction_km(jn, route)
+                except KeyError:
+                    continue
+                in_throat = [
+                    assign[(tid, c.id)]
+                    for tid in tasks_for_cand[c.id]
+                    if abs(task_by_id[tid].chainage_km - jkm) <= JUNCTION_THROAT_KM
+                ]
+                if not in_throat:
+                    continue
+                v = m.NewBoolVar(f"throat_{jn}_{c.id}")
+                m.Add(v <= sum(in_throat))
+                for x in in_throat:
+                    m.AddImplication(x, v)
+                throat_ivs.append(
+                    m.NewOptionalFixedSizeIntervalVar(
+                        c.start_min, c.capacity_min, v, f"tiv_{jn}_{c.id}"
+                    )
+                )
+            if len(throat_ivs) > 1:
+                m.AddNoOverlap(throat_ivs)
 
         # ---- staff: a department can only run so many blocks a day ------ #
         for dept in Department:
@@ -506,14 +668,14 @@ class BlockOptimiser:
             depts = sorted({t.department for t in ts}, key=lambda d: d.value)
             btypes = sorted({t.block_type for t in ts}, key=lambda b: b.value)
 
-            # The block only needs to be as long as its longest member; the rest of
-            # the reserved capacity is handed back rather than held against traffic.
-            used_min = max(
-                (t.p90_duration_min or t.demanded_duration_min) for t in ts
-            )
-            actual_cost = traffic.cost_of_block(
-                c.section_id, c.line, c.start_min, c.start_min + used_min
-            )
+            # `capacity_min` is the possession that the solver reserved.  It must be
+            # the interval shown to operations and used for the reported traffic cost:
+            # shortening it here used to make the displayed plan overlap-safe while
+            # the optimisation had priced and excluded a longer, different plan.
+            # Releasing unused minutes is a later, explicit re-planning operation;
+            # it cannot be inferred after CP-SAT has made its decisions.
+            reserved_min = c.capacity_min
+            reserved_cost = c.traffic_cost
 
             reasons = []
             if len(depts) > 1:
@@ -523,7 +685,7 @@ class BlockOptimiser:
             if c.inside_corridor:
                 reasons.append("inside mandated corridor")
             else:
-                reasons.append(f"outside corridor -- {actual_cost:.0f} wtd detention min")
+                reasons.append(f"outside corridor -- {reserved_cost:.0f} wtd detention min")
             top = max(ts, key=lambda t: t.criticality or 0)
             if top.criticality:
                 reasons.append(f"driven by {top.id} (criticality {top.criticality:.0f})")
@@ -535,12 +697,12 @@ class BlockOptimiser:
                     line=c.line,
                     day=c.day,
                     start_min=c.start_min,
-                    end_min=c.start_min + used_min,
+                    end_min=c.start_min + reserved_min,
                     task_ids=sorted(tids),
                     departments=depts,
                     block_types=btypes,
                     inside_corridor=c.inside_corridor,
-                    traffic_cost=actual_cost,
+                    traffic_cost=reserved_cost,
                     criticality_retired=round(sum(t.criticality or 0 for t in ts), 2),
                     reasons=reasons,
                 )
@@ -551,5 +713,5 @@ class BlockOptimiser:
             blocks=sorted(blocks, key=lambda b: (b.start_min, b.section_id)),
             unscheduled_task_ids=[t.id for t in tasks if t.id not in done],
             horizon_days=horizon_days,
-            label="SAMANVAY (CP-SAT)",
+            label="TRACKSEN (CP-SAT)",
         )
