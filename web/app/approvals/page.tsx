@@ -8,7 +8,8 @@ import {
   Badge, Button, Card, DemoNote, DeptBadge, Empty, Lamp, PageHead,
 } from "../components/ui";
 import {
-  ApprovalStatus, clearOperations, concur, planStatus, returnPlan, sanction, submitPlan,
+  ApprovalStatus, StoredPlanPayload, clearOperations, concur, planStatus, returnPlan,
+  sanction, storedPlan, submitPlan,
 } from "../lib/api";
 import { CURRENT_PLAN_ID } from "../lib/planId";
 import { Dept, ROLE_DEPARTMENT } from "../lib/plan";
@@ -53,10 +54,14 @@ function ApprovalsBody() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [remarks, setRemarks] = useState("");
+  const [stored, setStored] = useState<StoredPlanPayload | null>(null);
 
   const refresh = useCallback(async () => {
     if (!apiUp) return;
     try { setStatus(await planStatus(CURRENT_PLAN_ID)); } catch { setStatus(null); }
+    // The content behind the plan id, fetched alongside its approval state. Absent is
+    // normal for a plan that was never submitted; a 404 is not an error here.
+    try { setStored(await storedPlan(CURRENT_PLAN_ID)); } catch { setStored(null); }
   }, [apiUp]);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -224,6 +229,35 @@ function ApprovalsBody() {
                   <span style={{ color: "var(--warn)" }}>•</span>{b}
                 </div>
               ))}
+            </div>
+          )}
+          {stored && (
+            <div className="px-3.5 py-3" style={{ borderTop: "1px solid var(--line)" }}>
+              <div className="sig mb-1.5">The plan itself</div>
+              <div className="text-[11.5px] leading-relaxed" style={{ color: "var(--ink-2)" }}>
+                <span className="tnum">{stored.blocks.length}</span> blocks, revision{" "}
+                <span className="tnum">{stored.revision}</span>
+                {stored.revisions.length > 1 &&
+                  ` of ${stored.revisions.length} stored`}. Fingerprint{" "}
+                <span className="mono">{stored.content_hash.slice(0, 12)}…</span>
+              </div>
+              {/* The two checks are different questions and both are worth stating:
+                  one asks whether the stored file has been edited, the other whether
+                  this is the revision the DRM actually put their name to. */}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-[11px]">
+                <span style={{ color: stored.intact ? "var(--ok)" : "var(--crit)" }}>
+                  {stored.intact
+                    ? "✓ content matches its stored fingerprint"
+                    : "✗ content has been altered since it was stored"}
+                </span>
+                {stored.sanctioned_hash && (
+                  <span style={{ color: stored.matches_sanctioned ? "var(--ok)" : "var(--crit)" }}>
+                    {stored.matches_sanctioned
+                      ? "✓ this is the revision that was sanctioned"
+                      : "✗ NOT the revision that was sanctioned"}
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </Card>

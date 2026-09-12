@@ -27,6 +27,8 @@ from samanvay.domain import Department  # noqa: E402
 from samanvay.governance import (  # noqa: E402
     Actor,
     AuthenticationError,
+    PlanStore,
+    PlanStoreError,
     load_or_bootstrap,
     ApprovalWorkflow,
     AuditLog,
@@ -42,6 +44,11 @@ from samanvay.session import Pin, PlanningSession  # noqa: E402
 AUDIT_PATH = Path(__file__).resolve().parents[1] / "out" / "audit.jsonl"
 audit = AuditLog(AUDIT_PATH)
 workflow = ApprovalWorkflow(audit)
+
+# Every revision of every plan, so a sanction can be shown and not merely asserted. The
+# audit log says what was decided; this says what it was decided about.
+PLAN_STORE_PATH = Path(__file__).resolve().parents[1] / "out" / "plans"
+plans = PlanStore(PLAN_STORE_PATH)
 
 # Who the service will accept. On first run this mints one token per role and prints
 # them once; thereafter it reads the hashes. There is deliberately no "no identity file
@@ -177,6 +184,22 @@ def health() -> dict:
     }
 
 
+def _store_plan(plan_id: str, revision: int, plan, metrics=None) -> None:
+    """Persist a revision, without letting a storage fault lose the approval.
+
+    The workflow transition has already happened and is already in the audit log by the
+    time this runs. Raising here would fail the request after the fact was recorded,
+    leaving the caller thinking their submission was refused when the trail says it was
+    accepted -- a worse state than a plan that cannot be displayed.
+    """
+    try:
+        plans.save(plan_id, revision, plan,
+                   {k: v.__dict__ for k, v in (metrics or {}).items()} or None)
+    except (PlanStoreError, OSError) as exc:
+        print(f"WARNING: plan {plan_id} r{revision} was approved but not stored: {exc}",
+              file=sys.stderr, flush=True)
+
+
 @app.get("/api/me")
 def me(actor: Actor = Depends(caller)) -> dict:
     """Who the presented token belongs to.
@@ -241,6 +264,10 @@ def resolve(req: ResolveRequest,
                             pinned=[p.block_id for p in pins])
         except WorkflowError as exc:
             raise HTTPException(status_code=409, detail=str(exc))
+        # A re-solve of a plan under approval is a new revision of it, and the old one
+        # is what the concurrences it just invalidated were given to. Both are kept.
+        _store_plan(plan_id, workflow.plans[plan_id].revision, result.plan,
+                    result.metrics)
 
     return result.payload
 
@@ -305,10 +332,19 @@ def submit(plan_id: str, body: CreateIn, actor: Actor = Depends(caller)) -> dict
     # The fingerprint of the plan being submitted. Without it the trail records that a
     # plan was approved but not which plan, and "PLAN-0007 was sanctioned" could later be
     # attached to any set of blocks at all.
-    plan_hash = _last_plan.content_hash() if _last_plan is not None else None
+    if _last_plan is None:
+        raise HTTPException(
+            status_code=409,
+            detail=("no plan has been solved yet, so there is nothing to submit. "
+                    "Call /api/plan or /api/resolve first."),
+        )
+    plan_hash = _last_plan.content_hash()
     _handle(lambda: workflow.create(
-        plan_id, depts, actor, plan_hash=plan_hash,
-        note=body.remarks))
+        plan_id, depts, actor, plan_hash=plan_hash, note=body.remarks))
+
+    # Stored after the workflow accepted it, so a refused submission leaves nothing
+    # behind claiming to be under approval.
+    _store_plan(plan_id, workflow.plans[plan_id].revision, _last_plan)
     return workflow.status(plan_id)
 
 
@@ -345,6 +381,37 @@ def return_plan(plan_id: str, body: ActorIn, actor: Actor = Depends(caller)) -> 
 @app.get("/api/plans/{plan_id}/status")
 def plan_status(plan_id: str) -> dict:
     return _handle(lambda: workflow.status(plan_id))
+
+
+@app.get("/api/plans/{plan_id}/plan")
+def stored_plan(plan_id: str, revision: int | None = None) -> dict:
+    """The plan content behind a plan id: what was actually approved.
+
+    Checked, not just returned. `intact` says the stored file still hashes to the value
+    saved with it; `matches_sanctioned` says it is the revision the DRM signed, by
+    comparing against the hash in the approval state. Returning the content without
+    either would be an assertion, and an assertion is what this exists to replace.
+    """
+    try:
+        stored = plans.load(plan_id, revision)
+    except PlanStoreError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    if stored is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(f"no stored content for plan {plan_id}"
+                    + (f" revision {revision}" if revision is not None else "")),
+        )
+
+    approval = workflow.plans.get(plan_id)
+    sanctioned_hash = approval.sanctioned_hash if approval else None
+    return {
+        **stored.to_dict(),
+        "revisions": plans.revisions(plan_id),
+        "intact": stored.intact,
+        "sanctioned_hash": sanctioned_hash,
+        "matches_sanctioned": stored.matches(sanctioned_hash),
+    }
 
 
 @app.get("/api/plans/{plan_id}/audit")

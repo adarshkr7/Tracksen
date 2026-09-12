@@ -2,7 +2,7 @@
 
 *Audited against the repository, not from memory. Every figure below is reproducible —
 see "Check these claims yourself". Last updated 12 September 2026.*
-**~6,800 lines Python · ~6,100 lines TypeScript/CSS · ~1,830 lines of tests · 153 tests passing.**
+**~6,800 lines Python · ~6,100 lines TypeScript/CSS · ~1,830 lines of tests · 211 tests passing.**
 
 > This document says what is **built**. [AUDIT.md](AUDIT.md) says what is **broken or
 > unfinished**, with severities. Read that one before quoting a number off a screen.
@@ -17,7 +17,7 @@ A single percentage would be misleading, so here are the three that matter.
 |---|---:|---|
 | **Demo / prototype for the finals** | **~95%** | Runs end to end, validated, tested, UI a judge can drive |
 | **The problem statement's four stated requirements** | **~95%** | All four met, plus the governance the PS implies |
-| **A system that could be piloted on a division** | **~55%** | Connectors, approvals, audit and authentication exist; no persistence, no directory binding |
+| **A system that could be piloted on a division** | **~55%** | Connectors, approvals, audit, authentication and approved-plan storage exist; the estate is still regenerated, no directory binding |
 
 **If someone asks one number, say ~95%** — that is the honest answer against what
 PS 26027 actually asked for, and it is defensible line by line below.
@@ -125,7 +125,8 @@ the divisional directory. And there is no approvals UI; the workflow is API-only
 | **Test suite (152 tests)** | ✅ | `tests/`, `scripts/mutation_check.py` |
 | Time–distance chart, month view | ✅ | `web/app/components/` |
 | What-if simulator | ✅ | `web/app/components/WhatIfPanel.tsx`, `lib/whatif.ts` |
-| **Persistence** | ❌ | — |
+| Approved plan content | ✅ | `governance/planstore.py`, hash-verified |
+| **Estate persistence** | ❌ | regenerated from `seed=42` every start |
 | Authentication (bearer token → role) | ✅ | `governance/identity.py`, `/api/me` |
 | **Directory / SSO binding** | ❌ | tokens in a file, no expiry or revocation |
 | Approvals UI | ✅ | `web/app/approvals/`, with sign-in |
@@ -164,8 +165,10 @@ straight through. It now asserts an independent floor.
    use it without curl — so the governance layer is currently describable rather than
    demonstrable. A queue view with concur / withhold / return, and the audit trail beside
    the plan it belongs to. *~1 day, and the highest-value day left.*
-2. **Persistence.** PostgreSQL + PostGIS; stop regenerating the estate every run. Also
-   removes the fixed `seed=42` limitation — the service always plans the same world. *~1–2 days.*
+2. **Persist the estate.** Approved plans are stored and hash-verified already; what is
+   still regenerated every run is the asset population and defect history. PostgreSQL +
+   PostGIS removes the fixed `seed=42` limitation — the service always plans the same
+   world. *~1–2 days.*
 3. **Bind the identity store to the divisional directory.** Authentication is real —
    a bearer token resolves to a role server-side and the request body has no say. What is
    missing is LDAP or SSO behind it, plus token expiry and per-token revocation. *~1 day.*

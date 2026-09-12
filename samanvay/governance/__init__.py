@@ -9,6 +9,7 @@ from .identity import (
     hash_token,
     load_or_bootstrap,
 )
+from .planstore import PlanStore, PlanStoreError, StoredPlan
 from .workflow import (
     CONCURRENCE_AUTHORITY,
     DEPARTMENT_HEAD,
@@ -27,5 +28,5 @@ __all__ = [
     "CONCURRENCE_AUTHORITY", "ChainStatus", "Concurrence", "DEPARTMENT_HEAD",
     "PlanApproval", "PlanState", "Role", "WorkflowError",
     "AuthenticationError", "Identity", "IdentityStore", "bootstrap", "hash_token",
-    "load_or_bootstrap",
+    "load_or_bootstrap", "PlanStore", "PlanStoreError", "StoredPlan",
 ]
