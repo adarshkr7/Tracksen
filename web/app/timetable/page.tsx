@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import BlockDetail from "../components/BlockDetail";
 import ExpandableCard from "../components/Expandable";
 import Gate from "../components/Gate";
 import MonthView from "../components/MonthView";
 import TimeDistanceChart from "../components/TimeDistanceChart";
 import { usePlan } from "../components/PlanProvider";
 import { Card, DemoNote, Empty, Metric, MetricRow, PageHead } from "../components/ui";
-import { CLASS_COLOR, CLASS_LABEL, LineName, dayLabel } from "../lib/plan";
+import { Block, CLASS_COLOR, CLASS_LABEL, LineName, dayLabel } from "../lib/plan";
 
 /**
  * The control chart.
@@ -27,6 +28,7 @@ function TimetableBody() {
   const [horizon, setHorizon] = useState<"week" | "month">("week");
   const [day, setDay] = useState(0);
   const [line, setLine] = useState<LineName | "BOTH">("BOTH");
+  const [selected, setSelected] = useState<Block | null>(null);
 
   if (!plan) return null;
   const m = plan.monthly;
@@ -59,6 +61,7 @@ function TimetableBody() {
       <div className="mb-4"><DemoNote /></div>
 
       {horizon === "week" ? (
+        <>
         <ExpandableCard
           title={`Time–Distance Chart — ${dayLabel(day)}`}
           subtitle="Chainage down the main line, time across; the shaded band is the mandated corridor"
@@ -97,6 +100,7 @@ function TimetableBody() {
             <TimeDistanceChart
               sections={plan.sections} stations={plan.stations} paths={plan.paths}
               trains={plan.trains}
+              onSelect={setSelected} selectedId={selected?.id ?? null}
               corridors={plan.corridors} blocks={plan.blocks} day={day} line={line}
             />
           </div>
@@ -123,6 +127,13 @@ function TimetableBody() {
             </span>
           </div>
         </ExpandableCard>
+        {selected && (
+          <div className="mt-4">
+            <BlockDetail block={selected} data={plan} taskById={taskById}
+              onClose={() => setSelected(null)} />
+          </div>
+        )}
+        </>
       ) : m ? (
         <>
           <div className="mb-4">

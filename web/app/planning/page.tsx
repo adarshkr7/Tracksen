@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import ExpandableCard from "../components/Expandable";
 import Gate from "../components/Gate";
+import BlockDetail from "../components/BlockDetail";
 import TimeDistanceChart from "../components/TimeDistanceChart";
 import { usePlan } from "../components/PlanProvider";
 import {
@@ -31,6 +32,7 @@ function PlanningBody() {
   const { plan, setPlan, apiUp, taskById } = usePlan();
   const { token } = useRole();
   const [which, setWhich] = useState<"optimised" | "baseline">("optimised");
+  const [selected, setSelected] = useState<Block | null>(null);
   const [day, setDay] = useState(0);
   const [line, setLine] = useState<LineName | "BOTH">("BOTH");
   const [solving, setSolving] = useState(false);
@@ -176,10 +178,16 @@ function PlanningBody() {
             <TimeDistanceChart
               sections={plan.sections} stations={plan.stations} paths={plan.paths}
               trains={plan.trains}
+              onSelect={setSelected} selectedId={selected?.id ?? null}
               corridors={plan.corridors} blocks={blocks} day={day} line={line}
             />
           </div>
         </ExpandableCard>
+
+        {selected && (
+          <BlockDetail block={selected} data={plan} taskById={taskById}
+            onClose={() => setSelected(null)} />
+        )}
 
         {/* ---------- solver + constraints ---------- */}
         <div className="space-y-4">
