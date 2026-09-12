@@ -59,20 +59,25 @@ Central Railway, against an FCFS baseline on the identical task population:
 
 | Measure | Baseline | TRACKSEN | |
 |---|---:|---:|---|
-| **Risk retired per block-hour** | 8.3 | **18.8** | **+126%** |
-| Blocks used | 189 | 146 | −23% |
-| Block hours consumed | 623.0 | 450.0 | −28% |
-| Clubbing ratio (depts per block) | 1.00 | 1.32 | +32% |
-| Line closures saved | 0 | 47 | — |
-| Traffic cost (wtd detention min) | 72,730 | 46,673 | −36% |
-| Corridor adherence | 38% | 73% | +92% |
-| Unplanned failures | 73 | 61 | −16% |
-| High-criticality unplanned failures | 24 | 16 | −33% |
-| Overdue task-days | 3,903 | 3,965 | **+2% worse** |
+| **Risk retired per block-hour** | 8.4 | **21.3** | **+154%** |
+| Blocks used | 191 | 121 | −37% |
+| Block hours consumed | 643.0 | 393.0 | −39% |
+| Clubbing ratio (depts per block) | 1.00 | 1.59 | +59% |
+| Line closures saved | 0 | 71 | — |
+| Traffic cost (wtd detention min) | 155,321 | 77,838 | −50% |
+| Corridor adherence | 31% | 60% | +94% |
+| Unplanned failures | 71 | 63 | −11% |
+| High-criticality unplanned failures | 18 | 13 | −28% |
+| Overdue task-days | 3,880 | 4,001 | **+3% worse** |
 
-Solver: weekly `FEASIBLE` at a **2.4% optimality gap**, monthly at **7.0%**, both in
-240 s. Close enough to optimal that the comparison is about the formulation, not about
-how long the solver was left running.
+Solver: monthly **`OPTIMAL`**, weekly `FEASIBLE` at a **12.9% gap**, 600 s each.
+
+**The weekly gap is budget-sensitive, and it is worth knowing why.** At 240 s it is 76.6%
+on this timetable. The real road is 2.2x busier than the hand-written one this replaced,
+so the objective's traffic term has gone from a tenth of the total to half of it, and
+criticality and traffic now genuinely contend where criticality used to dominate. More
+time closes it — 600 s reaches 12.9% — so it is a search-effort problem, not a broken
+formulation. The gap prints on every run; check it before quoting.
 
 The gain is not in doing more work. It is in doing the *right* work, in *fewer* closures,
 at *cheaper* hours.
@@ -438,11 +443,24 @@ failure probability. That memoryless assumption approximates the Cox model rathe
 re-deriving it — it is an order of magnitude while dragging, not a substitute for the
 nightly re-solve.
 
-## Running it on published data
+## The timetable
 
-The shipped `data/timetable_danapur.csv` carries real train numbers, names and routes
-with **approximate times** — it is what makes the repository runnable out of the box. To
-plan against published times instead:
+Two files ship, and the loader prefers the second whenever it is present:
+
+| | services | times | running days |
+|---|---:|---|---|
+| `data/timetable_danapur.csv` | 212 | approximate, written by hand | approximate |
+| `data/timetable_danapur.imported.csv` | **543** | **published** | **published** |
+
+So a clone plans against published times by default. The approximate file stays as the
+fallback: it is what makes the repository runnable if the imported one is ever removed,
+and the Data Sources screen always says which is in force.
+
+The imported file is a **derived extract** — 543 services over one division, reduced to
+the ten columns this model needs — merged from a published schedule (stops and times) and
+an NTES crawl via [railpull](https://github.com/shwetankg07/railpull) (running days). Its
+header carries the attribution. The 116 MB of source datasets are not in the repository;
+regenerate rather than copy the extract onward:
 
 ```bash
 python scripts/import_opendata.py --file data/IRCTC_cleaned.csv \
@@ -450,14 +468,9 @@ python scripts/import_opendata.py --file data/IRCTC_cleaned.csv \
 python scripts/run_pipeline.py --days 7 --tasks 600 --monthly --validate
 ```
 
-The loader prefers the imported file the moment it exists — no code change, no config —
-and the Data Sources screen says which one is in force. The merge takes stops and times
-from IRCTC, running days from the NTES crawl, and adds any current service the published
-extract predates. Neither source is better at everything, which is why it is a merge and
-not a choice.
-
-Both the downloaded datasets and the file they produce are git-ignored: their licences
-differ from this repository's.
+The merge takes stops and times from IRCTC, running days from the NTES crawl, and adds
+any current service the published extract predates. Neither source is better at
+everything, which is why it is a merge and not a choice.
 
 ## Not built yet
 

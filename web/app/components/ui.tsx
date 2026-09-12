@@ -237,8 +237,14 @@ export function DemoNote({ children }: { children?: React.ReactNode }) {
       <Badge color="var(--warn)" bg="#fff">DEMO DATA</Badge>
       <span>
         {children ?? (
-          <>Synthetic railway operations data modelled on published maintenance
-          intervals. TRACKSEN is not connected to live Indian Railways systems.</>
+          // Precise about which half is which. "Synthetic railway operations data"
+          // covered everything when the timetable was written by hand; now that the
+          // train paths are published data, saying it flatly understates them, and a
+          // viewer would reasonably read the whole chart as invented.
+          <>Maintenance demands, assets and defect history are <b>synthetic</b>. The
+          coaching timetable is <b>published data</b>; goods paths are forecast, because
+          they are not booked anywhere. TRACKSEN is not connected to live Indian Railways
+          systems.</>
         )}
       </span>
     </div>
