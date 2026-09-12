@@ -87,9 +87,18 @@ STATION_ALIASES: dict[str, str] = {
 }
 
 
+# IRCTC's export carries a booking-quota marker in FRONT of the station name -- "RL
+# Patna Jn" for Remote Location, "PQ New Delhi" for Pooled Quota, "RS" for roadside.
+# It is not part of the name and it is not rare: 7,722 of the stop entries in
+# IRCTC_cleaned.csv carry one, and with the marker left in place every one of those
+# calls failed to resolve. 12273 Howrah-New Delhi Duronto touches this division at
+# exactly one station -- "RL Patna Jn" -- so it resolved to nothing at all.
+_QUOTA_PREFIX = re.compile(r"^(?:RL|PQ|RS)\s+(?=\S)")
+
+
 def normalise_station(name: str) -> str:
     """Published station name -> a form two sources can be compared on."""
-    s = re.sub(r"[^a-z0-9]", "", (name or "").lower())
+    s = re.sub(r"[^a-z0-9]", "", _QUOTA_PREFIX.sub("", (name or "").strip()).lower())
     # "Junction" and "Halt" are decoration. A bare trailing "h" is NOT: stripping it
     # turned "Mokameh" into "mokame" and stopped it matching anything at all.
     for suffix in ("junction", "jn", "halt"):
@@ -138,6 +147,34 @@ def unambiguous_route(code: str) -> str | None:
     return routes[0] if len(routes) == 1 else None
 
 
+def shared_route(codes: list[str]) -> str | None:
+    """The one road every stop lies on, for a run whose stops are all junctions.
+
+    Needed because "unambiguous" is the wrong test when a service calls only at
+    junctions. 12309/12310 Rajendra Nagar-New Delhi touches this division at Patna Jn
+    and Danapur and nowhere else; both are junction throats, so no stop was unambiguous
+    and the service was thrown away as route-indeterminate. Patna and Danapur are the
+    two busiest stations here, and the trains that call only there are exactly the
+    long-distance premier ones -- the fence was protecting a timetable that contained no
+    Rajdhani at all.
+
+    Intersecting settles it without guessing. Patna Jn is on the main line and the Gaya
+    branch, Danapur on the main line and the Hajipur branch; the main line is the only
+    road carrying both.
+
+    Where the intersection still holds more than one road the main line wins, because
+    every branch meets the main line at exactly one junction -- so two DIFFERENT
+    junctions can only be joined along the main line. Where it holds no main line, this
+    returns None rather than picking a branch: that would be a guess, and a guess here
+    puts a train on a road it never touches.
+    """
+    sets = [r for r in (set(STATION_ROUTES[c]) for c in codes) if r]
+    if len(sets) < 2:
+        return None
+    shared = set.intersection(*sets)
+    return MAIN if MAIN in shared else None
+
+
 def to_service(number: str, name: str, tclass: str, runs: str,
                stops: list[dict]) -> tuple[dict | None, str]:
     """One timetable row, or a reason it could not be written.
@@ -162,8 +199,12 @@ def to_service(number: str, name: str, tclass: str, runs: str,
     certain = {r for r in (unambiguous_route(c) for c in codes) if r}
 
     if not certain:
-        # Every stop was a junction. Nothing distinguishes which roads were used.
-        return None, "only junction stops -- route indeterminate"
+        # Every stop was a junction. No single stop distinguishes the road, but the road
+        # they all share may still do it.
+        shared = shared_route(codes)
+        if shared is None:
+            return None, "only junction stops -- route indeterminate"
+        certain = {shared}
 
     branches = certain - {MAIN}
     if len(branches) > 1:

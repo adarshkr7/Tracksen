@@ -10,6 +10,12 @@ from __future__ import annotations
 import pytest
 
 from samanvay.domain import Line, TrainClass
+from samanvay.timetable_import import (
+    code_for_name,
+    normalise_station,
+    shared_route,
+    to_service,
+)
 from samanvay.network import (
     BOOKED_SERVICES,
     SHIPPED_TIMETABLE,
@@ -186,6 +192,59 @@ def test_a_service_that_goes_nowhere_is_rejected(tmp_path):
 def test_a_missing_file_is_reported_not_silently_empty(tmp_path):
     with pytest.raises(FileNotFoundError):
         load_booked_services(tmp_path / "absent.csv")
+
+
+# --------------------------------------------------------------------------- #
+# Reading a published stop sequence
+#
+# Both of these were live defects, and both cost the division its premier traffic:
+# the imported book held 543 services and not one Rajdhani or Duronto.
+# --------------------------------------------------------------------------- #
+
+def test_a_booking_quota_marker_is_not_part_of_the_station_name():
+    # IRCTC's export writes "RL Patna Jn" for Remote Location and "PQ ..." for Pooled
+    # Quota. 7,722 stop entries in IRCTC_cleaned.csv carry one, and none of them
+    # resolved. 12273 Howrah-New Delhi Duronto touches this division at exactly one
+    # station, and it is spelled "RL Patna Jn".
+    assert code_for_name("RL Patna Jn") == code_for_name("Patna Jn") == "PNBE"
+    assert code_for_name("RS Barh") == code_for_name("Barh")
+
+
+def test_a_quota_marker_is_only_stripped_when_it_is_a_separate_word():
+    # A name that merely starts with those letters keeps them.
+    assert normalise_station("Rlxyz Junction") == "rlxyz"
+
+
+def test_a_run_calling_only_at_junctions_resolves_to_the_road_they_share():
+    # 12309/12310 Rajendra Nagar-New Delhi: Patna Jn and Danapur and nothing else on
+    # this road. Both are junction throats, so no stop is unambiguous -- but Patna is
+    # on the main line and the Gaya branch, Danapur on the main line and the Hajipur
+    # branch, and only the main line carries both.
+    row, why = to_service("12309", "RJPB TEJAS RAJ", "", "daily", [
+        {"code": "PNBE", "time": "19:23"},
+        {"code": "DNR", "time": "19:43"},
+    ])
+    assert row is not None, why
+    assert row["route"] == MAIN
+    assert (row["enter_at"], row["leave_at"]) == ("PNBE", "DNR")
+
+
+def test_one_junction_stop_is_still_indeterminate():
+    # Sharing a road takes two stops. One junction settles nothing, and guessing here
+    # would put a train on a road it never touches.
+    row, why = to_service("12273", "NDLS DURONTO", "", "daily", [
+        {"code": "PNBE", "time": "16:03"},
+    ])
+    assert row is None
+    assert "indeterminate" in why
+
+
+def test_the_shared_road_is_never_guessed_to_be_a_branch():
+    # Every branch meets the main line at exactly one junction, so two different
+    # junctions can only be joined along the main line. shared_route says so rather
+    # than picking whichever branch happens to sort first.
+    assert shared_route(["PNBE", "DNR"]) == MAIN
+    assert shared_route(["KIUL"]) is None
 
 
 # --------------------------------------------------------------------------- #
