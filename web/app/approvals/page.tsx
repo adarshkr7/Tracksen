@@ -44,7 +44,11 @@ export default function ApprovalsPage() {
 
 function ApprovalsBody() {
   const { plan, apiUp } = usePlan();
-  const { actor, role } = useRole();
+  const { session, token } = useRole();
+  // Everything the page offers keys off the role the SERVICE resolved, not a
+  // choice made here. Hiding a button the token cannot use is a courtesy; the
+  // refusal that matters happens on the server either way.
+  const role = session?.role ?? null;
   const [status, setStatus] = useState<ApprovalStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -90,7 +94,7 @@ function ApprovalsBody() {
   }
 
   const idx = stageIndex(status);
-  const myDept = ROLE_DEPARTMENT[role];
+  const myDept = role ? ROLE_DEPARTMENT[role] : undefined;
   const depts = (status?.departments ?? ["ENGG", "S&T", "TRD"]) as Dept[];
 
   return (
@@ -107,9 +111,11 @@ function ApprovalsBody() {
         }
       />
       <div className="mb-4"><DemoNote>
-        Roles here are selected, not authenticated — the top bar chooses the capacity a
-        request is made in. The backend enforces what that capacity may do and refuses
-        the rest; a deployment binds it to the divisional directory.
+        Roles are <b>authenticated</b>: a bearer token identifies the caller and the
+        service resolves it to a name and a role. Nothing in the request body can change
+        that. What is still a stand-in is the identity <i>store</i> — a deployment
+        replaces it with the divisional directory, and the rules below are unchanged
+        either way.
       </DemoNote></div>
 
       {err && (
@@ -223,7 +229,9 @@ function ApprovalsBody() {
         </Card>
 
         {/* ---------- actions ---------- */}
-        <Card title="Actions" subtitle={`Acting as ${actor} · ${role}`}>
+        <Card title="Actions"
+          subtitle={session ? `Signed in as ${session.name} · ${session.role}`
+                             : "Sign in to act on this plan"}>
           <textarea
             value={remarks} onChange={(e) => setRemarks(e.target.value)}
             placeholder="Remarks (recorded in the audit trail)"
@@ -232,11 +240,21 @@ function ApprovalsBody() {
             style={{ borderColor: "var(--line-2)", background: "var(--surface-2)" }}
           />
 
-          <div className="space-y-2">
+          {!session && (
+            <div className="rounded-[3px] border px-3 py-2.5 mb-3 text-[11.5px] leading-relaxed"
+              style={{ borderColor: "var(--line-2)", background: "var(--surface-2)",
+                       color: "var(--ink-2)" }}>
+              <b>Not signed in.</b> The approval route needs a bearer token — sign in from
+              the top bar. The plan itself is readable without one.
+            </div>
+          )}
+
+          <div className="space-y-2" style={{ opacity: session ? 1 : 0.45,
+                                              pointerEvents: session ? "auto" : "none" }}>
             {!status && (
               <Button variant="primary" disabled={busy}
                 onClick={() => run(() => submitPlan(
-                  CURRENT_PLAN_ID, actor, role, ["ENGG", "S&T", "TRD"], remarks))}>
+                  CURRENT_PLAN_ID, token!, ["ENGG", "S&T", "TRD"], remarks))}>
                 Submit plan into the route
               </Button>
             )}
@@ -245,12 +263,12 @@ function ApprovalsBody() {
               <div className="flex gap-2">
                 <Button variant="primary" disabled={busy}
                   onClick={() => run(() => concur(
-                    CURRENT_PLAN_ID, actor, role, myDept, true, remarks))}>
+                    CURRENT_PLAN_ID, token!, myDept, true, remarks))}>
                   Concur for {myDept}
                 </Button>
                 <Button variant="danger" disabled={busy}
                   onClick={() => run(() => concur(
-                    CURRENT_PLAN_ID, actor, role, myDept, false, remarks))}>
+                    CURRENT_PLAN_ID, token!, myDept, false, remarks))}>
                   Withhold
                 </Button>
               </div>
@@ -258,14 +276,14 @@ function ApprovalsBody() {
 
             {status && role === "Sr.DOM" && (
               <Button variant="primary" disabled={busy}
-                onClick={() => run(() => clearOperations(CURRENT_PLAN_ID, actor, role, remarks))}>
+                onClick={() => run(() => clearOperations(CURRENT_PLAN_ID, token!, remarks))}>
                 Clear traffic impact
               </Button>
             )}
 
             {status && role === "DRM" && (
               <Button variant="primary" disabled={busy}
-                onClick={() => run(() => sanction(CURRENT_PLAN_ID, actor, role, remarks))}>
+                onClick={() => run(() => sanction(CURRENT_PLAN_ID, token!, remarks))}>
                 Sanction plan
               </Button>
             )}
@@ -273,7 +291,7 @@ function ApprovalsBody() {
             {status && role !== "JE" && role !== "Viewer" && (
               <Button disabled={busy || !remarks.trim()}
                 title={remarks.trim() ? "" : "Returning a plan requires remarks"}
-                onClick={() => run(() => returnPlan(CURRENT_PLAN_ID, actor, role, remarks))}>
+                onClick={() => run(() => returnPlan(CURRENT_PLAN_ID, token!, remarks))}>
                 Return for revision
               </Button>
             )}
@@ -287,7 +305,9 @@ function ApprovalsBody() {
               ? "Only the DRM may sanction, and only once every department has concurred and operations has cleared."
               : role === "Sr.DOM"
               ? "Traffic clearance comes after departmental concurrence, not before."
-              : "This role cannot concur, clear or sanction. Change the acting role in the top bar."}
+              : role
+              ? "This role cannot concur, clear or sanction. Sign in with a token that can."
+              : "Sign in to act. Browsing the plan needs no token; acting on it does."}
           </p>
         </Card>
       </div>

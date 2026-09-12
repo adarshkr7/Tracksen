@@ -2,7 +2,7 @@
 
 **Date:** 12 September 2026
 **Scope:** whole repository — backend, solver, governance, web client, documentation
-**Test suite:** 158 passing · mutation check 11/11
+**Test suite:** 187 passing · mutation check 11/11
 **Plan:** 7 days, 600 tasks, Danapur division (41 sections, 15 planned), 600 s solve
 **Solver:** monthly `OPTIMAL` · weekly `FEASIBLE` 12.9% at 600 s (76.6% at 240 s)
 **Web build:** clean (Next.js 16, TypeScript, 14 static routes)
@@ -57,6 +57,26 @@ fixed in the working tree** — the review read the committed version:
 Ordered by how much they threaten the claims the project makes.
 
 ### ✅ Closed since the first pass
+
+- [x] **The API no longer trusts client-supplied identity.** Any caller could POST
+      `{"role": "DRM"}` and sanction a plan, which meant every rule in the approval route
+      was one JSON field away from being nothing.
+
+      A caller now presents a bearer token; `samanvay/governance/identity.py` resolves it
+      to a name and a role; and `actor`/`role` are **gone from the request bodies** rather
+      than validated — a field that is sometimes trusted eventually is. Tokens are stored
+      as SHA-256 hashes and compared in constant time, so the identity file names who may
+      act but does not confer the ability to act. On first run the service mints one token
+      per role, prints them once and stores only the hashes; there is deliberately no
+      "no identity file means trust the caller" path, because that is an authentication
+      system with a hole beside it and the hole is what gets used.
+
+      The client changed to match: the role *selector* is gone, replaced by a sign-in that
+      shows whatever `/api/me` resolved the token to. The audit trail records the
+      authenticated name, so a refused escalation is logged against who actually tried it.
+
+      What remains a stand-in is the identity *store*, not the identity *check*. A
+      deployment swaps it for the divisional directory; the seam is one function wide.
 
 - [x] **Both optimality gaps were bad, and it was a bug, not tuning.** Weekly was 84.75%
       and monthly 76.8%. `needs_extended_block` compared bare P90 against the corridor and
@@ -131,6 +151,20 @@ Ordered by how much they threaten the claims the project makes.
 - [ ] **Nothing blocking.** Every item below is a real limitation, but none of them makes
       a number on a screen wrong.
 
+### 🟠 New, from the authentication work
+
+- [ ] **Tokens are bearer credentials with no expiry and no revocation list.** Losing one
+      means deleting the identity file and reissuing every token, because there is no way
+      to withdraw a single one. A directory binding solves this; a `revoked` flag would
+      be the cheap interim.
+- [ ] **The service distinguishes "no such plan" (409) from "not permitted" (403) before
+      checking authority**, so an unauthorised caller can probe which plan ids exist.
+      Minor — ids are sequential and guessable anyway — and reversing the order would put
+      DENIED entries in the audit log for plans that do not exist. Recorded rather than
+      changed.
+- [ ] **No rate limiting on the token endpoint.** Tokens are 24 random bytes so guessing
+      is not a practical attack, but nothing slows an attempt down either.
+
 ### Found by putting real data through it
 
 Worth recording separately, because none of these would have surfaced against the
@@ -152,10 +186,7 @@ authored timetable:
 
 ### 🟠 Significant — real limitations, currently unstated or understated
 
-- [ ] **The API trusts client-supplied identity.** Any caller can POST
-      `{"role": "DRM"}` and sanction a plan (`scripts/serve.py:58`). The code documents
-      this as a deliberate seam and the workflow rules are real, but it is a hard
-      production blocker: roles must bind to authenticated server-side identities.
+
 - [ ] **Nothing persists except the audit log.** Plans, the planning session, the id
       counter and all solve results live in memory. A restart replays approvals but
       cannot show you the plan they approved.
@@ -244,14 +275,11 @@ Stated for balance, and because the checklist above is not the whole picture.
 
 The original list is done. What is left, in order:
 
-1. **Bind roles to authenticated identities.** The workflow rules are real and tested;
-   the identity behind them is asserted by the caller. Nothing else can be called
-   pilotable until this exists.
-2. **Persist plan content, not just the decision.** The hash proves which plan was
+1. **Persist plan content, not just the decision.** The hash proves which plan was
    signed; storing the plan itself would let you show it.
-3. **Close the execution loop** — ingest actual durations, overruns and cancellations so
+2. **Close the execution loop** — ingest actual durations, overruns and cancellations so
    the models can be monitored for drift.
-4. **Shrink the payload** so `web/public/plan.json` stops being a 2.7 MB commit.
-5. **Handle branch-to-branch services.** 85 trains work Barauni to Hajipur through the
+3. **Shrink the payload** so `web/public/plan.json` stops being a 2.7 MB commit.
+4. **Handle branch-to-branch services.** 85 trains work Barauni to Hajipur through the
    main line; the timetable schema holds one branch plus one main leg, so they are
    reported and skipped. They are real traffic this division sees.

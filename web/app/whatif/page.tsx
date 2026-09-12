@@ -34,7 +34,7 @@ export default function WhatIfPage() {
 
 function WhatIfBody() {
   const { plan, setPlan, taskById, apiUp } = usePlan();
-  const { actor, role } = useRole();
+  const { token } = useRole();
   const [day, setDay] = useState(0);
   const [line, setLine] = useState<LineName | "BOTH">("BOTH");
   const [selected, setSelected] = useState<Block | null>(null);
@@ -82,7 +82,7 @@ function WhatIfBody() {
       task_ids: plan.blocks.find((b) => b.id === blockId)?.tasks ?? [],
     }));
     try {
-      const next = await resolve(pins, 25, CURRENT_PLAN_ID, actor, role);
+      const next = await resolve(pins, 25, CURRENT_PLAN_ID, token);
       if (!next) { setNote("Solver service did not respond."); return; }
       const after = (next as PlanData).metrics.optimised.risk_retired_per_block_hour;
       const rejected = (next as PlanData).meta.rejectedPins ?? [];
@@ -97,7 +97,7 @@ function WhatIfBody() {
     } catch (e) {
       setNote(`Re-solve failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally { setSolving(false); }
-  }, [plan, moves, actor, role, setPlan]);
+  }, [plan, moves, token, setPlan]);
 
   if (!plan || !totals || !basis) return null;
   const costDelta = totals.trafficCost - basis.trafficCost;

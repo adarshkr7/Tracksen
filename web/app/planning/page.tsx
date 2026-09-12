@@ -29,7 +29,7 @@ export default function PlanningPage() {
 
 function PlanningBody() {
   const { plan, setPlan, apiUp, taskById } = usePlan();
-  const { actor, role } = useRole();
+  const { token } = useRole();
   const [which, setWhich] = useState<"optimised" | "baseline">("optimised");
   const [day, setDay] = useState(0);
   const [line, setLine] = useState<LineName | "BOTH">("BOTH");
@@ -57,7 +57,7 @@ function PlanningBody() {
     setNote(null);
     const before = plan!.metrics.optimised.risk_retired_per_block_hour;
     try {
-      const next = await resolve([], 30, CURRENT_PLAN_ID, actor, role);
+      const next = await resolve([], 30, CURRENT_PLAN_ID, token);
       if (!next) {
         setNote("Solver service did not respond. Showing the plan already loaded.");
       } else {

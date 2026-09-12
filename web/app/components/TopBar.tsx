@@ -3,7 +3,7 @@
 /**
  * Operational context strip.
  *
- * Division, horizon, solver status and the acting role — the things a controller needs
+ * Division, horizon, solver status and who is signed in — the things a controller needs
  * on screen at all times to know *which* plan they are looking at and *as whom*.
  *
  * The role selector is not authentication. It chooses the capacity a request is made in;
@@ -12,13 +12,15 @@
  */
 
 import { useRole } from "./RoleProvider";
+import { useState } from "react";
 import { usePlan } from "./PlanProvider";
+import SignIn from "./SignIn";
 import { Lamp } from "./ui";
-import { ROLES } from "../lib/plan";
 
 export default function TopBar() {
   const { plan, apiUp, loading } = usePlan();
-  const { actor, role, setRole, setActor } = useRole();
+  const { session, checking, signOut } = useRole();
+  const [signingIn, setSigningIn] = useState(false);
 
   const horizon = plan?.meta.horizon_days ?? 7;
   const gap = plan?.meta.solver?.gap_pct;
@@ -53,32 +55,59 @@ export default function TopBar() {
           label={apiUp ? "SYSTEM OPERATIONAL" : "PLAN-ONLY MODE"}
         />
 
+        {/* Identity, not a choice. The role shown is whatever the service resolved the
+            token to; there is nothing here to pick, which is the point. */}
         <div className="flex items-center gap-2 pl-4"
           style={{ borderLeft: "1px solid var(--line)" }}>
-          <div className="text-right leading-none">
-            <input
-              value={actor}
-              onChange={(e) => setActor(e.target.value)}
-              aria-label="Acting officer name"
-              className="text-[12px] font-medium text-right bg-transparent outline-none w-[104px]"
-              style={{ color: "var(--ink)" }}
-            />
-            <div className="sig mt-[3px]">Acting as</div>
-          </div>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            aria-label="Acting role"
-            className="rounded-[3px] border px-2 py-[5px] text-[11.5px] font-medium outline-none"
-            style={{
-              borderColor: "var(--line-2)", background: "var(--surface-2)",
-              color: "var(--rail)",
-            }}
-          >
-            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
+          {checking ? (
+            <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+              checking session…
+            </span>
+          ) : session ? (
+            <>
+              <div className="text-right leading-none">
+                <div className="text-[12px] font-medium" style={{ color: "var(--ink)" }}>
+                  {session.name}
+                </div>
+                <div className="sig mt-[3px]">Signed in as</div>
+              </div>
+              <span
+                className="rounded-[3px] border px-2 py-[5px] text-[11.5px] font-medium"
+                style={{
+                  borderColor: "var(--line-2)", background: "var(--surface-2)",
+                  color: "var(--rail)",
+                }}
+              >
+                {session.role}
+              </span>
+              <button
+                onClick={signOut}
+                className="text-[11px] underline"
+                style={{ color: "var(--ink-3)" }}
+              >
+                sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="text-right leading-none">
+                <div className="text-[12px] font-medium" style={{ color: "var(--ink-3)" }}>
+                  Not signed in
+                </div>
+                <div className="sig mt-[3px]">Read-only</div>
+              </div>
+              <button
+                onClick={() => setSigningIn(true)}
+                className="rounded-[3px] px-3 py-[5px] text-[11.5px] font-medium"
+                style={{ background: "var(--chrome)", color: "#fff" }}
+              >
+                Sign in
+              </button>
+            </>
+          )}
         </div>
       </div>
+      {signingIn && <SignIn onClose={() => setSigningIn(false)} />}
     </header>
   );
 }
