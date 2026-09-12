@@ -37,12 +37,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from samanvay.network import (  # noqa: E402
-    BRANCH_JUNCTION,
-    MAIN,
-    ROUTES,
-    ROUTE_BY_ID,
-    WEEKDAYS,
+from samanvay.network import ROUTE_BY_ID, WEEKDAYS  # noqa: E402
+from samanvay.timetable_import import (  # noqa: E402
+    MODELLED,
+    classify,
+    to_service,
 )
 
 # railpull writes weekday names; the timetable schema wants two-letter codes with no
@@ -51,24 +50,6 @@ DAY_CODE = {
     "mon": "Mo", "tue": "Tu", "wed": "We", "thu": "Th",
     "fri": "Fr", "sat": "Sa", "sun": "Su",
 }
-
-# NTES train types, lowercased, mapped onto the running priority order. Anything
-# unrecognised falls to MAIL_EXP, which is the common case and the safe one: calling a
-# stopping train an express overstates its detention weight slightly, whereas calling an
-# express a passenger train would understate it.
-PREMIER_MARKERS = ("rajdhani", "vande bharat", "vandebharat", "shatabdi", "duronto",
-                   "tejas", "gatimaan")
-PASSENGER_MARKERS = ("memu", "demu", "passenger", "ordinary", "suburban", "emu")
-
-
-def classify(name: str, ttype: str) -> str:
-    blob = f"{name} {ttype}".lower()
-    if any(m in blob for m in PREMIER_MARKERS):
-        return "PREMIER"
-    if any(m in blob for m in PASSENGER_MARKERS):
-        return "PASSENGER"
-    return "MAIL_EXP"
-
 
 def parse_runs(value: str) -> str | None:
     """railpull's runs_days -> our day codes, or None when it does not know.
@@ -101,77 +82,6 @@ def pick(row: dict, *names: str) -> str:
             if key in row and row[key] not in (None, ""):
                 return str(row[key]).strip()
     return ""
-
-
-# --------------------------------------------------------------------------- #
-# Where a station sits on the modelled network
-# --------------------------------------------------------------------------- #
-
-STATION_ROUTES: dict[str, list[str]] = defaultdict(list)
-for _r in ROUTES:
-    for _st in _r.stations:
-        STATION_ROUTES[_st.code].append(_r.id)
-
-MODELLED = set(STATION_ROUTES)
-
-
-def routes_spanning(a: str, b: str) -> list[str]:
-    """Routes carrying both stations. MAIN first, so a shared pair resolves to it."""
-    shared = [r for r in STATION_ROUTES[a] if r in STATION_ROUTES[b]]
-    return sorted(shared, key=lambda r: (r != MAIN, r))
-
-
-def segment(stops: list[dict]) -> list[tuple[str, list[dict]]]:
-    """Split a run over the modelled road into consecutive same-route legs.
-
-    Junction stations sit on two routes at once, so a stop cannot be assigned a route on
-    its own -- Kiul is on the main line, the Gaya branch and the Jamalpur branch. What
-    fixes it is the pair: the route a train is on between two adjacent stops is the one
-    that carries both of them.
-    """
-    legs: list[tuple[str, list[dict]]] = []
-    for prev, cur in zip(stops, stops[1:]):
-        shared = routes_spanning(prev["code"], cur["code"])
-        if not shared:
-            return []                     # not a move this network can represent
-        route = shared[0]
-        if legs and legs[-1][0] == route:
-            legs[-1][1].append(cur)
-        else:
-            legs.append((route, [prev, cur]))
-    return legs
-
-
-def to_service(number: str, name: str, tclass: str, runs: str,
-               stops: list[dict]) -> tuple[dict | None, str]:
-    """One timetable row, or a reason it could not be written."""
-    legs = segment(stops)
-    if not legs:
-        return None, "no modelled leg"
-
-    if len(legs) == 1:
-        route, leg = legs[0]
-        return {
-            "route": route, "enter_at": leg[0]["code"], "leave_at": leg[-1]["code"],
-            "main_leg": "", "enter_time": leg[0]["time"],
-        }, ""
-
-    if len(legs) == 2:
-        (ra, la), (rb, lb) = legs
-        # Exactly one of the two must be the main line for the schema to hold it.
-        if ra == MAIN and rb != MAIN and BRANCH_JUNCTION.get(rb) == lb[0]["code"]:
-            return {
-                "route": rb, "enter_at": lb[0]["code"], "leave_at": lb[-1]["code"],
-                "main_leg": la[0]["code"], "enter_time": lb[0]["time"],
-            }, ""
-        if rb == MAIN and ra != MAIN and BRANCH_JUNCTION.get(ra) == la[-1]["code"]:
-            return {
-                "route": ra, "enter_at": la[0]["code"], "leave_at": la[-1]["code"],
-                "main_leg": lb[-1]["code"], "enter_time": la[0]["time"],
-            }, ""
-        return None, f"two legs, neither shape the schema holds ({ra}+{rb})"
-
-    return None, f"{len(legs)} legs over the division"
 
 
 # --------------------------------------------------------------------------- #
@@ -253,7 +163,8 @@ def main() -> int:
 
         meta = trains.get(number, {})
         name = pick(meta, "name", "train_name") or f"Train {number}"
-        tclass = classify(name, pick(meta, "type_label", "type", "train_type"))
+        tclass = classify(name, pick(meta, "type_label", "type", "train_type"),
+                          number=number)
         runs = parse_runs(pick(meta, "runs_days", "days", "running_days"))
         if runs is None:
             skipped["NTES gave no running days"] += 1

@@ -23,3 +23,15 @@ data/timetable_danapur.imported.csv
 # is the cheaper problem. Regenerate and sync with:
 #     python scripts/run_pipeline.py --days 7 --tasks 600 --monthly --validate
 #     cd web && npm run sync
+
+# Downloaded source datasets. Large (16 MB CSV, 82 MB JSON), and their licences differ
+# from this repository's, so they are fetched rather than vendored:
+#   data.gov.in "Train details"  -> Government Open Data Licence - India
+#   Kaggle indian-railways       -> per that dataset's own terms
+# The timetable extracted from them is data/timetable_danapur.imported.csv, also ignored.
+data/Train_details_*.csv
+data/IRCTC_cleaned.csv
+data/schedules.json
+data/schedules.json.zip
+data/_imported.hold
+data/stations.json*

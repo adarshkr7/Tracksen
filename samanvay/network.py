@@ -173,9 +173,14 @@ BRANCH_STATIONS: list[Station] = [
 ]
 
 # Kiul -- Gaya, via Sheikhpura and Nawada. Single line.
+#
+# Luckeesarai Jn was on this list and should not have been. It sits on the Kiul--Patna
+# main line, a couple of kilometres from Kiul, not on the Gaya branch -- and modelling it
+# here made every main-line train that passes it look like branch traffic. A published
+# schedule caught it: Luckeesarai took 159 calls, as many as Patna Saheb or Buxar, which
+# is not a figure a single-line branch station produces.
 GAYA_STATIONS: list[Station] = [
     Station("KIUL", "Kiul Jn", 0.0),
-    Station("LKR", "Luckeesarai Jn", 3.0),
     Station("SHK", "Sheikhpura", 30.0),
     Station("WRS", "Warisaliganj", 62.0),
     Station("NWD", "Nawada", 78.0),

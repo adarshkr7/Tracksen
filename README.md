@@ -59,7 +59,7 @@ Central Railway, against an FCFS baseline on the identical task population:
 
 | Measure | Baseline | TRACKSEN | |
 |---|---:|---:|---|
-| **Risk retired per block-hour** | 8.5 | **19.4** | **+128%** |
+| **Risk retired per block-hour** | 8.3 | **18.8** | **+126%** |
 | Blocks used | 189 | 146 | −23% |
 | Block hours consumed | 623.0 | 450.0 | −28% |
 | Clubbing ratio (depts per block) | 1.00 | 1.32 | +32% |
@@ -70,7 +70,7 @@ Central Railway, against an FCFS baseline on the identical task population:
 | High-criticality unplanned failures | 24 | 16 | −33% |
 | Overdue task-days | 3,903 | 3,965 | **+2% worse** |
 
-Solver: weekly `FEASIBLE` at a **1.1% optimality gap**, monthly at **5.8%**, both in
+Solver: weekly `FEASIBLE` at a **2.4% optimality gap**, monthly at **7.0%**, both in
 240 s. Close enough to optimal that the comparison is about the formulation, not about
 how long the solver was left running.
 
@@ -438,6 +438,27 @@ failure probability. That memoryless assumption approximates the Cox model rathe
 re-deriving it — it is an order of magnitude while dragging, not a substitute for the
 nightly re-solve.
 
+## Running it on published data
+
+The shipped `data/timetable_danapur.csv` carries real train numbers, names and routes
+with **approximate times** — it is what makes the repository runnable out of the box. To
+plan against published times instead:
+
+```bash
+python scripts/import_opendata.py --file data/IRCTC_cleaned.csv \
+    --ntes ../railpull/data/out -o data/timetable_danapur.imported.csv
+python scripts/run_pipeline.py --days 7 --tasks 600 --monthly --validate
+```
+
+The loader prefers the imported file the moment it exists — no code change, no config —
+and the Data Sources screen says which one is in force. The merge takes stops and times
+from IRCTC, running days from the NTES crawl, and adds any current service the published
+extract predates. Neither source is better at everything, which is why it is a merge and
+not a choice.
+
+Both the downloaded datasets and the file they produce are git-ignored: their licences
+differ from this repository's.
+
 ## Not built yet
 
 See [AUDIT.md](AUDIT.md) for the full list with severities. The short version:
@@ -449,10 +470,13 @@ See [AUDIT.md](AUDIT.md) for the full list with severities. The short version:
   workflow rules are real; the identity behind them is not. Production blocker.
 - **Persistence beyond the audit log.** Approvals replay from the log on restart, but the
   plan *content* they approved is not stored — only the decision is.
-- **Published timetable times.** The coaching timetable carries real train numbers, names
-  and routes, but approximate times. `scripts/import_railpull.py` converts a real NTES
-  export into the same schema and is verified against railpull's exporter, but the crawl
-  has not been run.
+- **A single-vintage timetable.** Published times now come from IRCTC_cleaned and real
+  running days from an NTES crawl, merged by `scripts/import_opendata.py`. Where a train
+  was not crawled, its running days fall back to IRCTC's flattened column (all-seven or
+  exactly-one), and the importer reports that split on every run.
+- **Branch-to-branch services.** 85 trains work Barauni to Hajipur through the main line.
+  The timetable schema holds one branch plus one main leg, so those are reported and
+  skipped rather than guessed at.
 - **Branch block planning.** `PLANNED_ROUTES = ["MAIN"]`; the eight branches are modelled
   for the traffic they put onto the main line and the junction throats they share with
   it, not as places work is scheduled.

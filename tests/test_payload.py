@@ -95,8 +95,11 @@ def test_train_roster_labels_provenance_honestly(payload):
     goods = payload["trainClasses"].index(TrainClass.GOODS.value)
     roster = payload["trains"]
 
+    from samanvay.serialize import PROVENANCE_INDEX
+
+    valid = set(PROVENANCE_INDEX.values())
     for row in roster:
-        assert row[2] in (0, 1, 2), "unknown provenance code"
+        assert row[2] in valid, f"unknown provenance code {row[2]}"
 
     for row in payload["paths"]:
         number, name, provenance = roster[row[6]]
@@ -104,11 +107,18 @@ def test_train_roster_labels_provenance_honestly(payload):
             assert provenance == 2, f"goods train {number} claims a booked provenance"
             assert name == "", "a forecast goods path must not carry a service name"
         else:
-            assert provenance in (0, 1), f"coaching train {number} marked as forecast"
+            # Anything but forecast: coaching traffic is booked somewhere, whether
+            # authored here or read from a published source.
+            assert provenance != PROVENANCE_INDEX["forecast"], (
+                f"coaching train {number} marked as forecast"
+            )
             assert name, f"booked service {number} has no name"
 
-    named = [r for r in roster if r[2] == 0]
-    assert named, "no real services in the roster -- the timetable file did not load"
+    # Authored-real, or read from a published source. Any of them means the timetable
+    # loaded; only "representative" and "forecast" are stand-ins.
+    stand_in = {PROVENANCE_INDEX["representative"], PROVENANCE_INDEX["forecast"]}
+    real = [r for r in roster if r[2] not in stand_in]
+    assert real, "no real services in the roster -- the timetable file did not load"
 
 
 def test_task_ids_in_blocks_exist(payload):

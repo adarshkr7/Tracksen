@@ -12,6 +12,7 @@ import pytest
 from samanvay.domain import Line, TrainClass
 from samanvay.network import (
     BOOKED_SERVICES,
+    SHIPPED_TIMETABLE,
     BRANCH_JUNCTION,
     MAIN,
     ROUTE_BY_ID,
@@ -44,7 +45,14 @@ def test_shipped_timetable_loads():
 def test_every_service_declares_its_provenance():
     """The UI shows this. A blank or invented value would be a claim we cannot back."""
     for s in BOOKED_SERVICES:
-        assert s.provenance in ("named", "representative", "imported"), s.train_no
+        from samanvay.serialize import PROVENANCE_INDEX
+
+        # Derived, not listed: a new importer adding a provenance must register it in one
+        # place, and this test then accepts it without being edited into agreement.
+        assert s.provenance in PROVENANCE_INDEX, (
+            f"{s.train_no} carries unregistered provenance {s.provenance!r}"
+        )
+        assert s.provenance != "forecast", "coaching traffic is booked, not forecast"
 
 
 def test_train_numbers_are_unique():
@@ -58,9 +66,21 @@ def test_no_goods_in_the_book():
         assert s.train_class is not TrainClass.GOODS, s.train_no
 
 
-def test_every_route_carries_some_coaching_traffic():
+def test_the_shipped_book_carries_traffic_on_every_route():
+    """A modelled route with no traffic prices as free, and its junction as uncontended.
+
+    Asserted against the SHIPPED file specifically, because that one is ours to author.
+    An NTES import is a reading of the real railway and may legitimately have gaps -- the
+    weaker invariant that must hold whatever is loaded is the next test.
+    """
+    shipped = load_booked_services(SHIPPED_TIMETABLE)
+    assert {s.route_id for s in shipped} == set(ROUTE_BY_ID)
+
+
+def test_whatever_is_loaded_carries_main_line_traffic():
+    """The planned road must never price as empty, whichever timetable is in force."""
     worked = {s.route_id for s in BOOKED_SERVICES}
-    assert worked == set(ROUTE_BY_ID)
+    assert MAIN in worked, "no coaching traffic on the main line -- every block is free"
 
 
 # --------------------------------------------------------------------------- #
@@ -146,7 +166,7 @@ def test_station_not_on_the_route_is_rejected(tmp_path):
 
 
 def test_main_leg_without_a_junction_end_is_rejected(tmp_path):
-    p = write_table(tmp_path, "12345,Test,MAIL_EXP,GAYA,LKR,NWD,PNBE,06:00,daily,named")
+    p = write_table(tmp_path, "12345,Test,MAIL_EXP,GAYA,SHK,NWD,PNBE,06:00,daily,named")
     with pytest.raises(ValueError, match="neither end is the junction"):
         load_booked_services(p)
 
@@ -185,10 +205,23 @@ def test_premier_outranks_everything_else_by_a_wide_margin():
 
 
 def test_the_book_carries_premier_traffic():
+    """Protected paths must exist, or the premier fence is never exercised."""
     premier = [s for s in BOOKED_SERVICES if s.train_class is TrainClass.PREMIER]
     assert premier, "no protected paths in the timetable -- the fence would be untested"
-    assert any("Vande Bharat" in s.name for s in premier)
-    assert any("Rajdhani" in s.name for s in premier)
+
+
+def test_the_shipped_book_names_the_premier_services_it_claims():
+    """The shipped file is authored, so its premier traffic is ours to get right.
+
+    Matched case-insensitively: an NTES import spells them "VANDE BHARAT EXP", and a
+    test that only accepted title case would fail on real data while passing on ours --
+    exactly backwards.
+    """
+    shipped = load_booked_services(SHIPPED_TIMETABLE)
+    names = " ".join(s.name.lower() for s in shipped
+                     if s.train_class is TrainClass.PREMIER)
+    assert "vande bharat" in names
+    assert "rajdhani" in names
 
 
 def test_no_candidate_window_fouls_a_premier_path(candidates, traffic):
