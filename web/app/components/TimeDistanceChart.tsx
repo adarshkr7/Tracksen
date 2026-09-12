@@ -18,6 +18,7 @@ import {
   hhmm,
 } from "../lib/plan";
 import { snap } from "../lib/whatif";
+import { ChainageZoomBar, useChainageZoom } from "./ChainageZoom";
 
 /**
  * The time–distance chart: time across, chainage down.
@@ -94,8 +95,23 @@ export default function TimeDistanceChart({
   const both = line === "BOTH";
   const lineIdx = line === "UP" ? 0 : 1;
 
+  // The time axis is always a whole day -- a chart that hid part of the day would hide
+  // train paths a block has to be planned around. Zoom acts on chainage only.
+  const zoom = useChainageZoom(sections, maxKm, routeId);
+  const { km0: viewKm0, km1: viewKm1 } = zoom.view;
+  const kmSpan = Math.max(1, viewKm1 - viewKm0);
+
   const x = (minOfDay: number) => M.left + (minOfDay / MIN_PER_DAY) * PLOT_W;
-  const y = (km: number) => M.top + (km / maxKm) * PLOT_H;
+  const y = (km: number) => M.top + ((km - viewKm0) / kmSpan) * PLOT_H;
+
+  /** Does this section have any chainage inside the window? */
+  const secInView = useCallback(
+    (i: number) => {
+      const sec = sections[i];
+      return Boolean(sec) && sec.km1 > viewKm0 && sec.km0 < viewKm1;
+    },
+    [sections, viewKm0, viewKm1],
+  );
 
   const dayStart = day * MIN_PER_DAY;
   const startOf = useCallback(
@@ -187,16 +203,16 @@ export default function TimeDistanceChart({
       flush();
     }
     return out;
-  }, [paths, onRoute, both, lineIdx, dayStart, sections, maxKm]);
+  }, [paths, onRoute, both, lineIdx, dayStart, sections, maxKm, viewKm0, viewKm1]);
 
   const visibleBlocks = useMemo(
     () =>
       blocks.filter((b) => {
-        if (!onRoute.has(b.sec)) return false;
+        if (!onRoute.has(b.sec) || !secInView(b.sec)) return false;
         if (!both && b.line !== line) return false;
         return Math.floor(startOf(b) / MIN_PER_DAY) === day;
       }),
-    [blocks, line, both, day, startOf, onRoute],
+    [blocks, line, both, day, startOf, onRoute, secInView],
   );
 
   // Blocks whose original position was this day but have been dragged away — drawn
@@ -206,19 +222,22 @@ export default function TimeDistanceChart({
       blocks.filter((b) => {
         const s = startOf(b);
         if (s === b.s) return false;
-        if (!onRoute.has(b.sec)) return false;
+        if (!onRoute.has(b.sec) || !secInView(b.sec)) return false;
         if (!both && b.line !== line) return false;
         return Math.floor(b.s / MIN_PER_DAY) === day;
       }),
-    [blocks, line, both, day, startOf, onRoute],
+    [blocks, line, both, day, startOf, onRoute, secInView],
   );
 
   const visibleCorridors = useMemo(
-    () => corridors.filter((c) => c[1] === day && onRoute.has(c[0])),
-    [corridors, day, onRoute],
+    () => corridors.filter((c) => c[1] === day && onRoute.has(c[0]) && secInView(c[0])),
+    [corridors, day, onRoute, secInView],
   );
 
-  const active = hover ?? blocks.find((b) => b.id === selectedId) ?? null;
+  // Only a block that is actually drawn may raise a tooltip. Searching all blocks
+  // would park one off the frame for a selection on another day, or -- now that the
+  // chainage axis can be windowed -- for a selection outside the zoom.
+  const active = hover ?? visibleBlocks.find((b) => b.id === selectedId) ?? null;
 
   /* ---------------- drag ---------------- */
 
@@ -287,6 +306,12 @@ export default function TimeDistanceChart({
 
   return (
     <div className="relative">
+      <div className="pb-2">
+        <ChainageZoomBar
+          zoom={zoom}
+          right={`${visibleBlocks.length} block${visibleBlocks.length === 1 ? "" : "s"} in view`}
+        />
+      </div>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VB_W} ${VB_H}`}
@@ -315,7 +340,9 @@ export default function TimeDistanceChart({
           );
         })}
 
-        {stations.map((st) => (
+        {stations
+          .filter((st) => st.km >= viewKm0 - 1e-6 && st.km <= viewKm1 + 1e-6)
+          .map((st) => (
           <g key={st.code}>
             <line
               x1={M.left} x2={VB_W - M.right} y1={y(st.km)} y2={y(st.km)}
