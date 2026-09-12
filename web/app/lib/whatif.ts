@@ -91,6 +91,22 @@ export interface Conflict {
  * plan, it is not a plan. The panel shows them as blockers and leaves the move
  * un-applied.
  */
+/** No block has been resized. Shared so callers need not each mint an empty map. */
+export const NO_LENGTHS: ReadonlyMap<string, number> = new Map();
+
+/**
+ * How long a block is held under the current scenario.
+ *
+ * A possession has two dimensions a planner can argue about -- when it starts and how
+ * long the line is given up for -- and until now only the first was modelled here. The
+ * second is the one operations actually negotiates.
+ */
+export function durationOf(
+  b: Block, lengths: ReadonlyMap<string, number> = NO_LENGTHS,
+): number {
+  return lengths.get(b.id) ?? b.e - b.s;
+}
+
 export function findConflicts(
   block: Block,
   proposedStart: number,
@@ -98,9 +114,10 @@ export function findConflicts(
   allBlocks: Block[],
   moves: Map<string, number>,
   taskById: Map<string, Task>,
+  lengths: ReadonlyMap<string, number> = NO_LENGTHS,
 ): Conflict[] {
   const out: Conflict[] = [];
-  const duration = block.e - block.s;
+  const duration = durationOf(block, lengths);
   const proposedEnd = proposedStart + duration;
   const day = Math.floor(proposedStart / MIN_PER_DAY);
   const horizonEnd = data.meta.horizon_days * MIN_PER_DAY;
@@ -112,7 +129,7 @@ export function findConflicts(
 
   const effective = (b: Block) => {
     const s = moves.get(b.id) ?? b.s;
-    return { s, e: s + (b.e - b.s) };
+    return { s, e: s + durationOf(b, lengths) };
   };
 
   // Line exclusivity: one occupant per block section and line.
@@ -248,6 +265,7 @@ export function planTotals(
   data: PlanData,
   index: PathIndex,
   conflictedIds: Set<string>,
+  lengths: ReadonlyMap<string, number> = NO_LENGTHS,
 ): PlanTotals {
   // No literal fallback for the weights. A hardcoded [4, 2.5, 1.5, 1] here was a second
   // copy of the solver's pricing, and it went stale the moment premier detention was
@@ -268,7 +286,7 @@ export function planTotals(
 
   for (const b of blocks) {
     const s = moves.get(b.id) ?? b.s;
-    const e = s + (b.e - b.s);
+    const e = s + durationOf(b, lengths);
     const day = Math.floor(s / MIN_PER_DAY);
     const lineIdx = b.line === "UP" ? 0 : 1;
     trafficCost += priceWindow(index, b.sec, lineIdx, s, e, weights, overhead).cost;

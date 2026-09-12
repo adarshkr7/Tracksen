@@ -19,7 +19,7 @@ import {
   hhmm,
   liveryOf,
 } from "../lib/plan";
-import { snap } from "../lib/whatif";
+import { durationOf, snap } from "../lib/whatif";
 import { ChainageZoomBar, useChainageZoom } from "./ChainageZoom";
 
 /**
@@ -76,6 +76,8 @@ interface Props {
   selectedId?: string | null;
   /** Proposed starts, keyed by block id. Absent means the block sits where planned. */
   moves?: Map<string, number>;
+  /** Proposed held durations. Absent means the block runs for as long as planned. */
+  lengths?: Map<string, number>;
   onMove?: (blockId: string, startMin: number) => void;
   conflictedIds?: Set<string>;
   draggable?: boolean;
@@ -83,7 +85,7 @@ interface Props {
 
 export default function TimeDistanceChart({
   sections, stations, paths, trains, corridors, blocks, day, line,
-  routeId = "MAIN", onSelect, selectedId, moves, onMove, conflictedIds,
+  routeId = "MAIN", onSelect, selectedId, moves, lengths, onMove, conflictedIds,
   draggable = false,
 }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -123,6 +125,10 @@ export default function TimeDistanceChart({
   const startOf = useCallback(
     (b: Block) => moves?.get(b.id) ?? b.s,
     [moves],
+  );
+  const heldFor = useCallback(
+    (b: Block) => durationOf(b, lengths ?? undefined),
+    [lengths],
   );
 
   /**
@@ -295,7 +301,7 @@ export default function TimeDistanceChart({
   const onPointerMove = (e: React.PointerEvent, b: Block) => {
     const d = dragRef.current;
     if (!d || d.id !== b.id || !onMove) return;
-    const duration = b.e - b.s;
+    const duration = heldFor(b);
     const raw = clientToMin(e.clientX) - d.grabOffsetMin;
     const clamped = Math.max(0, Math.min(MIN_PER_DAY - duration, raw));
     onMove(b.id, dayStart + snap(clamped));
@@ -347,6 +353,7 @@ export default function TimeDistanceChart({
           hidden={hiddenLiveries}
           onToggle={toggleLivery}
           onShowAll={() => setHiddenLiveries(new Set())}
+          onHideAll={() => setHiddenLiveries(new Set(LIVERY_LABEL.map((_, i) => i)))}
         />
       </div>
       <svg
@@ -479,7 +486,7 @@ export default function TimeDistanceChart({
           const isActive = active?.id === b.id;
           const s = startOf(b);
           const bx = x(s - dayStart);
-          const bw = Math.max(3, x(s + (b.e - b.s) - dayStart) - bx);
+          const bw = Math.max(3, x(s + heldFor(b) - dayStart) - bx);
           const { by, bh } = bandOf(b);
 
           return (
@@ -611,7 +618,7 @@ export default function TimeDistanceChart({
                 {sec.a}–{sec.b} · {active.line}
               </span>
               <span className="tnum" style={{ color: "var(--ink-3)" }}>
-                {hhmm(s)}–{hhmm(s + (active.e - active.s))}
+                {hhmm(s)}–{hhmm(s + heldFor(active))}
               </span>
             </div>
             <div className="flex flex-wrap gap-1 mb-1.5">
@@ -652,15 +659,29 @@ export default function TimeDistanceChart({
  * ones: a count that fell to zero as you switched a series off would tell you nothing
  * about what switching it back on would bring.
  */
-function LiveryFilter({ counts, hidden, onToggle, onShowAll }: {
+function LiveryFilter({ counts, hidden, onToggle, onShowAll, onHideAll }: {
   counts: number[];
   hidden: ReadonlySet<number>;
   onToggle: (i: number) => void;
   onShowAll: () => void;
+  onHideAll: () => void;
 }) {
+  const anyShown = hidden.size < LIVERY_LABEL.length;
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="sig">Trains</span>
+      {/* Clearing the whole chart of paths is its own gesture. Switching six series off
+          one at a time to read the blocks underneath is six clicks to say one thing. */}
+      <button
+        type="button"
+        aria-pressed={anyShown}
+        onClick={anyShown ? onHideAll : onShowAll}
+        title={anyShown ? "Hide every train path" : "Show the train paths again"}
+        className="chip legend inline-flex items-center gap-1.5"
+      >
+        <PathIcon on={anyShown} />
+        Train paths
+      </button>
+      <span className="w-px h-4 mx-0.5" style={{ background: "var(--line-2)" }} />
       {LIVERY_LABEL.map((label, i) => {
         const on = !hidden.has(i);
         const n = counts[i] ?? 0;
@@ -689,5 +710,17 @@ function LiveryFilter({ counts, hidden, onToggle, onShowAll }: {
         <button type="button" className="chip" onClick={onShowAll}>Show all</button>
       )}
     </div>
+  );
+}
+
+function PathIcon({ on }: { on: boolean }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      style={{ display: "block", opacity: on ? 1 : 0.45 }}>
+      <path d="M3 20L21 4M3 12l9-8M11 20l10-9" stroke="currentColor" strokeWidth="1.9"
+        strokeLinecap="round" />
+      {!on && <path d="M4 4l16 16" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" />}
+    </svg>
   );
 }

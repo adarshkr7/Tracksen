@@ -5,6 +5,7 @@ import {
   Conflict,
   PathIndex,
   deferralRisk,
+  durationOf,
   findConflicts,
   isInsideCorridor,
   priceWindow,
@@ -23,17 +24,36 @@ interface Props {
   data: PlanData;
   blocks: Block[];
   moves: Map<string, number>;
+  /** Held durations, where the planner has changed one. */
+  lengths: Map<string, number>;
   index: PathIndex;
   taskById: Map<string, Task>;
   onMove: (blockId: string, startMin: number) => void;
+  onResize: (blockId: string, minutes: number) => void;
   onReset: (blockId: string) => void;
   onClose: () => void;
 }
 
+/** Nothing useful is negotiated past eight hours; that is a mega block, not a window. */
+const MAX_BLOCK_MIN = 480;
+
 export default function WhatIfPanel({
-  block, data, blocks, moves, index, taskById, onMove, onReset, onClose,
+  block, data, blocks, moves, lengths, index, taskById, onMove, onResize, onReset,
+  onClose,
 }: Props) {
-  const duration = block.e - block.s;
+  const planned = block.e - block.s;
+  const duration = durationOf(block, lengths);
+  const resized = duration !== planned;
+
+  // The floor is the longest single job's P90. The possession was sized against it and
+  // the others run in parallel beside it, so cutting below it does not shorten the work
+  // -- it just guarantees the block overruns.
+  const floor = Math.max(
+    15,
+    ...block.tasks
+      .map((id) => taskById.get(id))
+      .map((t) => (t ? t.p90 ?? t.demanded : 0)),
+  );
   const proposed = moves.get(block.id) ?? block.s;
   const moved = proposed !== block.s;
   const lineIdx = block.line === "UP" ? 0 : 1;
@@ -42,6 +62,7 @@ export default function WhatIfPanel({
 
   const before = priceWindow(index, block.sec, lineIdx, block.s, block.e, w, oh);
   const after = priceWindow(index, block.sec, lineIdx, proposed, proposed + duration, w, oh);
+  const atFloor = duration <= floor;
 
   const beforeDay = Math.floor(block.s / MIN_PER_DAY);
   const afterDay = Math.floor(proposed / MIN_PER_DAY);
@@ -51,8 +72,8 @@ export default function WhatIfPanel({
   );
 
   const risk = deferralRisk(block, proposed, taskById);
-  const conflicts: Conflict[] = moved
-    ? findConflicts(block, proposed, data, blocks, moves, taskById)
+  const conflicts: Conflict[] = moved || resized
+    ? findConflicts(block, proposed, data, blocks, moves, taskById, lengths)
     : [];
 
   const shiftDay = (delta: number) => {
@@ -62,6 +83,13 @@ export default function WhatIfPanel({
   };
 
   const nudge = (delta: number) => onMove(block.id, proposed + delta);
+
+  const stretch = (delta: number) => {
+    const next = Math.max(floor, Math.min(MAX_BLOCK_MIN, duration + delta));
+    if (next === duration) return;
+    if (proposed + next > data.meta.horizon_days * MIN_PER_DAY) return;
+    onResize(block.id, next);
+  };
 
   const sec = data.sections[block.sec];
   const costDelta = after.cost - before.cost;
@@ -77,8 +105,11 @@ export default function WhatIfPanel({
             What-if · {sec.a}–{sec.b}
           </span>
           <span className="text-[11.5px] tnum" style={{ color: "var(--ink-3)" }}>
-            {block.line} · {duration} min · {block.tasks.length} task
-            {block.tasks.length > 1 ? "s" : ""}
+            {block.line} · {block.tasks.length} task
+            {block.tasks.length > 1 ? "s" : ""} ·{" "}
+            <span style={{ color: resized ? "var(--rail)" : "var(--ink-3)" }}>
+              {duration} min{resized ? ` (planned ${planned})` : ""}
+            </span>
           </span>
           {block.depts.map((d) => (
             <span key={d} className="rounded px-1.5 py-px text-[10px] font-medium"
@@ -88,7 +119,7 @@ export default function WhatIfPanel({
           ))}
         </div>
         <div className="flex items-center gap-2">
-          {moved && (
+          {(moved || resized) && (
             <button onClick={() => onReset(block.id)}
               className="text-[11.5px] rounded-md px-2 py-1 border"
               style={{ borderColor: "var(--line-2)", color: "var(--ink-2)" }}>
@@ -117,14 +148,36 @@ export default function WhatIfPanel({
           { label: "+1 h", fn: () => nudge(60) },
           { label: "+1 day", fn: () => shiftDay(1) },
         ].map((b) => (
-          <button key={b.label} onClick={b.fn}
-            className="rounded-md px-2 py-1 text-[11.5px] border transition-colors tnum"
-            style={{ borderColor: "var(--line)", color: "var(--ink-2)" }}>
-            {b.label}
-          </button>
+          <button key={b.label} onClick={b.fn} className="chip tnum">{b.label}</button>
         ))}
         <span className="text-[11px] ml-auto" style={{ color: "var(--ink-3)" }}>
           or drag the block on the chart
+        </span>
+      </div>
+
+      {/* ---- how long the line is given up for ---- */}
+      <div className="flex items-center gap-2 flex-wrap px-4 py-3 border-b"
+        style={{ borderColor: "var(--line)" }}>
+        <span className="sig mr-1">Length</span>
+        {[
+          { label: "−1 h", d: -60 }, { label: "−15 m", d: -15 },
+          { label: "+15 m", d: 15 }, { label: "+1 h", d: 60 },
+        ].map((b) => (
+          <button key={b.label} onClick={() => stretch(b.d)}
+            disabled={b.d < 0 ? atFloor : duration >= MAX_BLOCK_MIN}
+            className="chip tnum">
+            {b.label}
+          </button>
+        ))}
+        {resized && (
+          <button onClick={() => onResize(block.id, planned)} className="chip">
+            Planned length
+          </button>
+        )}
+        <span className="text-[11px] ml-auto tnum" style={{ color: "var(--ink-3)" }}>
+          {atFloor
+            ? `at the floor — the longest job's P90 is ${floor} min`
+            : `floor ${floor} min · the longest job's P90`}
         </span>
       </div>
 
