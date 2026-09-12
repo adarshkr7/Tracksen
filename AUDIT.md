@@ -3,8 +3,8 @@
 **Date:** 12 September 2026
 **Scope:** whole repository — backend, solver, governance, web client, documentation
 **Test suite:** 158 passing · mutation check 11/11
-**Plan:** 7 days, 600 tasks, Danapur division (42 sections, 15 planned), 240 s solve
-**Solver:** shipped timetable — weekly 2.4%, monthly 7.0% · merged real timetable — weekly 76.6%, monthly 19.2%
+**Plan:** 7 days, 600 tasks, Danapur division (41 sections, 15 planned), 600 s solve
+**Solver:** monthly `OPTIMAL` · weekly `FEASIBLE` 12.9% at 600 s (76.6% at 240 s)
 **Web build:** clean (Next.js 16, TypeScript, 14 static routes)
 
 This is a point-in-time review of what is broken, what is incomplete, and what is
@@ -107,30 +107,29 @@ Ordered by how much they threaten the claims the project makes.
 
 ### 🔴 Blocking
 
-- [ ] **The weekly optimality gap returns at realistic traffic density: 76.6%.**
-      It was 1.1% against the 212-service authored timetable and 2.6% before that. Against
-      the merged 543-service book it is 76.6% at the same 240 s budget. The monthly pass
-      holds at 19.2%.
+- [x] **The gap at realistic traffic density was a search budget, not a formulation
+      failure.** Against the merged 543-service timetable the weekly gap is 76.6% at
+      240 s — where it was 2.4% against the 212-service authored one. Diagnosed rather
+      than guessed: the real road is 2.2x busier, so the objective's traffic term went
+      from a tenth of the total to half of it, and criticality and traffic now genuinely
+      contend where criticality used to dominate.
 
-      *Diagnosed, not guessed.* The objective's traffic term has gone from a tenth of the
-      total to half of it, because the real road is 2.2x busier than the authored one:
-
-      | | authored (212 svc) | merged (543 svc) |
+      | | authored (212 svc) | published (543 svc) |
       |---|---:|---:|
       | Baseline traffic cost | ~72,000 | **155,321** |
-      | Traffic term in objective | ~3,600 | **4,128** |
-      | Criticality term | ~8,700 | 8,378 |
+      | Weekly gap @ 240 s | 2.4% | 76.6% |
+      | Weekly gap @ 600 s | — | **12.9%** |
+      | Monthly @ 600 s | — | **OPTIMAL** |
 
-      So criticality and traffic now genuinely contend, where before criticality dominated
-      and the bound was easy. This is the problem being harder, not mis-weighted — and
-      retuning lambda to make the gap look better would change what is optimised rather
-      than solve it faster.
+      More search closes it, so the model is sound and the default budget was simply too
+      small for this density. The committed plan is solved at 600 s. Still open below:
+      the weekly pass has no symmetry breaking or LNS, which is what would close the
+      remaining 12.9% rather than more wall-clock.
 
-      **This does not invalidate the outcome measures** (+149% risk retired per block-hour,
-      traffic cost -47%, blocks -35%): those compare two plans built under identical
-      constraints. It does mean the optimised plan is not near-proven-optimal at this
-      density. Worth trying, in order: a longer weekly budget; symmetry breaking across
-      interchangeable candidates; an LNS loop warm-started from the incumbent.
+### 🔴 Blocking
+
+- [ ] **Nothing blocking.** Every item below is a real limitation, but none of them makes
+      a number on a screen wrong.
 
 ### Found by putting real data through it
 
@@ -163,7 +162,7 @@ authored timetable:
 - [ ] **311 of 600 tasks cannot fit a corridor at all.** Their P90 exceeds the 180-minute
       window, so they are named as needing an extended/mega block rather than scheduled.
       Honest, but it means a third of the backlog is outside what the system plans.
-- [ ] **Only the main line is planned.** `PLANNED_ROUTES = ["MAIN"]` (15 of 42 sections).
+- [ ] **Only the main line is planned.** `PLANNED_ROUTES = ["MAIN"]` (15 of 41 sections).
       The eight branches are modelled for traffic and junction contention only. This is
       deliberate and documented, but it is a scope limit, not a solved problem.
 - [ ] **No execution feedback loop.** Nothing ingests what actually happened — actual
@@ -195,17 +194,18 @@ Regenerated after the fixes above, so these supersede every figure in `README.md
 
 | Measure | FCFS baseline | TRACKSEN | Change |
 |---|---:|---:|---:|
-| Risk retired per block-hour | 8.5 | **19.4** | **+128%** |
-| Blocks used | 189 | 146 | −23% |
-| Block hours consumed | 623.0 | 450.0 | −28% |
-| Departments per block (clubbing) | 1.00 | 1.32 | +32% |
-| Traffic cost (wtd detention min) | 72,730 | 46,673 | −36% |
-| Corridor adherence | 38% | 73% | +92% |
-| Unplanned failures | 73 | 61 | −16% |
-| — of which high-criticality | 24 | 16 | −33% |
-| Overdue task-days | 3,903 | 3,965 | **+2% worse** |
+| Risk retired per block-hour | 8.4 | **21.3** | **+154%** |
+| Blocks used | 191 | 121 | −37% |
+| Block hours consumed | 643.0 | 393.0 | −39% |
+| Departments per block (clubbing) | 1.00 | 1.59 | +59% |
+| Traffic cost (wtd detention min) | 155,321 | 77,838 | −50% |
+| Corridor adherence | 31% | 60% | +94% |
+| Unplanned failures | 71 | 63 | −11% |
+| — of which high-criticality | 18 | 13 | −28% |
+| Overdue task-days | 3,880 | 4,001 | **+3% worse** |
 
-**Solver:** weekly `FEASIBLE` gap **1.1%**, monthly `FEASIBLE` gap **5.8%**, both at 240 s.
+**Solver:** monthly `OPTIMAL`, weekly `FEASIBLE` gap **12.9%**, 600 s each.
+Measured against the **published** 543-service timetable, not the authored one.
 
 Both sides fell against the run before the withdrawal overheads were enforced (risk
 retired per block-hour was 10.98 → 25.49) because **both now pay them**. Fewer jobs fit a

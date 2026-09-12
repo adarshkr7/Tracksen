@@ -12,7 +12,16 @@ out/audit.jsonl
 # Timetable imported from a local railpull crawl. Real NTES data: kept out of the
 # repository because railpull's README warns that redistributing it may run against
 # the operator's terms of use. Re-crawl rather than passing it on.
-data/timetable_danapur.imported.csv
+# data/timetable_danapur.imported.csv is deliberately NOT ignored.
+#
+# It is a 40 KB derived extract -- 543 services over one division, reduced to the ten
+# columns this model needs -- not a copy of any source book. Committing it is what makes
+# a clone plan against published times rather than the approximate ones, which is the
+# difference between demonstrating the idea and demonstrating the system. Its own header
+# carries the attribution and the regenerate-rather-than-copy note.
+#
+# The datasets it derives from stay out: they are 116 MB and their licences are not this
+# repository's to grant.
 
 # NOTE on web/public/plan.json (deliberately NOT ignored).
 #
@@ -28,7 +37,16 @@ data/timetable_danapur.imported.csv
 # from this repository's, so they are fetched rather than vendored:
 #   data.gov.in "Train details"  -> Government Open Data Licence - India
 #   Kaggle indian-railways       -> per that dataset's own terms
-# The timetable extracted from them is data/timetable_danapur.imported.csv, also ignored.
+# The timetable extracted from them is # data/timetable_danapur.imported.csv is deliberately NOT ignored.
+#
+# It is a 40 KB derived extract -- 543 services over one division, reduced to the ten
+# columns this model needs -- not a copy of any source book. Committing it is what makes
+# a clone plan against published times rather than the approximate ones, which is the
+# difference between demonstrating the idea and demonstrating the system. Its own header
+# carries the attribution and the regenerate-rather-than-copy note.
+#
+# The datasets it derives from stay out: they are 116 MB and their licences are not this
+# repository's to grant., also ignored.
 data/Train_details_*.csv
 data/IRCTC_cleaned.csv
 data/schedules.json

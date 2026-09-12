@@ -105,7 +105,7 @@ export default function Sidebar() {
             DEMO MODE
           </span>
         </div>
-        Synthetic railway operations data.
+        Synthetic maintenance data over a published timetable.
         <br />Not an official Indian Railways product.
       </div>
     </aside>

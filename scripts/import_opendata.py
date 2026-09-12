@@ -419,8 +419,14 @@ def main() -> int:
         "# Goods is absent by design - goods paths are not booked, so TRACKSEN forecasts",
         "# them.",
         "#",
-        "# Local working file, regenerated in one command. Git-ignored: it is derived",
-        "# from downloaded datasets whose licences differ from this repository's.",
+        "# ATTRIBUTION. This is a derived extract, not a redistribution of any source:",
+        "# 543 rows covering one division, reduced to the columns this model needs.",
+        "#   Stops and times  : the published schedule named above.",
+        "#   Running days     : NTES, via railpull (github.com/shwetankg07/railpull, MIT).",
+        "#                      railpull asks that NTES data not be bulk-redistributed;",
+        "#                      what is here is the running-day field for a few dozen",
+        "#                      trains on one division, not a copy of the book.",
+        "# Regenerate rather than copy onward. One command, printed by the importer.",
         "#",
     ]
 

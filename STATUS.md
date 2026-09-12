@@ -17,7 +17,7 @@ A single percentage would be misleading, so here are the three that matter.
 |---|---:|---|
 | **Demo / prototype for the finals** | **~95%** | Runs end to end, validated, tested, UI a judge can drive |
 | **The problem statement's four stated requirements** | **~95%** | All four met, plus the governance the PS implies |
-| **A system that could be piloted on a division** | **~55%** | Connectors, approvals and audit exist; no persistence, no real identity, approximate timetable |
+| **A system that could be piloted on a division** | **~55%** | Connectors, approvals and audit exist; no persistence, no real identity |
 
 **If someone asks one number, say ~95%** — that is the honest answer against what
 PS 26027 actually asked for, and it is defensible line by line below.
@@ -72,20 +72,20 @@ staff caps, night-work rules, corridor policy, statutory deadlines; FCFS baselin
 identical physical constraints; pinned placements and re-solve.
 
 Measured on the Danapur division, 7 days, 600 tasks: risk retired per block-hour
-**8.3→18.8 (+126%)**, blocks **−23%**, corridor adherence **38%→73%**,
-traffic cost **−36%**, high-criticality unplanned failures **24→16**.
+**8.4→21.3 (+154%)**, blocks **−37%**, corridor adherence **31%→60%**,
+traffic cost **−50%**, high-criticality unplanned failures **18→13**.
 
 **Not done**
-- Optimality gap at 240 s: **weekly 2.4%, monthly 7.0%** — both near optimal. Not tuned
-  further; no ALNS fallback.
+- At 600 s: **monthly OPTIMAL, weekly 12.9%**. The weekly gap is budget-sensitive —
+  76.6% at 240 s — because criticality and traffic genuinely contend at real traffic
+  density. More search closes it; no ALNS fallback or symmetry breaking yet.
 - Rolling nightly re-solve against realised outcomes does not exist.
 - No sensitivity analysis across weight settings.
 
 ### 4. Weekly *and* monthly horizons — **85%**
 
 **Done** — weekly at 15-minute granularity; monthly at corridor-slot granularity
-(201/900 slots allocated over 30 days, backlog 577 → 363). Work too long for a corridor
-(311 tasks) is surfaced as an extended-block demand list rather than silently dropped.
+(over 30 days, solved to proven optimality). Work too long for a corridor is surfaced as an extended-block demand list rather than silently dropped.
 
 **Not done** — the two horizons are solved independently. A proper rolling scheme would nest
 the week inside the month's allocation and re-solve nightly.
@@ -206,15 +206,19 @@ right and this file is stale.
 ## Disclose these before someone finds them
 
 - **No live railway data.** Everything synthetic, modelled on published intervals.
-- **Optimality gap at 240 s: weekly 2.4%, monthly 7.0%.** Both near optimal.
+- **At 600 s: monthly OPTIMAL, weekly 12.9%.** The weekly gap is budget-sensitive:
+  76.6% at 240 s. Quote the gap the run printed, not this line.
 - **Overdue task-days get ~2% worse**, because criticality outranks age. A tunable trade-off.
 - **Cancellation risk is near the information ceiling** — a weak prior, not a prediction.
 - **Consequence weighting discriminates properly now** (0.698–1.000 across the planned
   road) — it did not on the earlier single-corridor topology.
-- **The coaching timetable carries real trains but approximate times.** 212 services with
-  real numbers, names and routes; the times and running days are plausible, not booked.
-  `scripts/import_railpull.py` swaps in real NTES data; the crawl has not been run.
-- **Only the main line is planned** — 15 of 42 sections. The eight branches are modelled
+- **The plan is built against published times** — 543 services, stops and times from a
+  published schedule, running days from an NTES crawl, merged by
+  `scripts/import_opendata.py`. An approximate hand-written timetable (212 services)
+  ships as the fallback; the Data Sources screen says which is in force.
+- **The published extract is of its own vintage.** Services introduced since it was taken
+  are absent, and some it contains have been retimed. A real timetable, not a current one.
+- **Only the main line is planned** — 15 of 41 sections. The eight branches are modelled
   for traffic and junction contention, not as places work is scheduled.
 - **What-if deferral risk uses an exponential-hazard approximation** of the Cox model.
 - **Fixed seed** — the service always plans the same 7-day, 200-task world.
@@ -230,8 +234,10 @@ reaching past their authority, and a UI a planner can argue with.
 
 What remains is narrower than it was and mostly unglamorous: storage, a real identity
 binding, pointing the connectors — which exist and are tested — at something other than a
-mock, and running the NTES crawl so the timetable carries booked times rather than
-plausible ones. [AUDIT.md](AUDIT.md) lists all of it with severities.
+mock. [AUDIT.md](AUDIT.md) lists all of it with severities — including the one that
+matters most right now: against a realistically busy timetable the weekly optimality gap
+is wide, because criticality and traffic genuinely contend at that density where
+criticality used to dominate.
 
 **The honest framing for a judge.** Every mechanism the problem statement asks for exists
 and is tested. Three of them are wired to stand-ins rather than the real thing: the source
