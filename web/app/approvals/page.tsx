@@ -31,6 +31,12 @@ const STAGES = [
   { key: "SANCTION", label: "DRM Sanction", who: "Divisional Railway Manager" },
 ] as const;
 
+/** The route as drawn: the four decisions plus the state they arrive at. */
+const ROUTE = [
+  ...STAGES,
+  { key: "DONE", label: "Sanctioned", who: "" },
+] as const;
+
 function stageIndex(s: ApprovalStatus | null): number {
   if (!s) return -1;
   if (s.state === "SANCTIONED") return 4;
@@ -116,11 +122,9 @@ function ApprovalsBody() {
         }
       />
       <div className="mb-4"><DemoNote>
-        Roles are <b>authenticated</b>: a bearer token identifies the caller and the
-        service resolves it to a name and a role. Nothing in the request body can change
-        that. What is still a stand-in is the identity <i>store</i> — a deployment
-        replaces it with the divisional directory, and the rules below are unchanged
-        either way.
+        Roles are <b>authenticated</b> — a bearer token resolves to a name and a role
+        server-side. The identity <b>store</b> is the stand-in: a deployment reads the
+        divisional directory instead, under the same rules.
       </DemoNote></div>
 
       {err && (
@@ -133,51 +137,42 @@ function ApprovalsBody() {
         </div>
       )}
 
-      {/* ---------- the route ---------- */}
-      <Card title="Workflow" className="mb-4">
-        <div className="flex items-stretch gap-0 flex-wrap">
-          {STAGES.map((s, i) => {
-            const done = idx > i;
-            const current = idx === i + 1 && idx < 4;
+      {/* ---------- the route ----------
+          Equal cells in one strip with the stage carried by the underline, rather than
+          boxes joined by typed arrows: the arrows wrapped onto a second line on any
+          narrow window and left one pointing at nothing. */}
+      <Card title="Workflow" className="mb-4" pad={false}>
+        <div className="grid" style={{
+          gridTemplateColumns: "repeat(auto-fit,minmax(158px,1fr))",
+          background: "var(--surface)",
+        }}>
+          {ROUTE.map((s, i) => {
+            // The terminal cell is not a decision, so it lights only once every
+            // decision behind it has been taken -- never as "current".
+            const terminal = s.key === "DONE";
+            const done = terminal ? idx >= STAGES.length : idx > i;
+            const current = !terminal && idx === i + 1 && idx < STAGES.length;
             const tone = done ? "var(--ok)" : current ? "var(--rail)" : "var(--ink-3)";
+            const rule = done ? "var(--ok)" : current ? "var(--rail)" : "var(--line-2)";
             return (
-              <div key={s.key} className="flex items-stretch">
-                <div className="px-3.5 py-2.5 rounded-[3px] min-w-[168px]"
-                  style={{
-                    background: current ? "var(--rail-bg)" : done ? "var(--ok-bg)" : "var(--surface-2)",
-                    border: `1px solid ${current ? "var(--rail)" : "var(--line)"}`,
-                  }}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <i className="lamp" style={{ background: tone }} />
-                    <span className="text-[12px] font-semibold" style={{ color: tone }}>
-                      {s.label}
-                    </span>
-                  </div>
-                  <div className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>{s.who}</div>
+              <div key={s.key} className="px-3.5 pt-2.5 pb-3 relative"
+                style={{
+                  boxShadow: "1px 0 0 var(--line), 0 1px 0 var(--line)",
+                  background: current ? "var(--rail-bg)" : "var(--surface)",
+                }}>
+                <div className="flex items-baseline gap-2">
+                  <span className="sig tnum" style={{ color: tone }}>{i + 1}</span>
+                  <span className="text-[12px] font-semibold leading-tight"
+                    style={{ color: tone }}>{s.label}</span>
                 </div>
-                {i < STAGES.length - 1 && (
-                  <div className="flex items-center px-2" style={{ color: "var(--line-2)" }}>→</div>
-                )}
+                <div className="text-[10.5px] mt-1" style={{ color: "var(--ink-3)" }}>
+                  {s.key === "DONE" ? (status?.sanctioned_by ?? "pending") : s.who}
+                </div>
+                <span className="absolute left-0 right-0 bottom-0"
+                  style={{ height: 2, background: rule }} />
               </div>
             );
           })}
-          <div className="flex items-center px-2" style={{ color: "var(--line-2)" }}>→</div>
-          <div className="px-3.5 py-2.5 rounded-[3px] min-w-[120px]"
-            style={{
-              background: idx >= 4 ? "var(--ok-bg)" : "var(--surface-2)",
-              border: `1px solid ${idx >= 4 ? "var(--ok)" : "var(--line)"}`,
-            }}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <i className="lamp" style={{ background: idx >= 4 ? "var(--ok)" : "var(--ink-3)" }} />
-              <span className="text-[12px] font-semibold"
-                style={{ color: idx >= 4 ? "var(--ok)" : "var(--ink-3)" }}>
-                Sanctioned
-              </span>
-            </div>
-            <div className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>
-              {status?.sanctioned_by ?? "pending"}
-            </div>
-          </div>
         </div>
       </Card>
 
@@ -244,18 +239,14 @@ function ApprovalsBody() {
               {/* The two checks are different questions and both are worth stating:
                   one asks whether the stored file has been edited, the other whether
                   this is the revision the DRM actually put their name to. */}
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-[11px]">
-                <span style={{ color: stored.intact ? "var(--ok)" : "var(--crit)" }}>
-                  {stored.intact
-                    ? "✓ content matches its stored fingerprint"
-                    : "✗ content has been altered since it was stored"}
-                </span>
+              <div className="flex flex-col gap-1 mt-2">
+                <Check ok={stored.intact}
+                  yes="Content matches its stored fingerprint"
+                  no="Content has been altered since it was stored" />
                 {stored.sanctioned_hash && (
-                  <span style={{ color: stored.matches_sanctioned ? "var(--ok)" : "var(--crit)" }}>
-                    {stored.matches_sanctioned
-                      ? "✓ this is the revision that was sanctioned"
-                      : "✗ NOT the revision that was sanctioned"}
-                  </span>
+                  <Check ok={stored.matches_sanctioned}
+                    yes="This is the revision that was sanctioned"
+                    no="NOT the revision that was sanctioned" />
                 )}
               </div>
             </div>
@@ -346,5 +337,18 @@ function ApprovalsBody() {
         </Card>
       </div>
     </>
+  );
+}
+
+/** A verified/failed assertion about the stored plan. A lamp carries the state to a
+ *  reader who does not distinguish the two greens and reds, and it is the same lamp
+ *  used everywhere else for a pass or a fail. */
+function Check({ ok, yes, no }: { ok: boolean; yes: string; no: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px]"
+      style={{ color: ok ? "var(--ok)" : "var(--crit)" }}>
+      <i className={`lamp lamp-${ok ? "ok" : "crit"}`} />
+      {ok ? yes : no}
+    </span>
   );
 }

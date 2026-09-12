@@ -49,7 +49,7 @@ function IntelligenceBody() {
     <>
       <PageHead
         title="AI Maintenance Intelligence"
-        subtitle="Criticality, time-to-failure, duration and cancellation risk — and how well each generalises"
+        subtitle="Criticality, time to failure, duration and cancellation risk"
       />
       <div className="mb-4"><DemoNote /></div>
 

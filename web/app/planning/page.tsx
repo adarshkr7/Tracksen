@@ -7,7 +7,8 @@ import BlockDetail from "../components/BlockDetail";
 import TimeDistanceChart from "../components/TimeDistanceChart";
 import { usePlan } from "../components/PlanProvider";
 import {
-  Badge, Button, Card, DemoNote, DeptBadge, Empty, Lamp, Metric, MetricRow, PageHead,
+  Badge, Button, Card, Chip, DemoNote, DeptBadge, Empty, Lamp, Metric, MetricRow,
+  PageHead, Seg,
 } from "../components/ui";
 import { resolve } from "../lib/api";
 import { CURRENT_PLAN_ID } from "../lib/planId";
@@ -81,7 +82,7 @@ function PlanningBody() {
     <>
       <PageHead
         title="Block Planning & Optimisation"
-        subtitle="Constraint-programming schedule over the mandated corridor and its alternatives"
+        subtitle="CP-SAT schedule over the mandated corridor, against the baseline"
         right={
           <>
             <Lamp state={apiUp ? "ok" : "warn"} live={apiUp}
@@ -148,27 +149,21 @@ function PlanningBody() {
           pad={false}
           right={
             <>
-              <Seg options={[
+              <Seg label="Schedule shown" options={[
                 { id: "optimised", label: "TRACKSEN" },
                 { id: "baseline", label: "Baseline" },
-              ]} value={which} onChange={(v) => setWhich(v as typeof which)} />
-              <Seg options={[
+              ]} value={which} onChange={setWhich} />
+              <Seg label="Direction" options={[
                 { id: "BOTH", label: "Both" }, { id: "DN", label: "DN" }, { id: "UP", label: "UP" },
-              ]} value={line} onChange={(v) => setLine(v as LineName | "BOTH")} />
+              ]} value={line} onChange={setLine} />
             </>
           }
         >
           <div className="flex items-center gap-1 px-3.5 pt-3">
             {Array.from({ length: plan.meta.horizon_days }, (_, d) => (
-              <button key={d} onClick={() => setDay(d)}
-                className="rounded-[3px] px-2 py-[4px] text-[11px] tnum border transition-colors"
-                style={{
-                  borderColor: d === day ? "var(--rail)" : "transparent",
-                  background: d === day ? "var(--rail-bg)" : "transparent",
-                  color: d === day ? "var(--rail)" : "var(--ink-3)",
-                }}>
-                {dayLabel(d)}
-              </button>
+              <Chip key={d} active={d === day} onClick={() => setDay(d)}>
+                <span className="tnum">{dayLabel(d)}</span>
+              </Chip>
             ))}
             <span className="ml-auto tnum text-[11px]" style={{ color: "var(--ink-3)" }}>
               {dayBlocks.length} blocks · {dayBlocks.filter((x) => x.depts.length > 1).length} clubbed
@@ -299,23 +294,3 @@ function Row({ k, v }: { k: string; v: string }) {
   );
 }
 
-function Seg({ options, value, onChange }: {
-  options: { id: string; label: string }[]; value: string; onChange: (v: string) => void;
-}) {
-  return (
-    <div className="inline-flex rounded-[3px] border overflow-hidden"
-      style={{ borderColor: "var(--line-2)" }}>
-      {options.map((o, i) => (
-        <button key={o.id} onClick={() => onChange(o.id)}
-          className="px-2.5 py-[4px] text-[11px] font-medium transition-colors"
-          style={{
-            background: value === o.id ? "var(--chrome)" : "var(--surface)",
-            color: value === o.id ? "#fff" : "var(--ink-2)",
-            borderLeft: i === 0 ? "none" : "1px solid var(--line-2)",
-          }}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}

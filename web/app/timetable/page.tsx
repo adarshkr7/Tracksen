@@ -7,7 +7,7 @@ import Gate from "../components/Gate";
 import MonthView from "../components/MonthView";
 import TimeDistanceChart from "../components/TimeDistanceChart";
 import { usePlan } from "../components/PlanProvider";
-import { Card, DemoNote, Empty, Metric, MetricRow, PageHead } from "../components/ui";
+import { Card, Chip, DemoNote, Empty, Metric, MetricRow, PageHead, Seg } from "../components/ui";
 import { Block, CLASS_COLOR, CLASS_LABEL, LineName, dayLabel } from "../lib/plan";
 
 /**
@@ -40,22 +40,17 @@ function TimetableBody() {
     <>
       <PageHead
         title="Timetable & Block Chart"
-        subtitle="Train movement, maintenance windows and infrastructure availability on one chart"
+        subtitle="Train paths, maintenance windows and the mandated corridor on one chart"
         right={
-          <div className="inline-flex rounded-[3px] border overflow-hidden"
-            style={{ borderColor: "var(--line-2)" }}>
-            {(["week", "month"] as const).map((h, i) => (
-              <button key={h} onClick={() => setHorizon(h)}
-                className="px-3 py-[5px] text-[11.5px] font-medium"
-                style={{
-                  background: horizon === h ? "var(--chrome)" : "var(--surface)",
-                  color: horizon === h ? "#fff" : "var(--ink-2)",
-                  borderLeft: i === 0 ? "none" : "1px solid var(--line-2)",
-                }}>
-                {h === "week" ? "Weekly · 15 min" : "Monthly · corridor slot"}
-              </button>
-            ))}
-          </div>
+          <Seg
+            label="Planning horizon"
+            options={[
+              { id: "week", label: "Weekly · 15 min" },
+              { id: "month", label: "Monthly · corridor slot" },
+            ] as const}
+            value={horizon}
+            onChange={setHorizon}
+          />
         }
       />
       <div className="mb-4"><DemoNote /></div>
@@ -69,27 +64,15 @@ function TimetableBody() {
         >
           <div className="flex items-center gap-1 px-3.5 pt-3 flex-wrap">
             {Array.from({ length: plan.meta.horizon_days }, (_, d) => (
-              <button key={d} onClick={() => setDay(d)}
-                className="rounded-[3px] px-2 py-[4px] text-[11px] tnum border transition-colors"
-                style={{
-                  borderColor: d === day ? "var(--rail)" : "transparent",
-                  background: d === day ? "var(--rail-bg)" : "transparent",
-                  color: d === day ? "var(--rail)" : "var(--ink-3)",
-                }}>
-                {dayLabel(d)}
-              </button>
+              <Chip key={d} active={d === day} onClick={() => setDay(d)}>
+                <span className="tnum">{dayLabel(d)}</span>
+              </Chip>
             ))}
             <span className="w-px h-4 mx-1.5" style={{ background: "var(--line-2)" }} />
             {(["BOTH", "DN", "UP"] as const).map((l) => (
-              <button key={l} onClick={() => setLine(l)}
-                className="rounded-[3px] px-2 py-[4px] text-[11px] border transition-colors"
-                style={{
-                  borderColor: line === l ? "var(--rail)" : "transparent",
-                  background: line === l ? "var(--rail-bg)" : "transparent",
-                  color: line === l ? "var(--rail)" : "var(--ink-3)",
-                }}>
+              <Chip key={l} active={line === l} onClick={() => setLine(l)}>
                 {l === "BOTH" ? "Both lines" : `${l} line`}
-              </button>
+              </Chip>
             ))}
             <span className="ml-auto tnum text-[11px]" style={{ color: "var(--ink-3)" }}>
               {dayBlocks.length} blocks

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import Expandable from "./components/Expandable";
 import ExpandableCard from "./components/Expandable";
 import Gate from "./components/Gate";
 import NetworkDiagram from "./components/NetworkDiagram";
@@ -120,7 +119,7 @@ function DashboardBody() {
       <div className="mb-4">
         <ExpandableCard
           title="Divisional Schematic — Danapur · Buxar (BXR) – Patna – Jhajha (JAJ)"
-          subtitle="Main line and branches, with pending maintenance at its actual chainage. Jhajha is the divisional limit."
+          subtitle="Pending maintenance at its actual chainage · BXR to JAJ, the divisional limit"
           right={<Link href="/network"><Button>Open Network</Button></Link>}
         >
           <NetworkDiagram

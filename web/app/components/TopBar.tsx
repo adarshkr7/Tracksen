@@ -6,16 +6,19 @@
  * Division, horizon, solver status and who is signed in — the things a controller needs
  * on screen at all times to know *which* plan they are looking at and *as whom*.
  *
- * The role selector is not authentication. It chooses the capacity a request is made in;
- * the backend enforces what that capacity may do and refuses anything else. Saying so
- * here is better than implying an identity system that does not exist.
+ * Everything here is one line or it is not here. A header that wraps its own fields onto
+ * three lines when the window narrows stops being a fixed reference point, so the fields
+ * drop out in order of importance instead: solver first, then section, then the estate
+ * lamp's label. Nothing that drops is unavailable — it is on the page it belongs to.
+ *
+ * The identity shown is not a selector. It is whatever the service resolved the bearer
+ * token to; there is nothing here to pick, which is the point.
  */
 
-import { useRole } from "./RoleProvider";
 import { useState } from "react";
 import { usePlan } from "./PlanProvider";
+import { useRole } from "./RoleProvider";
 import SignIn from "./SignIn";
-import { Lamp } from "./ui";
 
 export default function TopBar() {
   const { plan, apiUp, loading } = usePlan();
@@ -35,12 +38,13 @@ export default function TopBar() {
     >
       <Field label="Division" value="Danapur (DNR)" />
       <Divider />
-      <Field label="Section" value="BXR–PNBE–JAJ · 281 km" />
-      <Divider />
-      <Field label="Planning Horizon" value={`${horizon} days`} />
-      <Divider />
+      <Field label="Section" value="BXR–PNBE–JAJ · 281 km" at="lg" />
+      <Divider at="lg" />
+      <Field label="Horizon" value={`${horizon} days`} />
+      <Divider at="xl" />
       <Field
         label="Solver"
+        at="xl"
         value={
           loading ? "loading…"
             : gap !== undefined ? `feasible · ${Number(gap).toFixed(1)}% gap`
@@ -48,16 +52,18 @@ export default function TopBar() {
         }
       />
 
-      <div className="ml-auto flex items-center gap-4">
-        <Lamp
-          state={apiUp ? "ok" : "warn"}
-          live={apiUp}
-          label={apiUp ? "SYSTEM OPERATIONAL" : "PLAN-ONLY MODE"}
-        />
+      <div className="ml-auto flex items-center gap-4 shrink-0">
+        <span
+          className="inline-flex items-center gap-2 whitespace-nowrap"
+          title={apiUp ? "Solver service reachable" : "Serving the last saved plan file"}
+        >
+          <i className={`lamp lamp-${apiUp ? "ok" : "warn"}${apiUp ? " lamp-live" : ""}`} />
+          <span className="sig hidden md:inline">
+            {apiUp ? "System Operational" : "Plan-Only Mode"}
+          </span>
+        </span>
 
-        {/* Identity, not a choice. The role shown is whatever the service resolved the
-            token to; there is nothing here to pick, which is the point. */}
-        <div className="flex items-center gap-2 pl-4"
+        <div className="flex items-center gap-2.5 pl-4 whitespace-nowrap"
           style={{ borderLeft: "1px solid var(--line)" }}>
           {checking ? (
             <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
@@ -65,37 +71,26 @@ export default function TopBar() {
             </span>
           ) : session ? (
             <>
-              <div className="text-right leading-none">
-                <div className="text-[12px] font-medium" style={{ color: "var(--ink)" }}>
+              <span className="text-right leading-none hidden sm:block">
+                <span className="sig block">{session.role}</span>
+                <span className="block text-[12px] font-medium mt-[3px]"
+                  style={{ color: "var(--ink)" }}>
                   {session.name}
-                </div>
-                <div className="sig mt-[3px]">Signed in as</div>
-              </div>
-              <span
-                className="rounded-[3px] border px-2 py-[5px] text-[11.5px] font-medium"
-                style={{
-                  borderColor: "var(--line-2)", background: "var(--surface-2)",
-                  color: "var(--rail)",
-                }}
-              >
-                {session.role}
+                </span>
               </span>
               <button
                 onClick={signOut}
-                className="text-[11px] underline"
-                style={{ color: "var(--ink-3)" }}
+                title="Discard the token held for this tab"
+                className="rounded-[3px] border px-2.5 py-[5px] text-[11.5px] font-medium"
+                style={{ borderColor: "var(--line-2)", background: "var(--surface)",
+                         color: "var(--ink-2)" }}
               >
-                sign out
+                Sign out
               </button>
             </>
           ) : (
             <>
-              <div className="text-right leading-none">
-                <div className="text-[12px] font-medium" style={{ color: "var(--ink-3)" }}>
-                  Not signed in
-                </div>
-                <div className="sig mt-[3px]">Read-only</div>
-              </div>
+              <span className="sig hidden sm:inline">Read-only</span>
               <button
                 onClick={() => setSigningIn(true)}
                 className="rounded-[3px] px-3 py-[5px] text-[11.5px] font-medium"
@@ -112,9 +107,11 @@ export default function TopBar() {
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+/** `at` is the width below which the field gives up its space. */
+function Field({ label, value, at }: { label: string; value: string; at?: "lg" | "xl" }) {
+  const hide = at === "lg" ? "hidden lg:block" : at === "xl" ? "hidden xl:block" : "";
   return (
-    <div className="leading-none">
+    <div className={`leading-none whitespace-nowrap ${hide}`}>
       <div className="sig">{label}</div>
       <div className="text-[12px] font-medium mt-[3px] tnum" style={{ color: "var(--ink)" }}>
         {value}
@@ -123,6 +120,7 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Divider() {
-  return <span className="h-7 w-px" style={{ background: "var(--line)" }} />;
+function Divider({ at }: { at?: "lg" | "xl" }) {
+  const hide = at === "lg" ? "hidden lg:block" : at === "xl" ? "hidden xl:block" : "";
+  return <span className={`h-7 w-px shrink-0 ${hide}`} style={{ background: "var(--line)" }} />;
 }

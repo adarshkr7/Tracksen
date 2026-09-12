@@ -31,7 +31,9 @@ export function Card({ title, subtitle, right, children, className = "", pad = t
               </p>
             )}
           </div>
-          {right && <div className="ml-auto flex items-center gap-2">{right}</div>}
+          {right && (
+            <div className="head-tools ml-auto flex items-center gap-2">{right}</div>
+          )}
         </header>
       )}
       <div className={pad ? "p-3.5" : ""}>{children}</div>
@@ -64,9 +66,10 @@ export function Metric({
           <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>{unit}</span>
         )}
         {delta && Math.abs(delta.pct) >= 0.5 && (
-          <span className="tnum text-[11px] font-semibold ml-0.5"
+          <span className="tnum text-[11px] font-semibold ml-0.5 inline-flex items-center gap-[3px]"
             style={{ color: delta.better ? "var(--ok)" : "var(--crit)" }}>
-            {delta.pct > 0 ? "▲" : "▼"} {Math.abs(delta.pct).toFixed(0)}%
+            <Caret up={delta.pct > 0} />
+            {Math.abs(delta.pct).toFixed(0)}%
           </span>
         )}
       </div>
@@ -86,8 +89,8 @@ export function MetricRow({ children, cols = 4 }: {
   // own row whenever the count does not divide evenly, which reads as a layout fault.
   return (
     <div
-      className="grid gap-px card overflow-hidden metric-row"
-      style={{ background: "var(--line)", ["--cols" as string]: cols }}
+      className="card overflow-hidden metric-row"
+      style={{ ["--cols" as string]: cols }}
     >
       {children}
     </div>
@@ -183,9 +186,50 @@ export function Button({
     <button
       type={type} onClick={onClick} disabled={disabled} title={title}
       className="rounded-[3px] border px-2.5 py-[5px] text-[11.5px] font-medium
-                 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                 whitespace-nowrap transition-colors
+                 disabled:opacity-40 disabled:cursor-not-allowed"
       style={style}
     >
+      {children}
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+/**
+ * Segmented control — one choice out of a short, fixed set.
+ *
+ * Three pages had grown their own version of this, each with its own height, weight and
+ * active colour, so the same gesture looked like a different control depending on where
+ * you met it. The styling now lives in one place and the pressed state is announced
+ * rather than only coloured.
+ */
+export function Seg<T extends string>({ options, value, onChange, label }: {
+  options: readonly { id: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+  label?: string;
+}) {
+  return (
+    <div className="seg" role="group" aria-label={label}>
+      {options.map((o) => (
+        <button key={o.id} type="button" aria-pressed={value === o.id}
+          onClick={() => onChange(o.id)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Filter chip — an independent toggle, unlike a segment. */
+export function Chip({ children, active, onClick, title }: {
+  children: React.ReactNode; active: boolean; onClick: () => void; title?: string;
+}) {
+  return (
+    <button type="button" onClick={onClick} title={title} aria-pressed={active}
+      className="chip inline-flex items-center gap-1.5">
       {children}
     </button>
   );
@@ -223,7 +267,7 @@ export function PageHead({ title, subtitle, right }: {
           <p className="text-[12px] mt-1.5" style={{ color: "var(--ink-3)" }}>{subtitle}</p>
         )}
       </div>
-      {right && <div className="flex items-center gap-2">{right}</div>}
+      {right && <div className="flex items-center gap-2 shrink-0">{right}</div>}
     </div>
   );
 }
@@ -240,13 +284,26 @@ export function DemoNote({ children }: { children?: React.ReactNode }) {
           // Precise about which half is which. "Synthetic railway operations data"
           // covered everything when the timetable was written by hand; now that the
           // train paths are published data, saying it flatly understates them, and a
-          // viewer would reasonably read the whole chart as invented.
-          <>Maintenance demands, assets and defect history are <b>synthetic</b>. The
-          coaching timetable is <b>published data</b>; goods paths are forecast, because
-          they are not booked anywhere. TRACKSEN is not connected to live Indian Railways
-          systems.</>
+          // viewer would reasonably read the whole chart as invented. Every clause
+          // here carries a disclosure -- the explanations behind them do not, and a
+          // banner nobody finishes reading discloses nothing.
+          <>Maintenance demands, assets and defect history are <b>synthetic</b>; goods
+          paths are forecast. The coaching timetable is <b>published data</b>. Not
+          connected to Indian Railways systems.</>
         )}
       </span>
     </div>
+  );
+}
+
+/** Direction of travel against the baseline. Drawn rather than typed: ▲/▼ sit off the
+ *  text baseline and their weight varies by platform font, which shows up immediately
+ *  in a column of figures. */
+function Caret({ up }: { up: boolean }) {
+  return (
+    <svg width="7" height="7" viewBox="0 0 8 8" aria-hidden="true"
+      style={{ display: "block" }}>
+      <path d={up ? "M4 1l3.2 5.4H0.8z" : "M4 7L0.8 1.6h6.4z"} fill="currentColor" />
+    </svg>
   );
 }
