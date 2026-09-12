@@ -17,7 +17,7 @@ A single percentage would be misleading, so here are the three that matter.
 |---|---:|---|
 | **Demo / prototype for the finals** | **~95%** | Runs end to end, validated, tested, UI a judge can drive |
 | **The problem statement's four stated requirements** | **~95%** | All four met, plus the governance the PS implies |
-| **A system that could be piloted on a division** | **~55%** | Connectors, approvals and audit exist; no persistence, no real identity |
+| **A system that could be piloted on a division** | **~55%** | Connectors, approvals, audit and authentication exist; no persistence, no directory binding |
 
 **If someone asks one number, say ~95%** — that is the honest answer against what
 PS 26027 actually asked for, and it is defensible line by line below.
@@ -98,8 +98,9 @@ over HTTP (403 for authority, 409 for state). Every transition, **including refu
 attempts**, lands in a hash-chained append-only audit log that detects any retroactive
 edit and names the first broken link.
 
-**Not done** — identity is a stand-in: roles are supplied by the caller rather than
-authenticated. `_actor()` in `scripts/serve.py` is the seam a real deployment binds to
+**Not done** — the identity *store* is a stand-in: bearer tokens in a file rather than
+the divisional directory, with no expiry and no per-token revocation. The identity
+*check* is real — `caller()` in `scripts/serve.py` is the seam a deployment binds to
 the divisional directory. And there is no approvals UI; the workflow is API-only.
 
 ---
@@ -125,8 +126,9 @@ the divisional directory. And there is no approvals UI; the workflow is API-only
 | Time–distance chart, month view | ✅ | `web/app/components/` |
 | What-if simulator | ✅ | `web/app/components/WhatIfPanel.tsx`, `lib/whatif.ts` |
 | **Persistence** | ❌ | — |
-| **Real identity / RBAC binding** | ❌ | roles are caller-supplied |
-| **Approvals UI** | ❌ | workflow is API-only |
+| Authentication (bearer token → role) | ✅ | `governance/identity.py`, `/api/me` |
+| **Directory / SSO binding** | ❌ | tokens in a file, no expiry or revocation |
+| Approvals UI | ✅ | `web/app/approvals/`, with sign-in |
 
 ### On the tests
 
@@ -164,9 +166,9 @@ straight through. It now asserts an independent floor.
    the plan it belongs to. *~1 day, and the highest-value day left.*
 2. **Persistence.** PostgreSQL + PostGIS; stop regenerating the estate every run. Also
    removes the fixed `seed=42` limitation — the service always plans the same world. *~1–2 days.*
-3. **Bind identity to the divisional directory.** The workflow rules are enforced; *who you
-   are* is currently whatever you claim. LDAP or SSO behind `_actor()` closes it, and until
-   it does, the authority model is a convention rather than a control. *~1 day.*
+3. **Bind the identity store to the divisional directory.** Authentication is real —
+   a bearer token resolves to a role server-side and the request body has no say. What is
+   missing is LDAP or SSO behind it, plus token expiry and per-token revocation. *~1 day.*
 4. **Point an adapter at something real.** The transport and translation work; only the
    data behind them is mocked. A single live read-only view or SFTP drop from an actual
    departmental system would close the last of requirement 1. *~1 day, mostly access.*

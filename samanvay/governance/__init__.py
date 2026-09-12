@@ -1,6 +1,14 @@
 """Governance: who may approve a block plan, and an audit trail that cannot be rewritten."""
 
 from .audit import Action, AuditEntry, AuditLog, ChainStatus
+from .identity import (
+    AuthenticationError,
+    Identity,
+    IdentityStore,
+    bootstrap,
+    hash_token,
+    load_or_bootstrap,
+)
 from .workflow import (
     CONCURRENCE_AUTHORITY,
     DEPARTMENT_HEAD,
@@ -18,4 +26,6 @@ __all__ = [
     "Action", "Actor", "ApprovalWorkflow", "AuditEntry", "AuditLog", "AuthorityError",
     "CONCURRENCE_AUTHORITY", "ChainStatus", "Concurrence", "DEPARTMENT_HEAD",
     "PlanApproval", "PlanState", "Role", "WorkflowError",
+    "AuthenticationError", "Identity", "IdentityStore", "bootstrap", "hash_token",
+    "load_or_bootstrap",
 ]

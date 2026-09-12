@@ -12,6 +12,9 @@ import { PlanData } from "./plan";
 export const API =
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
+/** Alias, for callers that read better with a "base" in the name. */
+export const API_BASE = API;
+
 async function call<T>(
   path: string,
   init?: RequestInit,
@@ -105,27 +108,39 @@ export interface AuditPayload {
   chain: { intact: boolean; entries: number; broken_at: number | null; reason: string | null };
 }
 
-const post = <T>(path: string, body: unknown) =>
-  call<T>(path, { method: "POST", body: JSON.stringify(body) });
+/**
+ * An approval action. The token identifies the caller; nothing in the body does.
+ *
+ * These used to take `actor` and `role` and send them, which meant the browser chose its
+ * own authority and the service took its word. Both arguments are gone rather than
+ * ignored: a parameter that is accepted and discarded invites someone to start trusting
+ * it again.
+ */
+const act = <T>(path: string, token: string, body: unknown) =>
+  call<T>(path, {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-export const submitPlan = (planId: string, actor: string, role: string,
-                          departments: string[], remarks = "") =>
-  post<ApprovalStatus>(`/api/plans/${planId}/submit`,
-    { plan_id: planId, actor, role, departments, remarks });
+export const submitPlan = (planId: string, token: string,
+                           departments: string[], remarks = "") =>
+  act<ApprovalStatus>(`/api/plans/${planId}/submit`, token,
+    { plan_id: planId, departments, remarks });
 
-export const concur = (planId: string, actor: string, role: string,
+export const concur = (planId: string, token: string,
                        department: string, granted: boolean, remarks = "") =>
-  post<ApprovalStatus>(`/api/plans/${planId}/concur`,
-    { actor, role, department, granted, remarks });
+  act<ApprovalStatus>(`/api/plans/${planId}/concur`, token,
+    { department, granted, remarks });
 
-export const clearOperations = (planId: string, actor: string, role: string, remarks = "") =>
-  post<ApprovalStatus>(`/api/plans/${planId}/clear`, { actor, role, remarks });
+export const clearOperations = (planId: string, token: string, remarks = "") =>
+  act<ApprovalStatus>(`/api/plans/${planId}/clear`, token, { remarks });
 
-export const sanction = (planId: string, actor: string, role: string, remarks = "") =>
-  post<ApprovalStatus>(`/api/plans/${planId}/sanction`, { actor, role, remarks });
+export const sanction = (planId: string, token: string, remarks = "") =>
+  act<ApprovalStatus>(`/api/plans/${planId}/sanction`, token, { remarks });
 
-export const returnPlan = (planId: string, actor: string, role: string, remarks: string) =>
-  post<ApprovalStatus>(`/api/plans/${planId}/return`, { actor, role, remarks });
+export const returnPlan = (planId: string, token: string, remarks: string) =>
+  act<ApprovalStatus>(`/api/plans/${planId}/return`, token, { remarks });
 
 export const planStatus = (planId: string) =>
   call<ApprovalStatus>(`/api/plans/${planId}/status`);
@@ -143,11 +158,15 @@ export const verifyChain = () =>
 
 export interface Pin { block_id: string; start_min: number; task_ids: string[] }
 
+/**
+ * Re-solve. The token is only needed when `planId` names a plan already in the approval
+ * route, because re-solving one invalidates every concurrence given to it — the service
+ * answers 401 in that case and nowhere else.
+ */
 export const resolve = (pins: Pin[], timeLimit = 20, planId?: string,
-                        actor?: string, role?: string) =>
+                        token?: string | null) =>
   call<PlanData>("/api/resolve", {
     method: "POST",
-    body: JSON.stringify({
-      pins, time_limit_s: timeLimit, plan_id: planId, actor, role,
-    }),
+    body: JSON.stringify({ pins, time_limit_s: timeLimit, plan_id: planId }),
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   }, (timeLimit + 25) * 1000);

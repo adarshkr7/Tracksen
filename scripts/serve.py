@@ -19,13 +19,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 warnings.filterwarnings("ignore")
 
-from fastapi import FastAPI, HTTPException  # noqa: E402
+from fastapi import Depends, FastAPI, Header, HTTPException  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 from samanvay.domain import Department  # noqa: E402
 from samanvay.governance import (  # noqa: E402
     Actor,
+    AuthenticationError,
+    load_or_bootstrap,
     ApprovalWorkflow,
     AuditLog,
     AuthorityError,
@@ -41,6 +43,30 @@ AUDIT_PATH = Path(__file__).resolve().parents[1] / "out" / "audit.jsonl"
 audit = AuditLog(AUDIT_PATH)
 workflow = ApprovalWorkflow(audit)
 
+# Who the service will accept. On first run this mints one token per role and prints
+# them once; thereafter it reads the hashes. There is deliberately no "no identity file
+# means trust the caller" path -- that would be an authentication system with a hole
+# beside it, and the hole is what would get used.
+IDENTITY_PATH = Path(__file__).resolve().parents[1] / "out" / "identities.json"
+identities, _minted = load_or_bootstrap(IDENTITY_PATH)
+if _minted:
+    print()
+    print("=" * 72)
+    print("  FIRST RUN -- bearer tokens minted. Shown once here and never stored.")
+    print(f"  Only their hashes go to {IDENTITY_PATH}")
+    print("=" * 72)
+    for role, token in _minted.items():
+        print(f"  {role:12} {token}")
+    print("=" * 72)
+    print("  Use one as:  Authorization: Bearer <token>")
+    print("  Lost a token? Delete the file above and restart to mint a fresh set.")
+    print()
+    # Flushed explicitly. stdout is block-buffered when it is a file or a pipe, and a
+    # server does not exit -- so without this the one-time secrets sit in a buffer
+    # forever and are unrecoverable, because only their hashes were stored. Found by
+    # starting the service with its output redirected and getting an empty log.
+    sys.stdout.flush()
+
 app = FastAPI(title="TRACKSEN re-solve", version="1.0")
 
 app.add_middleware(
@@ -55,18 +81,29 @@ _last_plan = None
 _plan_counter = 0
 
 
-def _actor(name: str | None, role: str | None) -> Actor:
-    """Stand-in for real authentication.
+def caller(authorization: str = Header(default="")) -> Actor:
+    """The authenticated caller, from the bearer token. FastAPI dependency.
 
-    A production deployment binds this to the divisional directory; the workflow rules
-    are the same either way, and keeping the seam explicit is better than pretending
-    there is an identity system here when there is not.
+    The request body has no say in this. It used to: `{"actor": "...", "role": "DRM"}`
+    was taken at face value, which meant every rule in the approval route was one JSON
+    field away from being nothing. The role now comes from the identity store and the
+    body's copy is gone rather than ignored -- a field that is sometimes trusted
+    eventually is.
     """
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        raise HTTPException(
+            status_code=401,
+            detail="an approval action needs a bearer token: Authorization: Bearer <token>",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     try:
-        parsed = Role(role) if role else Role.VIEWER
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"unknown role {role!r}")
-    return Actor(name or "unknown", parsed)
+        return identities.resolve(token.strip())
+    except AuthenticationError as exc:
+        # 401, not 403. The caller has not established who they are; telling them they
+        # lack permission would send them looking for the wrong problem.
+        raise HTTPException(status_code=401, detail=str(exc),
+                            headers={"WWW-Authenticate": "Bearer"})
 
 
 def _next_plan_id() -> str:
@@ -111,8 +148,6 @@ class Weights(BaseModel):
 
 class ResolveRequest(BaseModel):
     plan_id: str | None = None
-    actor: str | None = None
-    role: str | None = None
     pins: list[PinIn] = Field(default_factory=list)
     weights: Weights | None = None
     time_limit_s: float = Field(default=20.0, ge=2.0, le=120.0)
@@ -142,6 +177,16 @@ def health() -> dict:
     }
 
 
+@app.get("/api/me")
+def me(actor: Actor = Depends(caller)) -> dict:
+    """Who the presented token belongs to.
+
+    The client shows the role this returns rather than one the user picked. A role
+    selector on the client was always decoration; this is where the answer lives.
+    """
+    return {"name": actor.name, "role": actor.role.value}
+
+
 @app.get("/api/plan")
 def plan(time_limit_s: float = 20.0) -> dict:
     """The unpinned plan. Same shape as plan.json."""
@@ -152,8 +197,15 @@ def plan(time_limit_s: float = 20.0) -> dict:
 
 
 @app.post("/api/resolve")
-def resolve(req: ResolveRequest) -> dict:
-    """Re-optimise with the planner's moves held fixed."""
+def resolve(req: ResolveRequest,
+            authorization: str = Header(default="")) -> dict:
+    """Re-optimise with the planner's moves held fixed.
+
+    Authentication is required only when this touches a plan already in the approval
+    route, because re-solving one invalidates every concurrence given to it. Exploring a
+    fresh plan changes nothing anybody signed, and gating it would put a login in front
+    of the thing a planner is meant to play with.
+    """
     global _last_plan
     s = session()
 
@@ -181,8 +233,9 @@ def resolve(req: ResolveRequest) -> dict:
     # any concurrence already given -- those were granted to a different plan.
     plan_id = req.plan_id or _next_plan_id()
     if plan_id in workflow.plans:
+        actor = caller(authorization)      # 401 here rather than a silent no-op
         try:
-            workflow.modify(plan_id, _actor(req.actor, req.role),
+            workflow.modify(plan_id, actor,
                             note=f"re-solved around {len(pins)} pinned block(s)",
                             plan_hash=result.plan.content_hash(),
                             pinned=[p.block_id for p in pins])
@@ -197,8 +250,8 @@ def resolve(req: ResolveRequest) -> dict:
 # --------------------------------------------------------------------------- #
 
 class ActorIn(BaseModel):
-    actor: str
-    role: str
+    """Remarks only. Identity comes from the token, never from the body."""
+
     remarks: str = ""
 
 
@@ -240,7 +293,7 @@ def _department(value: str) -> Department:
 
 
 @app.post("/api/plans/{plan_id}/submit")
-def submit(plan_id: str, body: CreateIn) -> dict:
+def submit(plan_id: str, body: CreateIn, actor: Actor = Depends(caller)) -> dict:
     """Put a plan into the approval route."""
     if body.plan_id != plan_id:
         raise HTTPException(
@@ -254,38 +307,38 @@ def submit(plan_id: str, body: CreateIn) -> dict:
     # attached to any set of blocks at all.
     plan_hash = _last_plan.content_hash() if _last_plan is not None else None
     _handle(lambda: workflow.create(
-        plan_id, depts, _actor(body.actor, body.role), plan_hash=plan_hash,
+        plan_id, depts, actor, plan_hash=plan_hash,
         note=body.remarks))
     return workflow.status(plan_id)
 
 
 @app.post("/api/plans/{plan_id}/concur")
-def concur(plan_id: str, body: ConcurIn) -> dict:
+def concur(plan_id: str, body: ConcurIn, actor: Actor = Depends(caller)) -> dict:
     dept = _department(body.department)
-    _handle(lambda: workflow.concur(plan_id, _actor(body.actor, body.role), dept,
+    _handle(lambda: workflow.concur(plan_id, actor, dept,
                                     granted=body.granted, remarks=body.remarks))
     return workflow.status(plan_id)
 
 
 @app.post("/api/plans/{plan_id}/clear")
-def clear(plan_id: str, body: ActorIn) -> dict:
+def clear(plan_id: str, body: ActorIn, actor: Actor = Depends(caller)) -> dict:
     _handle(lambda: workflow.clear_operations(
-        plan_id, _actor(body.actor, body.role), remarks=body.remarks))
+        plan_id, actor, remarks=body.remarks))
     return workflow.status(plan_id)
 
 
 @app.post("/api/plans/{plan_id}/sanction")
-def sanction(plan_id: str, body: ActorIn) -> dict:
+def sanction(plan_id: str, body: ActorIn, actor: Actor = Depends(caller)) -> dict:
     """The only endpoint that makes a plan operative. DRM only."""
     _handle(lambda: workflow.sanction(
-        plan_id, _actor(body.actor, body.role), remarks=body.remarks))
+        plan_id, actor, remarks=body.remarks))
     return workflow.status(plan_id)
 
 
 @app.post("/api/plans/{plan_id}/return")
-def return_plan(plan_id: str, body: ActorIn) -> dict:
+def return_plan(plan_id: str, body: ActorIn, actor: Actor = Depends(caller)) -> dict:
     _handle(lambda: workflow.return_for_revision(
-        plan_id, _actor(body.actor, body.role), remarks=body.remarks))
+        plan_id, actor, remarks=body.remarks))
     return workflow.status(plan_id)
 
 

@@ -53,3 +53,4 @@ data/schedules.json
 data/schedules.json.zip
 data/_imported.hold
 data/stations.json*
+out/identities.json

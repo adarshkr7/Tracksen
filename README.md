@@ -292,9 +292,22 @@ GET  /api/plans/{id}/audit      the trail for one plan, with chain status
 GET  /api/audit/verify          has the log been rewritten?
 ```
 
-Identity is a stand-in: `_actor(name, role)` in `scripts/serve.py` is the seam a real
-deployment binds to the divisional directory. The workflow rules are the same either way,
-and leaving the seam visible is better than implying an identity system that is not there.
+**Every approval action needs a bearer token.** `caller()` in `scripts/serve.py` resolves
+it to a name and a role; `actor` and `role` are gone from the request bodies rather than
+validated, because a field that is sometimes trusted eventually is. Tokens are stored as
+SHA-256 hashes and compared in constant time, so the identity file names who may act
+without conferring the ability to act.
+
+On first run the service mints one token per role, prints them once, and stores only the
+hashes. There is deliberately no fallback that trusts an unauthenticated caller.
+
+```bash
+python scripts/serve.py          # prints the tokens once, on first run
+curl -H "Authorization: Bearer <token>" http://127.0.0.1:8000/api/me
+```
+
+The identity *store* is the stand-in now, not the identity *check*: a deployment swaps it
+for the divisional directory, and the seam is one function wide.
 
 ## Tests
 
@@ -479,8 +492,10 @@ See [AUDIT.md](AUDIT.md) for the full list with severities. The short version:
 - **Real execution feedback.** Nothing ingests what actually happened — actual durations,
   overruns, cancellations, failures — so the models cannot be monitored for drift or
   retrained against outcomes.
-- **Authentication.** `_actor(name, role)` takes the caller's word for their role. The
-  workflow rules are real; the identity behind them is not. Production blocker.
+- **A real identity store.** Callers now authenticate with a bearer token and the
+  service resolves the role — the request body has no say. What is still a stand-in is
+  the *store*: tokens in a file rather than the divisional directory, with no expiry and
+  no way to revoke one without reissuing all of them.
 - **Persistence beyond the audit log.** Approvals replay from the log on restart, but the
   plan *content* they approved is not stored — only the decision is.
 - **A single-vintage timetable.** Published times now come from IRCTC_cleaned and real
