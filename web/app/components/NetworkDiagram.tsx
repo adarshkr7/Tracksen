@@ -29,16 +29,22 @@ const RAIL_Y = 215;           // centre of the formation
 const GAUGE = 9;              // spacing between the two rails
 const LANE = 21;              // vertical step between stacked markers
 const LANES = 5;              // how many rows of work stack above / below
-// Branches lean by a fixed amount rather than by length, so two leaving nearby
-// junctions stay separable. Length is carried by the label, not the geometry.
+// How far each branch is drawn out from the formation, as a fraction of the room on its
+// side. Branches are perpendicular, so this is the only thing keeping two of them apart
+// when their junctions are close together.
 //
 // One entry per modelled branch, in route order:
-//   Sasaram, Hajipur, Patna–Gaya, Islampur, Rajgir, Barauni, Kiul–Gaya, Jamalpur
-// Barauni leans west and Jamalpur east because they leave adjacent junctions on the
-// same side of the formation — Hathidah and Kiul are ten kilometres apart, and with
-// both leaning the same way their termini land on top of each other. The same applies
-// to the Patna and Fatuha branches, which are twenty-five kilometres apart.
-const BRANCH_LEAN = [-130, -80, -76, 4, 86, -70, 120, 76];
+//   Sasaram, Hajipur, Patna-Gaya, Islampur, Rajgir, Barauni, Kiul-Gaya, Jamalpur
+//
+// Alternating long and short along each side does the work. In chainage order, south is
+// Sasaram, Patna-Gaya, Islampur, Rajgir, Kiul-Gaya; north is Hajipur, Barauni, Jamalpur.
+// Barauni and Jamalpur leave junctions ten kilometres apart -- forty pixels here -- so
+// one is drawn short and the other long, and their labels sit at different depths rather
+// than on top of each other.
+//
+// The number is not the branch's length. Length is stated on the label, where it can be
+// read, rather than encoded in a geometry that already has a different job.
+const BRANCH_REACH = [1.0, 1.0, 0.72, 1.0, 0.68, 0.62, 1.0, 1.0];
 
 interface Props {
   stations: Station[];
@@ -110,11 +116,11 @@ export default function NetworkDiagram({
   }, [sections]);
 
   /**
-   * Every modelled branch, as a real diverging line with its own chainage.
+   * Every modelled branch, as a real line with its own chainage.
    *
-   * Fanned above and below the formation and given a reach proportional to its actual
-   * length, so the four legs meeting at Kiul stay legible and Gaya reads as the long
-   * road it is rather than as another identical stub.
+   * Drawn perpendicular to the formation, above or below it according to which side the
+   * branch actually leaves on, at a depth chosen to keep neighbouring branches' labels
+   * off each other.
    */
   const branchGeoms = useMemo(() => {
     const usedSide: Record<string, number> = {};
@@ -136,21 +142,26 @@ export default function NetworkDiagram({
         const dirY = north ? -1 : 1;
         const y0 = RAIL_Y + dirY * GAUGE;
         const len = route.lengthKm || 1;
-        // Reach differs by direction: the station names and chainage occupy the foot of
-        // the frame, so a southward branch has less room than a northward one and must
-        // stop short of them rather than printing over them.
-        const reach = north
-          ? RAIL_Y - GAUGE - 32 - fan * 18
-          : VB_H - 74 - (RAIL_Y + GAUGE) - fan * 18;
-        // Keep the lean inside the frame; a branch that runs off the edge tells nobody
-        // anything.
-        const lean = BRANCH_LEAN[idx % BRANCH_LEAN.length];
-        const dx = Math.max(M.left + 62 - x0, Math.min(VB_W - M.right - 92 - x0, lean));
+
+        // Perpendicular, like a section diagram. A branch leaves the main line at the
+        // junction and is drawn straight out from it -- the angle carries no meaning on
+        // a schematic, so leaning it only invites the reader to infer a direction the
+        // drawing is not claiming.
+        //
+        // What the length carries instead is separation. Two branches leaving junctions
+        // a few kilometres apart on the same side -- Barauni at Hathidah and Jamalpur at
+        // Kiul are ten km apart, forty pixels here -- would otherwise print their labels
+        // on top of each other. Staggering the reach stacks them at different depths.
+        const room = north
+          ? RAIL_Y - GAUGE - 34
+          // The station names and chainage occupy the foot of the frame, so a southward
+          // branch has less room and must stop short of them rather than over them.
+          : VB_H - 76 - (RAIL_Y + GAUGE);
+        const reach = room * (BRANCH_REACH[idx % BRANCH_REACH.length] - fan * 0.08);
 
         const at = (km: number) => {
           const t = Math.max(0, Math.min(1, km / len));
-          const e = t * t * 0.35 + t * 0.65;   // eased, so it reads as a turnout
-          return { px: x0 + dx * e, py: y0 + dirY * reach * t };
+          return { px: x0, py: y0 + dirY * reach * t };
         };
         return { route, at, north, label: meta?.name ?? route.name, note: meta?.note ?? "" };
       })
@@ -258,13 +269,15 @@ export default function NetworkDiagram({
               <path d={d} fill="none" stroke="var(--chrome-3)" strokeWidth={1.9}
                 strokeLinecap="round" />
 
-              {/* terminus and label */}
+              {/* Terminus and label, centred on the line rather than offset to its
+                  right: the branches are vertical now, so a right-hand label would run
+                  into whichever branch comes next along the formation. */}
               <circle cx={end.px} cy={end.py} r={4} fill="var(--rail)"
                 stroke="var(--rail-3)" strokeWidth={1.6} />
-              <text x={end.px + 8} y={end.py + (north ? -1 : 4)} fontSize={9.5}
-                fontWeight={700} fill="var(--rail)">
+              <text x={end.px} y={end.py + (north ? -13 : 15)} textAnchor="middle"
+                fontSize={9.5} fontWeight={700} fill="var(--rail)">
                 {label.toUpperCase()}
-                <tspan x={end.px + 8} dy={10} fontSize={7.5} fontWeight={500}
+                <tspan x={end.px} dy={9.5} fontSize={7.5} fontWeight={500}
                   fill="var(--ink-3)">
                   {route.lengthKm.toFixed(0)} km{note ? ` · ${note}` : ""}
                 </tspan>
