@@ -120,6 +120,11 @@ export const PROVENANCE = [
     note: "Number, time and running days as published — not an estimate",
     color: "var(--ok)",
   },
+  {
+    label: "Published open data",
+    note: "Booked time as published, of that dataset's vintage — not an estimate",
+    color: "var(--ok)",
+  },
 ] as const;
 /** [sectionIdx, day, startMin, endMin] */
 export type CorridorRow = [number, number, number, number];

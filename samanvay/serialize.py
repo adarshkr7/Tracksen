@@ -34,8 +34,32 @@ CLASS_INDEX = {"PREMIER": 0, "MAIL_EXP": 1, "PASSENGER": 2, "GOODS": 3}
 # How each train in the payload came to be there. The UI shows this on the path tooltip
 # so nobody reads a forecast goods path as a booked one, or a stand-in MEMU number as a
 # verified one. See data/timetable_danapur.csv for what the two coaching values mean.
-PROVENANCE_INDEX = {"named": 0, "representative": 1, "forecast": 2, "imported": 3}
+PROVENANCE_INDEX = {
+    "named": 0,          # authored here: real train, approximate time
+    "representative": 1, # authored here: stands in for stopping traffic
+    "forecast": 2,       # goods -- not booked anywhere, so modelled
+    "imported": 3,       # from NTES via railpull: current, booked
+    "opendata": 4,       # from a published open dataset: booked, but of its vintage
+}
 SERVICE_PROVENANCE = {s.train_no: s.provenance for s in BOOKED_SERVICES}
+
+
+def _provenance_code(train_no: str) -> int:
+    """Provenance index for a train, refusing to guess at one it does not recognise.
+
+    Defaulting an unknown value to "named" would put a made-up time behind a label that
+    says it is real, which is the one direction this field must never fail in. A new
+    importer that writes a provenance nobody registered should stop the build.
+    """
+    value = SERVICE_PROVENANCE.get(train_no, "forecast")
+    try:
+        return PROVENANCE_INDEX[value]
+    except KeyError:
+        raise KeyError(
+            f"train {train_no} carries provenance {value!r}, which is not in "
+            f"PROVENANCE_INDEX ({', '.join(PROVENANCE_INDEX)}). Register it there and in "
+            "web/app/lib/plan.ts PROVENANCE so the UI can say where it came from."
+        ) from None
 
 
 def dump_trains(paths: list) -> tuple[list[list], dict[str, int]]:
@@ -54,7 +78,7 @@ def dump_trains(paths: list) -> tuple[list[list], dict[str, int]]:
         roster.append([
             p.train_no,
             p.train_name,
-            PROVENANCE_INDEX[SERVICE_PROVENANCE.get(p.train_no, "forecast")],
+            _provenance_code(p.train_no),
         ])
     return roster, index
 

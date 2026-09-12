@@ -72,11 +72,11 @@ staff caps, night-work rules, corridor policy, statutory deadlines; FCFS baselin
 identical physical constraints; pinned placements and re-solve.
 
 Measured on the Danapur division, 7 days, 600 tasks: risk retired per block-hour
-**8.5→19.4 (+128%)**, blocks **−23%**, corridor adherence **38%→73%**,
+**8.3→18.8 (+126%)**, blocks **−23%**, corridor adherence **38%→73%**,
 traffic cost **−36%**, high-criticality unplanned failures **24→16**.
 
 **Not done**
-- Optimality gap at 240 s: **weekly 1.1%, monthly 5.8%** — both near optimal. Not tuned
+- Optimality gap at 240 s: **weekly 2.4%, monthly 7.0%** — both near optimal. Not tuned
   further; no ALNS fallback.
 - Rolling nightly re-solve against realised outcomes does not exist.
 - No sensitivity analysis across weight settings.
@@ -206,7 +206,7 @@ right and this file is stale.
 ## Disclose these before someone finds them
 
 - **No live railway data.** Everything synthetic, modelled on published intervals.
-- **Optimality gap at 240 s: weekly 1.1%, monthly 5.8%.** Both near optimal.
+- **Optimality gap at 240 s: weekly 2.4%, monthly 7.0%.** Both near optimal.
 - **Overdue task-days get ~2% worse**, because criticality outranks age. A tunable trade-off.
 - **Cancellation risk is near the information ceiling** — a weak prior, not a prediction.
 - **Consequence weighting discriminates properly now** (0.698–1.000 across the planned

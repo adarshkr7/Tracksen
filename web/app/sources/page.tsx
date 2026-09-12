@@ -55,6 +55,10 @@ function SourcesBody() {
       <>
         <PageHead title="Data Integration Status"
           subtitle="TMS · SMMS · TDMS · Control Office" />
+        {/* Shown even with the service down: it reads the static plan, not the API, and
+            a page that hides where its timetable came from whenever the backend is
+            offline hides it exactly when someone is browsing the demo unattended. */}
+        <TimetableSource />
         <Card>
           <Empty title="Solver service offline">
             Adapter status is queried live from the ingestion service. Start it to see

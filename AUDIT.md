@@ -2,9 +2,9 @@
 
 **Date:** 12 September 2026
 **Scope:** whole repository — backend, solver, governance, web client, documentation
-**Test suite:** 153 passing · mutation check 11/11
+**Test suite:** 158 passing · mutation check 11/11
 **Plan:** 7 days, 600 tasks, Danapur division (42 sections, 15 planned), 240 s solve
-**Solver:** weekly gap 1.1% · monthly gap 5.8%
+**Solver:** shipped timetable — weekly 2.4%, monthly 7.0% · merged real timetable — weekly 76.6%, monthly 19.2%
 **Web build:** clean (Next.js 16, TypeScript, 14 static routes)
 
 This is a point-in-time review of what is broken, what is incomplete, and what is
@@ -80,19 +80,76 @@ Ordered by how much they threaten the claims the project makes.
 
 ### 🔴 Blocking — these undermine stated results
 
-- [ ] **The timetable's times are still approximate.** This is now the single weakest
-      claim in the project. 212 services carry real numbers, names and routes; the times
-      and running days are plausible, not booked. `scripts/import_railpull.py` has been
-      **verified against railpull's actual exporter** — three bugs were found and fixed in
-      doing so, one of them fatal (it read `train` where railpull writes `train_number`,
-      so it would have imported nothing). The crawl itself has not been run: it is several
-      hours against a public enquiry service and is yours to start.
+- [x] **The timetable now carries published times.** Closed, and it went further than
+      planned. Three published sources were evaluated and the best two are merged:
 
-      ```
-      cd D:/CODE/railpull && pip install -r requirements.txt
-      python ntes/crawl.py && python transform/export.py
-      cd D:/CODE/SIH && python scripts/import_railpull.py           --railpull ../railpull/data/out -o data/timetable_danapur.imported.csv
-      ```
+      | | IRCTC_cleaned | data.gov.in | Kaggle | NTES (railpull) |
+      |---|---:|---:|---:|---:|
+      | Services over this division | **543** | 319 | 319 | 98 |
+      | Main-line services | **203** | 101 | 101 | 44 |
+      | Stop lists include passing points | yes | no | yes | no |
+      | Running days | flattened | none | none | **real** |
+      | Vande Bharat present | **yes** | no | no | yes |
+
+      `scripts/import_opendata.py` merges them field by field, because neither is better
+      at everything: stops and times from IRCTC, running days from an NTES crawl, and any
+      service NTES has that the published extract predates is added whole. 39 sets of
+      running days replaced, 11 services added. The frequency spread went from `{1, 7}` —
+      a binary, not a timetable — to `{1, 2, 3, 4, 6, 7}`.
+
+      `samanvay/timetable_import.py` holds the part that is the same whatever the source:
+      mapping a published stop sequence onto this division's roads.
+
+      **The committed `plan.json` is still built from the shipped approximate timetable.**
+      The merged file is git-ignored, because it derives from datasets whose licences
+      differ from this repository's. Regenerating it locally is one command, and the
+      loader prefers it automatically.
+
+### 🔴 Blocking
+
+- [ ] **The weekly optimality gap returns at realistic traffic density: 76.6%.**
+      It was 1.1% against the 212-service authored timetable and 2.6% before that. Against
+      the merged 543-service book it is 76.6% at the same 240 s budget. The monthly pass
+      holds at 19.2%.
+
+      *Diagnosed, not guessed.* The objective's traffic term has gone from a tenth of the
+      total to half of it, because the real road is 2.2x busier than the authored one:
+
+      | | authored (212 svc) | merged (543 svc) |
+      |---|---:|---:|
+      | Baseline traffic cost | ~72,000 | **155,321** |
+      | Traffic term in objective | ~3,600 | **4,128** |
+      | Criticality term | ~8,700 | 8,378 |
+
+      So criticality and traffic now genuinely contend, where before criticality dominated
+      and the bound was easy. This is the problem being harder, not mis-weighted — and
+      retuning lambda to make the gap look better would change what is optimised rather
+      than solve it faster.
+
+      **This does not invalidate the outcome measures** (+149% risk retired per block-hour,
+      traffic cost -47%, blocks -35%): those compare two plans built under identical
+      constraints. It does mean the optimised plan is not near-proven-optimal at this
+      density. Worth trying, in order: a longer weekly budget; symmetry breaking across
+      interchangeable candidates; an LNS loop warm-started from the incumbent.
+
+### Found by putting real data through it
+
+Worth recording separately, because none of these would have surfaced against the
+authored timetable:
+
+- **Luckeesarai was on the wrong line.** Modelled as the first station of the Kiul–Gaya
+  branch; it is on the Kiul–Patna main line. Every main-line train passing it counted as
+  branch traffic — the Gaya branch showed 71 services against the main line's 40. The
+  published data made it obvious: 159 calls, as many as Buxar, which no single-line
+  branch station produces. Corrected to MAIN 203 / GAYA 13.
+- **Station codes collide across the network.** `MDR` resolved to Madhira in Telangana
+  rather than Makhdumpur, `KIQ` to "Khai Phemeki". Name-based resolution with an explicit
+  alias table replaced it; 40 of 41 stations resolve, and Simariya is deliberately left
+  unmatched because every candidate is elsewhere in the country.
+- **The importer wrote straight to its target.** A crash mid-write left a truncated
+  timetable — and the loader *prefers* the imported file, so the next run planned against
+  zero services instead of falling back to the shipped one. It writes to a temporary file
+  and moves it into place now.
 
 ### 🟠 Significant — real limitations, currently unstated or understated
 
@@ -185,16 +242,16 @@ Stated for balance, and because the checklist above is not the whole picture.
 
 ## 5. Suggested order of work
 
-Items 2–7 of the original list are done. What is left, in order:
+The original list is done. What is left, in order:
 
-1. **Run the railpull crawl and import.** The only blocking item, and the importer is
-   ready and verified against railpull's own exporter. Everything else on this list is
-   smaller.
-2. **Bind roles to authenticated identities.** The workflow rules are real and tested;
+1. **Bind roles to authenticated identities.** The workflow rules are real and tested;
    the identity behind them is asserted by the caller. Nothing else can be called
    pilotable until this exists.
-3. **Persist plan content, not just the decision.** The hash proves which plan was
+2. **Persist plan content, not just the decision.** The hash proves which plan was
    signed; storing the plan itself would let you show it.
-4. **Close the execution loop** — ingest actual durations, overruns and cancellations so
+3. **Close the execution loop** — ingest actual durations, overruns and cancellations so
    the models can be monitored for drift.
-5. **Shrink the payload** so `web/public/plan.json` stops being a 2.7 MB commit.
+4. **Shrink the payload** so `web/public/plan.json` stops being a 2.7 MB commit.
+5. **Handle branch-to-branch services.** 85 trains work Barauni to Hajipur through the
+   main line; the timetable schema holds one branch plus one main leg, so they are
+   reported and skipped. They are real traffic this division sees.
