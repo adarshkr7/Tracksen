@@ -37,8 +37,21 @@ def _clear_start(session, block, *offsets: int) -> int:
     raise AssertionError(f"no premier-free shift for block {block.id} among {offsets}")
 
 
-# Shifts to try, in preference order: a couple of hours either way, then further out.
-SHIFTS = (120, 60, 180, -60, -120, 240, 300, -180, 360, 420, -240, 480)
+def _shifts() -> tuple[int, ...]:
+    """Offsets to try, nearest first.
+
+    Generated rather than hand-listed. The premier fence covers more of the chart every
+    time the timetable gets better -- twelve short premier legs became twenty-two running
+    the length of the division -- and a fixed shortlist quietly runs out, failing the
+    test for a reason that has nothing to do with pinning.
+    """
+    out: list[int] = []
+    for mins in range(15, 12 * 60 + 1, 15):
+        out.extend((mins, -mins))
+    return tuple(out)
+
+
+SHIFTS = _shifts()
 
 
 def _placement(plan, task_id: str) -> int | None:

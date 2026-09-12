@@ -168,13 +168,10 @@ def _read_irctc(path: Path) -> dict[str, dict]:
             no = (row.get("train_no") or "").strip()
             if not no:
                 continue
-            stops = []
+            stops, outside = [], []
             for seq, chunk in enumerate((row.get("intermediate_stops") or "").split("|")):
                 m = stop_re.match(chunk.strip())
                 if not m:
-                    continue
-                code = code_for_name(m.group("name"))
-                if code not in MODELLED:
                     continue
                 times = dict(
                     kv.split("=", 1) for kv in m.group("times").split(",") if "=" in kv
@@ -182,15 +179,20 @@ def _read_irctc(path: Path) -> dict[str, dict]:
                 # "First"/"Last" mark the originating and terminating calls, which have
                 # no departure and no arrival respectively.
                 dep, arr = times.get("dep", ""), times.get("arr", "")
-                stops.append({
-                    "code": code, "seq": seq,
-                    "time": hhmm(dep if dep not in ("", "Last") else arr),
-                })
+                when = hhmm(dep if dep not in ("", "Last") else arr)
+                code = code_for_name(m.group("name"))
+                if code not in MODELLED:
+                    # Kept, not dropped. Where a train goes after its last modelled stop
+                    # is what says whether the leg ends there or runs on to the boundary.
+                    outside.append({"name": m.group("name"), "seq": seq, "time": when})
+                    continue
+                stops.append({"code": code, "seq": seq, "time": when})
             if not stops:
                 continue
             by_train[no] = {
                 "name": (row.get("train_name") or "").strip(),
                 "stops": stops,
+                "outside": outside,
                 "runs": parse_days_of_week(row.get("days_of_week")),
             }
     return by_train
@@ -314,7 +316,14 @@ def main() -> int:
         stops = sorted(rec["stops"], key=lambda s: s["seq"])
         stops = [s for i, s in enumerate(stops)
                  if i == 0 or s["code"] != stops[i - 1]["code"]]
-        if len(stops) < 2:
+        outside = sorted(rec.get("outside") or [], key=lambda o: o["seq"])
+        before = [o for o in outside if o["seq"] < stops[0]["seq"]]
+        after = [o for o in outside if o["seq"] > stops[-1]["seq"]]
+
+        # One halt used to be fatal. It is not, when the stops either side of it say
+        # which boundary the train came in at and which it left by: 12305 Howrah-New
+        # Delhi Rajdhani halts only at Patna and runs the full 281 km.
+        if len(stops) < 2 and not (before and after):
             skipped["only touches one modelled station"] += 1
             continue
         if not all(s["time"] for s in stops):
@@ -326,7 +335,8 @@ def main() -> int:
         known_runs = runs is not None
 
         tclass = classify(name, number=number)
-        row, why = to_service(number, name, tclass, runs or "daily", stops)
+        row, why = to_service(number, name, tclass, runs or "daily", stops,
+                              before=before, after=after)
         if row is None:
             skipped[why] += 1
             continue
@@ -345,6 +355,31 @@ def main() -> int:
             "provenance": "opendata",
         })
 
+    # ---- one movement per path -------------------------------------------------
+    #
+    # The source carries a service under both its current and its former number, with
+    # every booked time identical: 12327 and 13035 are both the Upasana Express out of
+    # Howrah, calling at Jhajha 17:55/18:00 and Buxar 22:32/22:34 in both rows. Written
+    # out twice, one train occupies the road twice and every block over it is priced as
+    # though it delayed two.
+    #
+    # Identity here is the MOVEMENT -- same road, same ends, same minute, same days --
+    # not the name, because the pair rarely share one. Two different trains cannot hold
+    # the same section at the same minute anyway, so a collision is a duplicate rather
+    # than a coincidence.
+    seen: dict[tuple, str] = {}
+    unique: list[dict] = []
+    duplicates = 0
+    for svc in written:
+        key = (svc["route"], svc["enter_at"], svc["leave_at"], svc["main_leg"],
+               svc["enter_time"], svc["runs"])
+        if key in seen:
+            duplicates += 1
+            continue
+        seen[key] = svc["train_no"]
+        unique.append(svc)
+    written = unique
+
     print(f"source          : {args.file.name}")
     if args.ntes:
         print(f"merged with     : {args.ntes} (NTES)")
@@ -352,6 +387,8 @@ def main() -> int:
               f"{tally['added_from_ntes']} services added")
     print(f"touching the road: {len(by_train)} trains")
     print(f"importable      : {len(written)}")
+    if duplicates:
+        print(f"  deduped {duplicates:>4}  same movement under a second train number")
     for why, n in sorted(skipped.items(), key=lambda kv: -kv[1]):
         print(f"  skipped {n:>4}  {why}")
 

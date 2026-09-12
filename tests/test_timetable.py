@@ -11,6 +11,8 @@ import pytest
 
 from samanvay.domain import Line, TrainClass
 from samanvay.timetable_import import (
+    BOUNDARIES,
+    GATEWAYS,
     code_for_name,
     normalise_station,
     shared_route,
@@ -245,6 +247,92 @@ def test_the_shared_road_is_never_guessed_to_be_a_branch():
     # than picking whichever branch happens to sort first.
     assert shared_route(["PNBE", "DNR"]) == MAIN
     assert shared_route(["KIUL"]) is None
+
+
+# --------------------------------------------------------------------------- #
+# Gateways: where a service leaves the modelled network
+#
+# A leg ran from the first modelled STOP to the last, which equals the first to the last
+# modelled KILOMETRE only for a train that happens to halt at the boundary. It does not
+# for the premier traffic, which is exactly the traffic the fence exists for.
+# --------------------------------------------------------------------------- #
+
+def test_every_gateway_points_at_a_boundary():
+    # A boundary is where the network STOPS -- the two ends of the main line and the far
+    # end of each branch. A station leading into the MIDDLE of a road is not a gateway:
+    # the train's own call there already says where it joined. Listing Chhapra, which
+    # leads into Sonpur, made 11033 Pune-Darbhanga enter and leave at Hajipur.
+    for name, boundaries in GATEWAYS.items():
+        for b in boundaries:
+            assert b in BOUNDARIES, f"{name} -> {b} is not a boundary"
+
+
+def test_a_non_stop_run_to_the_boundary_is_not_clipped_at_the_last_halt():
+    # 12309 halts at Patna and Danapur, then runs non-stop through Bihta, Ara, Dumraon
+    # and Buxar to Mughalsarai. The leg used to end at Danapur, ten km in.
+    row, why = to_service("12309", "RJPB TEJAS RAJ", "PREMIER", "daily",
+        [{"code": "PNBE", "time": "19:30"}, {"code": "DNR", "time": "19:45"}],
+        before=[{"name": "Rajendranagar T", "time": "19:10"}],
+        after=[{"name": "Dd Upadhyaya Jn", "time": "22:10"}])
+    assert row is not None, why
+    assert (row["enter_at"], row["leave_at"]) == ("PNBE", "BXR")
+
+
+def test_a_service_terminating_inside_the_division_is_not_dragged_to_the_boundary():
+    # The mirror image, and the one a naive rule gets wrong. 12310 TERMINATES at Rajendra
+    # Nagar Terminal, which is in Patna and is not modelled. "The destination is not a
+    # modelled station, so the train must be leaving" would send it to Jhajha.
+    row, why = to_service("12310", "RJPB TEJAS RAJ", "PREMIER", "daily",
+        [{"code": "DNR", "time": "04:17"}, {"code": "PNBE", "time": "04:45"}],
+        before=[{"name": "RL Dd Upadhyaya Jn", "time": "02:00"}],
+        after=[{"name": "Rajendranagar T", "time": "05:15"}])
+    assert row is not None, why
+    assert (row["enter_at"], row["leave_at"]) == ("BXR", "PNBE")
+
+
+def test_a_boundary_time_is_backed_off_from_the_first_booked_stop():
+    # Not taken from the gateway's own clock. 12310 leaves Mughalsarai at 02:00 and is
+    # 200 km short of Danapur there, which is nothing like the 116 km from Buxar; using
+    # 02:00 would drag the whole path an hour early.
+    row, _ = to_service("12310", "RJPB TEJAS RAJ", "PREMIER", "daily",
+        [{"code": "DNR", "time": "04:17"}],
+        before=[{"name": "RL Dd Upadhyaya Jn", "time": "02:00"}],
+        after=[{"name": "Rajendranagar T", "time": "05:15"}])
+    assert row is None or row["enter_time"] != "02:00"
+
+
+def test_one_halt_plus_two_gateways_is_a_full_traversal():
+    # 12305 Howrah-New Delhi Rajdhani halts once on this division, at Patna, and runs the
+    # whole 281 km. One modelled stop used to be fatal.
+    row, why = to_service("12305", "RAJDHANI EXPRESS", "PREMIER", "Su",
+        [{"code": "PNBE", "time": "21:35"}],
+        before=[{"name": "RL Jasidih Jn", "time": "17:33"}],
+        after=[{"name": "RL Dd Upadhyaya Jn", "time": "00:50"}])
+    assert row is not None, why
+    assert (row["route"], row["enter_at"], row["leave_at"]) == (MAIN, "JAJ", "BXR")
+
+
+def test_a_gateway_does_not_drag_a_train_onto_a_road_it_never_used():
+    # 20887 Ranchi-Varanasi Vande Bharat runs the GRAND CHORD: Koderma, Gaya, Sasaram,
+    # Mughalsarai. Mughalsarai is beyond Buxar AND beyond Sasaram, and reading it as
+    # Buxar put this train up the Ara-Sasaram branch and out along our main line. It
+    # touches two branch ends and no through road, so it belongs to neither.
+    row, why = to_service("20887", "VANDE BHARAT EXP", "PREMIER", "daily",
+        [{"code": "GAYA", "time": "09:55"}, {"code": "SSM", "time": "10:57"}],
+        before=[{"name": "Koderma", "time": "08:42"}],
+        after=[{"name": "Dd Upadhyaya Jn", "time": "12:15"}])
+    assert row is None or row["route"] != MAIN, row
+
+
+def test_a_leg_that_starts_where_it_ends_is_refused_at_import():
+    # 11033 Pune-Darbhanga calls Chhapra, Sonpur, Hajipur, Muzaffarpur. Reading both
+    # outer calls as the Hajipur boundary made the leg HJP -> HJP, which the loader
+    # rejects by raising -- taking the whole timetable down rather than one row.
+    row, why = to_service("11033", "DARBHANGA EXP", "MAIL_EXP", "daily",
+        [{"code": "HJP", "time": "10:00"}],
+        before=[{"name": "Muzaffarpur Jn", "time": "09:00"}],
+        after=[{"name": "Muzaffarpur Jn", "time": "11:00"}])
+    assert row is None, row
 
 
 # --------------------------------------------------------------------------- #
