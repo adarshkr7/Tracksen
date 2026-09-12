@@ -254,6 +254,21 @@ table.ops tbody tr:last-child td { border-bottom: none; }
   font-weight: 500;
 }
 .chip:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* A legend that is also a filter. "Pressed" is the RESTING state here, because every
+   series starts drawn -- so it is the switched-off one that has to look different, and
+   the maroon active treatment would otherwise light all six at once. */
+.chip.legend[aria-pressed="true"] {
+  border-color: var(--line-2);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-weight: 400;
+}
+.chip.legend[aria-pressed="false"] {
+  background: var(--surface-2);
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
 .chip:disabled:hover { background: var(--surface); }
 
 /* Dropdown picker, on the same baseline as the chip beside it. */

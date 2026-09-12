@@ -8,7 +8,7 @@ import MonthView from "../components/MonthView";
 import TimeDistanceChart from "../components/TimeDistanceChart";
 import { usePlan } from "../components/PlanProvider";
 import { Card, Chip, DemoNote, Empty, Metric, MetricRow, PageHead, Seg } from "../components/ui";
-import { Block, LIVERY_COLOR, LIVERY_LABEL, LineName, dayLabel } from "../lib/plan";
+import { Block, LineName, dayLabel } from "../lib/plan";
 
 /**
  * The control chart.
@@ -90,14 +90,8 @@ function TimetableBody() {
 
           <div className="flex items-center gap-x-5 gap-y-2 flex-wrap px-4 pb-3.5 pt-1 text-[10.5px]"
             style={{ color: "var(--ink-3)" }}>
-            {LIVERY_LABEL.map((label, i) => (
-              <span key={label} className="inline-flex items-center gap-1.5">
-                <i style={{
-                  width: 16, height: 2.5, background: LIVERY_COLOR[i], display: "inline-block",
-                }} />
-                {label}
-              </span>
-            ))}
+            {/* The train key lives on the chart itself now, where it also switches
+                each series on and off. Only what the chart does not key stays here. */}
             <span className="inline-flex items-center gap-1.5">
               <i style={{
                 width: 16, height: 9, background: "var(--rail)", opacity: 0.12,

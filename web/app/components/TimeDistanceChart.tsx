@@ -92,6 +92,9 @@ export default function TimeDistanceChart({
   const [dragging, setDragging] = useState<string | null>(null);
   const [trainHover, setTrainHover] =
     useState<{ run: TrainRun; x: number; y: number } | null>(null);
+  // Liveries switched OFF. Held as the exclusion rather than the inclusion so the
+  // resting state is "everything is drawn" and needs no initialisation.
+  const [hiddenLiveries, setHiddenLiveries] = useState<ReadonlySet<number>>(new Set());
   const clipId = useId();
 
   const maxKm = stations.length ? stations[stations.length - 1].km : 100;
@@ -209,6 +212,30 @@ export default function TimeDistanceChart({
     return out;
   }, [paths, onRoute, both, lineIdx, dayStart, sections, trains, maxKm, viewKm0, viewKm1]);
 
+  /**
+   * Counted over every run on the chart, not over the drawn ones -- a filter whose
+   * counts fell to zero as you switched a series off could not be switched back on with
+   * any confidence about what you were getting.
+   */
+  const liveryCount = useMemo(() => {
+    const n = LIVERY_LABEL.map(() => 0);
+    for (const r of runs) n[r.liv] += 1;
+    return n;
+  }, [runs]);
+
+  const shownRuns = useMemo(
+    () => (hiddenLiveries.size ? runs.filter((r) => !hiddenLiveries.has(r.liv)) : runs),
+    [runs, hiddenLiveries],
+  );
+
+  const toggleLivery = useCallback((i: number) => {
+    setHiddenLiveries((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(i)) next.add(i);
+      return next;
+    });
+  }, []);
+
   const visibleBlocks = useMemo(
     () =>
       blocks.filter((b) => {
@@ -310,10 +337,16 @@ export default function TimeDistanceChart({
 
   return (
     <div className="relative">
-      <div className="pb-2">
+      <div className="pb-2 flex flex-col gap-1.5">
         <ChainageZoomBar
           zoom={zoom}
           right={`${visibleBlocks.length} block${visibleBlocks.length === 1 ? "" : "s"} in view`}
+        />
+        <LiveryFilter
+          counts={liveryCount}
+          hidden={hiddenLiveries}
+          onToggle={toggleLivery}
+          onShowAll={() => setHiddenLiveries(new Set())}
         />
       </div>
       <svg
@@ -378,15 +411,18 @@ export default function TimeDistanceChart({
         ))}
 
         <g className="train-paths" clipPath={`url(#${clipId})`}>
-          {runs.map((r) => {
+          {shownRuns.map((r) => {
             const on = r.train === hoveredTrain;
             return (
               <polyline
                 key={r.key}
                 points={r.points}
                 fill="none"
-                stroke={on ? "var(--rail)" : LIVERY_COLOR[r.liv]}
-                strokeWidth={on ? LIVERY_WIDTH[r.liv] + 1.8 : LIVERY_WIDTH[r.liv]}
+                // A hovered path keeps its own colour. It used to go maroon, which
+                // erased the one thing you were pointing at it to read. Weight and
+                // opacity carry the highlight instead.
+                stroke={LIVERY_COLOR[r.liv]}
+                strokeWidth={on ? LIVERY_WIDTH[r.liv] + 2.2 : LIVERY_WIDTH[r.liv]}
                 strokeOpacity={on ? 1 : r.prob * 0.85}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -399,7 +435,7 @@ export default function TimeDistanceChart({
             be pointed at. Drawn before the blocks so a block always wins the hover. */}
         {trains && (
           <g clipPath={`url(#${clipId})`}>
-            {runs.map((r) => (
+            {shownRuns.map((r) => (
               <polyline
                 key={`hit-${r.key}`}
                 points={r.points}
@@ -600,6 +636,58 @@ export default function TimeDistanceChart({
           </div>
         );
       })()}
+    </div>
+  );
+}
+
+/**
+ * The legend, made to do something.
+ *
+ * A chart carrying six colours needs a key whatever happens, and a key whose entries
+ * are already one per series is the obvious place to put the filter -- so it is the
+ * same row. Switching the goods paths off is how you see the coaching pattern
+ * underneath them, and goods is two thirds of the roster.
+ *
+ * The counts are of every run on the chart for this day and direction, not of the drawn
+ * ones: a count that fell to zero as you switched a series off would tell you nothing
+ * about what switching it back on would bring.
+ */
+function LiveryFilter({ counts, hidden, onToggle, onShowAll }: {
+  counts: number[];
+  hidden: ReadonlySet<number>;
+  onToggle: (i: number) => void;
+  onShowAll: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <span className="sig">Trains</span>
+      {LIVERY_LABEL.map((label, i) => {
+        const on = !hidden.has(i);
+        const n = counts[i] ?? 0;
+        return (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onToggle(i)}
+            title={n === 0
+              ? `No ${label.toLowerCase()} paths on this day`
+              : on ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+            className="chip legend inline-flex items-center gap-1.5"
+            style={{ opacity: n === 0 ? 0.5 : 1 }}
+          >
+            <i style={{
+              width: 14, height: 2.5, display: "inline-block", flex: "none",
+              background: LIVERY_COLOR[i], opacity: on ? 1 : 0.35,
+            }} />
+            {label}
+            <span className="tnum" style={{ color: "var(--ink-3)" }}>{n}</span>
+          </button>
+        );
+      })}
+      {hidden.size > 0 && (
+        <button type="button" className="chip" onClick={onShowAll}>Show all</button>
+      )}
     </div>
   );
 }
