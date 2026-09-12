@@ -274,8 +274,14 @@ export const LIVERY_COLOR = [
  *
  * Weight still ranks: a Rajdhani path is the one a block must not foul, so it is the
  * one that survives the crowd.
+ *
+ * Widened by roughly 60% over the first pass, which read as thread rather than line. The
+ * honest cost is that weight and density trade against each other: at 945 runs on a
+ * Monday, two thirds of them forecast goods, bolder strokes buy legibility per path and
+ * spend it on the crowd. Switching goods off in the filter is what makes the extra
+ * weight pay -- see the note on LIVERY_GOODS.
  */
-export const LIVERY_WIDTH = [1.05, 1.05, 0.8, 0.6, 0.55, 0.35];
+export const LIVERY_WIDTH = [1.7, 1.7, 1.35, 1.0, 0.95, 0.6];
 
 const RAJDHANI = /RAJDHANI|TEJAS\s*RAJ/;
 const VANDE = /VANDE\s*BHARAT/;
