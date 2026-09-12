@@ -29,14 +29,30 @@ def api(tmp_path_factory):
     """
     tmp = tmp_path_factory.mktemp("api")
     import samanvay.governance.identity as identity_mod
+    from samanvay.domain import BlockType, Department, Line, Plan, ScheduledBlock
+    from samanvay.governance import PlanStore
 
     serve = importlib.import_module("serve")
     serve.audit.__init__(tmp / "audit.jsonl")                  # fresh chain
     serve.workflow.log = serve.audit
     serve.workflow.plans.clear()
+    serve.plans = PlanStore(tmp / "plans")                     # never touch out/
 
     store, tokens = identity_mod.bootstrap(tmp / "identities.json")
     serve.identities = store
+
+    # A plan to submit. Solving a real one here would fit four models for the sake of
+    # testing an HTTP surface; what these tests need is something with a content hash.
+    serve._last_plan = Plan(
+        blocks=[ScheduledBlock(
+            id="1", section_id="BXR-DURE", line=Line.UP, day=0,
+            start_min=600, end_min=780, task_ids=["T1", "T2"],
+            departments=[Department.ENGINEERING], block_types=[BlockType.TRAFFIC],
+            inside_corridor=True, traffic_cost=12.5, criticality_retired=40.0,
+            reasons=["inside mandated corridor"],
+        )],
+        unscheduled_task_ids=["T9"], horizon_days=7, label="test",
+    )
 
     client = fastapi_testclient.TestClient(serve.app)
     return client, tokens, serve
@@ -155,3 +171,67 @@ def test_the_audit_records_the_authenticated_name_not_a_claimed_one(api):
         f"the audit trusted a name from the body: {[e.actor for e in entries]}"
     )
     assert all(e.role == "JE" for e in entries)
+
+
+# --------------------------------------------------------------------------- #
+# What was approved, retrievable afterwards
+# --------------------------------------------------------------------------- #
+
+def test_a_submitted_plan_is_stored_and_retrievable(api):
+    client, tokens, serve = api
+    pid = "P-STORED"
+    client.post(f"/api/plans/{pid}/submit",
+                json={"plan_id": pid, "departments": ["ENGG"]},
+                headers=auth(tokens["JE"]))
+
+    r = client.get(f"/api/plans/{pid}/plan")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["blocks"], "the plan was approved but its content was not stored"
+    assert body["intact"], "the stored plan does not match its own hash"
+    assert body["revisions"] == [body["revision"]]
+
+
+def test_the_stored_plan_is_the_one_the_drm_signed(api):
+    """The claim the content hash exists to support, asserted end to end."""
+    client, tokens, _ = api
+    pid = "P-SIGNED"
+    client.post(f"/api/plans/{pid}/submit",
+                json={"plan_id": pid, "departments": ["ENGG"]},
+                headers=auth(tokens["JE"]))
+    client.post(f"/api/plans/{pid}/concur", json={"department": "ENGG"},
+                headers=auth(tokens["Sr.DEN"]))
+    client.post(f"/api/plans/{pid}/clear", json={}, headers=auth(tokens["Sr.DOM"]))
+    client.post(f"/api/plans/{pid}/sanction", json={}, headers=auth(tokens["DRM"]))
+
+    body = client.get(f"/api/plans/{pid}/plan").json()
+    assert body["matches_sanctioned"], (
+        "the stored plan is not the one recorded as sanctioned"
+    )
+    assert body["sanctioned_hash"] == body["content_hash"]
+
+
+def test_an_unstored_plan_is_404_not_an_empty_plan(api):
+    client, _, _ = api
+    r = client.get("/api/plans/NEVER-EXISTED/plan")
+    assert r.status_code == 404
+
+
+def test_a_plan_id_that_would_escape_the_store_is_refused_over_http(api):
+    """The id reaches the store from a URL path, so it is checked there too."""
+    client, _, _ = api
+    r = client.get("/api/plans/..%2F..%2Fetc/plan")
+    assert r.status_code in (404, 422), f"got {r.status_code}: path traversal reached disk"
+
+
+def test_submitting_before_anything_is_solved_is_refused(api):
+    """Storing nothing and calling it approved would be the worst of both."""
+    client, tokens, serve = api
+    held, serve._last_plan = serve._last_plan, None
+    try:
+        r = client.post("/api/plans/P-NOTHING/submit",
+                        json={"plan_id": "P-NOTHING", "departments": ["ENGG"]},
+                        headers=auth(tokens["JE"]))
+        assert r.status_code == 409
+    finally:
+        serve._last_plan = held

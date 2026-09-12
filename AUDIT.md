@@ -2,7 +2,7 @@
 
 **Date:** 12 September 2026
 **Scope:** whole repository — backend, solver, governance, web client, documentation
-**Test suite:** 187 passing · mutation check 11/11
+**Test suite:** 211 passing · mutation check 11/11
 **Plan:** 7 days, 600 tasks, Danapur division (41 sections, 15 planned), 600 s solve
 **Solver:** monthly `OPTIMAL` · weekly `FEASIBLE` 12.9% at 600 s (76.6% at 240 s)
 **Web build:** clean (Next.js 16, TypeScript, 14 static routes)
@@ -57,6 +57,28 @@ fixed in the working tree** — the review read the committed version:
 Ordered by how much they threaten the claims the project makes.
 
 ### ✅ Closed since the first pass
+
+- [x] **What was approved is now stored, and checked.** The audit chain proved a plan was
+      sanctioned and the content hash proved *which* plan, but nothing stored the plan —
+      so a restarted service could verify a sanction and be unable to show anybody what
+      had been sanctioned.
+
+      `samanvay/governance/planstore.py` keeps every revision of every plan and checks
+      what it reads back against the hash recorded beside it. That turns the hash from a
+      claim into a test: presented with a plan and an audit entry you can say whether they
+      are the same plan, which is the whole reason the hash was worth recording.
+      `GET /api/plans/{id}/plan` answers two separate questions — `intact` (has the file
+      been edited since it was stored) and `matches_sanctioned` (is this the revision the
+      DRM actually signed), which differ because a plan is re-solved several times before
+      anyone approves it.
+
+      `Plan.content_hash()` and the store go through one `plan_content_hash()` function.
+      A second implementation of "what a plan is, canonically" would drift, and the one
+      thing that value must never do is disagree with itself.
+
+      Verified across a cold restart: sanction a plan, kill the service, start it with no
+      solve performed, and the 78-block plan comes back with `matches_sanctioned: true`.
+      Editing one block's start time on disk flips both flags to false.
 
 - [x] **The API no longer trusts client-supplied identity.** Any caller could POST
       `{"role": "DRM"}` and sanction a plan, which meant every rule in the approval route
@@ -153,6 +175,11 @@ Ordered by how much they threaten the claims the project makes.
 
 ### 🟠 New, from the authentication work
 
+- [ ] **The estate is still regenerated on every start.** Plans persist; the assets,
+      defect history and task population do not — they come from `seed=42` each time, so
+      the service always plans the same world. A stored plan therefore references task
+      ids that only exist because the seed is fixed. Persisting the estate is the next
+      layer, and is what `STATUS.md` means by PostgreSQL.
 - [ ] **Tokens are bearer credentials with no expiry and no revocation list.** Losing one
       means deleting the identity file and reissuing every token, because there is no way
       to withdraw a single one. A directory binding solves this; a `revoked` flag would
@@ -187,9 +214,7 @@ authored timetable:
 ### 🟠 Significant — real limitations, currently unstated or understated
 
 
-- [ ] **Nothing persists except the audit log.** Plans, the planning session, the id
-      counter and all solve results live in memory. A restart replays approvals but
-      cannot show you the plan they approved.
+
 - [ ] **311 of 600 tasks cannot fit a corridor at all.** Their P90 exceeds the 180-minute
       window, so they are named as needing an extended/mega block rather than scheduled.
       Honest, but it means a third of the backlog is outside what the system plans.
@@ -275,11 +300,9 @@ Stated for balance, and because the checklist above is not the whole picture.
 
 The original list is done. What is left, in order:
 
-1. **Persist plan content, not just the decision.** The hash proves which plan was
-   signed; storing the plan itself would let you show it.
-2. **Close the execution loop** — ingest actual durations, overruns and cancellations so
+1. **Close the execution loop** — ingest actual durations, overruns and cancellations so
    the models can be monitored for drift.
-3. **Shrink the payload** so `web/public/plan.json` stops being a 2.7 MB commit.
-4. **Handle branch-to-branch services.** 85 trains work Barauni to Hajipur through the
+2. **Shrink the payload** so `web/public/plan.json` stops being a 2.7 MB commit.
+3. **Handle branch-to-branch services.** 85 trains work Barauni to Hajipur through the
    main line; the timetable schema holds one branch plus one main leg, so they are
    reported and skipped. They are real traffic this division sees.

@@ -145,6 +145,29 @@ export const returnPlan = (planId: string, token: string, remarks: string) =>
 export const planStatus = (planId: string) =>
   call<ApprovalStatus>(`/api/plans/${planId}/status`);
 
+export interface StoredPlanPayload {
+  plan_id: string;
+  revision: number;
+  content_hash: string;
+  saved_at: string;
+  horizon_days: number;
+  label: string;
+  blocks: { section_id: string; line: string; start_min: number; end_min: number;
+            task_ids: string[]; departments: string[] }[];
+  unscheduled_task_ids: string[];
+  revisions: number[];
+  /** Does the stored file still hash to the value saved beside it? */
+  intact: boolean;
+  sanctioned_hash: string | null;
+  /** Is this the revision the DRM actually signed? */
+  matches_sanctioned: boolean;
+}
+
+/** The plan content behind a plan id — what was approved, not what is loaded now. */
+export const storedPlan = (planId: string, revision?: number) =>
+  call<StoredPlanPayload>(
+    `/api/plans/${planId}/plan${revision !== undefined ? `?revision=${revision}` : ""}`);
+
 export const planAudit = (planId: string) =>
   call<AuditPayload>(`/api/plans/${planId}/audit`);
 
