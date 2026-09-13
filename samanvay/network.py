@@ -369,17 +369,20 @@ JUNCTION_RECEPTION_MIN = 8
 #
 # Two files can supply them, and which one is in use is not a detail to keep quiet about:
 #
-#   timetable_danapur.imported.csv   Written by scripts/import_railpull.py from a local
-#                                    railpull crawl of NTES. Real booked times, real
-#                                    running days. Preferred whenever it exists.
-#   timetable_danapur.csv            Ships with the repository. Real train numbers, names
-#                                    and routes; APPROXIMATE times and running days.
+#   timetable_danapur.imported.csv   Written by scripts/import_opendata.py: stops and
+#                                    times from a published open dataset, running days
+#                                    from an NTES crawl. Published times, published
+#                                    running days. Preferred whenever it exists, and it
+#                                    ships -- so a clone plans against published data.
+#   timetable_danapur.csv            The fallback. Real train numbers, names and routes;
+#                                    APPROXIMATE times and running days.
 #
-# The imported file wins, so running the crawl is the only step needed to move the whole
-# system onto published data -- no code change, no configuration. It is absent by default
-# because railpull's README asks that NTES data not be redistributed, so it cannot be
-# committed here; the repository has to be runnable without a multi-hour crawl, and the
-# approximate file is what makes that true.
+# The imported file wins, and it is a derived extract rather than a copy of any source
+# book -- 543 services over one division, reduced to the ten columns this model needs.
+# The 116 MB of datasets it derives from stay out of the repository: their licences are
+# not this repository's to grant, and the header of the extract says how to regenerate it.
+# The approximate file stays because it is what keeps a clone runnable if the extract is
+# ever removed.
 #
 # On a real deployment both are replaced by the division's own WTT extract. Nothing below
 # this point changes either way: the columns are the contract.

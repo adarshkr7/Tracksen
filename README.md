@@ -13,8 +13,8 @@ TRACKSEN is a decision-support layer over those existing systems. It does not re
 any of them and it **never grants a block** — it produces a recommended plan, and the
 competent authority sanctions.
 
-**Build status:** [STATUS.md](STATUS.md) for what is built against the problem statement.
-[AUDIT.md](AUDIT.md) for what is broken or unfinished, which is the more useful document
+**Build status:** [STATUS.md](docs/STATUS.md) for what is built against the problem statement.
+[AUDIT.md](docs/AUDIT.md) for what is broken or unfinished, which is the more useful document
 if you are deciding whether to trust a number on a screen.
 
 TRACKSEN is not an Indian Railways product and is not connected to any live railway
@@ -63,7 +63,7 @@ python scripts/run_pipeline.py --corridor-regime split-150x2
 | `split-150x2` | para 2.0, second limb — two blocks of two and a half hours | 150 min |
 | `min-180` | para 3.0 — the three-hour floor, not the norm | 180 min |
 
-See [ROADMAP.md](ROADMAP.md) for why the default moved, and what it cost to have had the
+See [ROADMAP.md](docs/ROADMAP.md) for why the default moved, and what it cost to have had the
 floor hard-coded.
 
 ---
@@ -153,6 +153,20 @@ In the UI, **Week / Month** switches horizons; `?view=month` links straight to i
 ---
 
 ## How it works
+
+[docs/architecture.md](docs/architecture.md) draws this: the whole system as one flowchart,
+plus the approval route and the ingestion fallback ladder, which are about authority and
+degradation rather than about data moving and do not fit inside a data-flow picture.
+
+```
+samanvay/     the system — domain, models, solver, governance, ingestion
+scripts/      entry points — pipeline, API service, returns, validation, mutation check
+tests/        the suite, plus the mutants that prove it can fail
+data/         the two timetables; the datasets they derive from are fetched, not vendored
+docs/         everything else in prose — see docs/README.md
+web/          Next.js client, reads out/plan.json and the API
+out/          run artefacts, gitignored — plan, hints, audit log, identities
+```
 
 ```
 samanvay/
@@ -595,7 +609,7 @@ everything, which is why it is a merge and not a choice.
 
 ## Not built yet
 
-See [AUDIT.md](AUDIT.md) for the full list with severities. The short version:
+See [AUDIT.md](docs/AUDIT.md) for the full list with severities. The short version:
 
 - **Real execution feedback.** Nothing ingests what actually happened — actual durations,
   overruns, cancellations, failures — so the models cannot be monitored for drift or

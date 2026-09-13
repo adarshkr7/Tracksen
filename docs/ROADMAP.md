@@ -8,7 +8,7 @@ Nothing here changes the honesty discipline in [AUDIT.md](AUDIT.md): no item may
 number that is not either measured or clearly labelled as synthetic.
 
 **State after items 1–4: 256 tests passing, mutation check 15/15.** Headline figures in
-[README.md](README.md) have been re-run against the new corridor default. Two of the four
+[README.md](../README.md) have been re-run against the new corridor default. Two of the four
 items changed a number the project was quoting, and both changes made the old number look
 like what it was — an artefact of a constant nobody had checked against the rule.
 
@@ -66,10 +66,10 @@ spell is shorter, and a four-hour job cannot be done in two halves with the line
 back to traffic in between. Which limb a division picks is a genuine trade between total
 corridor time and the longest job it can absorb, and TRACKSEN can now price it.
 
-Default is now `single-240`, so the headline figures in [README.md](README.md) need
+Default is now `single-240`, so the headline figures in [README.md](../README.md) need
 re-running before they are quoted again.
 
-Covered by [tests/test_corridor.py](tests/test_corridor.py) — including the two failures
+Covered by [tests/test_corridor.py](../tests/test_corridor.py) — including the two failures
 that do not throw: spells that silently overlap, and a corridor placed outside the
 06:00–18:00 working day, which would quietly exclude every night-restricted task from the
 possession meant to hold it.
@@ -107,8 +107,8 @@ blocks out of eighty-odd. Protection against bursting comes from the duration mo
 from the solver, and the comparison table should not be read as though the optimiser earned
 it. What the optimiser earns is on the other rows.
 
-Covered by [tests/test_bursting.py](tests/test_bursting.py) and two additions to
-[tests/test_models.py](tests/test_models.py). The tests to keep are the ones guarding
+Covered by [tests/test_bursting.py](../tests/test_bursting.py) and two additions to
+[tests/test_models.py](../tests/test_models.py). The tests to keep are the ones guarding
 failures that do not throw: a burst check that forgets the withdrawal (170 minutes of work
 in a 180-minute possession is *not* comfortable once disconnection and restoration are
 counted), and one that sums two departments' work instead of taking the longer, which would
@@ -203,7 +203,7 @@ feed connected" rather than being filled with the cancellation model's forecast 
 substitution that would make this document actively misleading, since the DRM reads that part as a
 record. The model's number appears below it, labelled as a prior. A test asserts this.
 
-Covered by [tests/test_reports.py](tests/test_reports.py). The mutation check gained an entry for
+Covered by [tests/test_reports.py](../tests/test_reports.py). The mutation check gained an entry for
 the failure that renders perfectly: a monthly return built from the weekly plan's blocks. **Writing
 it found that the first version of that test did not catch it** — the overdue total comes from the
 metrics, and the worst-offender list filled up with deferred tasks either way. The test now asserts
