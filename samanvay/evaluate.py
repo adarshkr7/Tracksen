@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .domain import MaintenanceTask, Plan
+from .optimizer.cpsat import withdrawal_overhead, withdrawals_for
 
 
 @dataclass
@@ -46,6 +47,12 @@ class PlanMetrics:
     overdue_task_days: int = 0
     expected_cancellations: float = 0.0
 
+    # Block bursting -- the railway's own name for a possession worked beyond its
+    # sanctioned time. Counted, audited, and a named cause of punctuality loss.
+    blocks_written_to_burst: int = 0
+    burst_rate: float = 0.0
+    burst_minutes: int = 0
+
     # Outcome against ground truth
     unplanned_failures: int = 0
     critical_unplanned_failures: int = 0
@@ -67,6 +74,8 @@ class PlanMetrics:
             ("Traffic cost per task", f"{self.traffic_cost_per_task:.0f}"),
             ("Corridor adherence", f"{self.corridor_adherence:.0%}"),
             ("Block utilisation", f"{self.block_utilisation:.0%}"),
+            ("Blocks written to burst", f"{self.blocks_written_to_burst}"),
+            ("Burst minutes carried", f"{self.burst_minutes:,}"),
             ("Overdue task-days", f"{self.overdue_task_days}"),
             ("Expected cancellations", f"{self.expected_cancellations:.1f}"),
             ("Unplanned failures", f"{self.unplanned_failures}"),
@@ -87,6 +96,8 @@ def evaluate(plan: Plan, tasks: list[MaintenanceTask]) -> PlanMetrics:
     dept_slots = 0
     corridor_blocks = 0
     cancel_expectation = 0.0
+    burst_blocks = 0
+    burst_minutes = 0
 
     for b in plan.blocks:
         total_minutes += b.duration_min
@@ -100,11 +111,22 @@ def evaluate(plan: Plan, tasks: list[MaintenanceTask]) -> PlanMetrics:
         if members:
             # Departments work in parallel inside a clubbed block, so the productive
             # span is the longest member, not the sum.
-            worked_minutes += min(b.duration_min,
-                                  max(t.true_duration_min for t in members))
+            longest = max(t.true_duration_min for t in members)
+            worked_minutes += min(b.duration_min, longest)
             cancel_expectation += max(
                 (t.cancellation_risk or 0.0) for t in members
             )
+
+            # Does this block burst? The possession has to hold the withdrawal as well
+            # as the work -- a disconnection that takes 20 minutes to make and 15 to
+            # restore leaves that much less of the window for the job itself.
+            overhead = withdrawal_overhead(
+                {bt for t in members for bt in withdrawals_for(t)}
+            )
+            over = longest + overhead - b.duration_min
+            if over > 0:
+                burst_blocks += 1
+                burst_minutes += over
 
     m.block_hours = round(total_minutes / 60.0, 2)
     m.clubbed_blocks = len(plan.clubbed_blocks)
@@ -122,6 +144,10 @@ def evaluate(plan: Plan, tasks: list[MaintenanceTask]) -> PlanMetrics:
     m.block_utilisation = round(
         worked_minutes / total_minutes, 4) if total_minutes else 0.0
     m.expected_cancellations = round(cancel_expectation, 2)
+
+    m.blocks_written_to_burst = burst_blocks
+    m.burst_rate = round(burst_blocks / m.blocks_used, 4) if m.blocks_used else 0.0
+    m.burst_minutes = burst_minutes
 
     m.risk_retired_per_block_hour = round(
         m.criticality_retired / m.block_hours, 2) if m.block_hours else 0.0

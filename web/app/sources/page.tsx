@@ -59,6 +59,7 @@ function SourcesBody() {
             a page that hides where its timetable came from whenever the backend is
             offline hides it exactly when someone is browsing the demo unattended. */}
         <TimetableSource />
+        <CorridorCard />
         <Card>
           <Empty title="Solver service offline">
             Adapter status is queried live from the ingestion service. Start it to see
@@ -93,6 +94,7 @@ function SourcesBody() {
       </div>
 
       <TimetableSource />
+      <CorridorCard />
 
       <div className="mb-4">
         <MetricRow cols={4}>
@@ -189,6 +191,7 @@ function SourcesBody() {
             of an hour is an expectation rather than a count.
           </p>
         </Card>
+
       </div>
 
       <p className="text-[10.5px] mt-4 leading-relaxed max-w-3xl" style={{ color: "var(--ink-3)" }}>
@@ -197,6 +200,66 @@ function SourcesBody() {
         should make the weaker grant sufficient.
       </p>
     </>
+  );
+}
+
+/**
+ * The corridor policy in force, and whether the chart actually keeps it.
+ *
+ * Two things a planner must not have to guess at. A 180-minute corridor is the floor in
+ * para 3.0 of Railway Board's joint circular of 28.12.2016, not the norm in para 2.0, and
+ * a block marked "inside mandated corridor" in a window the timetable runs trains through
+ * is inside a promise the chart does not keep.
+ */
+function CorridorCard() {
+  const { plan } = usePlan();
+  const regime = plan?.meta?.corridorRegime;
+  const fouled = plan?.corridorAudit;
+
+  if (!regime) {
+    return (
+      <Card title="Mandated corridor"
+        subtitle="Railway Board joint circular No. 2015/Track-III/TK/15, 28.12.2016">
+        <Empty title="No corridor regime in this plan">
+          Written before the corridor policy was recorded. Re-run the pipeline.
+        </Empty>
+      </Card>
+    );
+  }
+
+  const booked = (fouled ?? []).reduce((n, f) => n + f.booked, 0);
+  const premier = (fouled ?? []).reduce((n, f) => n + f.premier, 0);
+  const clean = fouled !== undefined && fouled.length === 0;
+
+  return (
+    <Card title="Mandated corridor"
+      subtitle="Railway Board joint circular No. 2015/Track-III/TK/15, 28.12.2016"
+      right={<Lamp state={clean ? "ok" : "warn"}
+        label={clean ? "Corridor clear" : "Charted paths inside"} />}>
+      <div className="flex gap-2 mb-2 flex-wrap">
+        <Badge>{regime.name}</Badge>
+        <Badge>{regime.spells.join(" + ")} min</Badge>
+        <Badge>longest spell {regime.longestSpellMin} min</Badge>
+      </div>
+      <p className="text-[11.5px]" style={{ color: "var(--ink-2)" }}>
+        {regime.name === "min-180"
+          ? "Three hours is para 3.0's floor, not para 2.0's norm — work that would fit a "
+            + "four-hour corridor is being reported as needing an extended block."
+          : "Para 2.0: one block of four hours, or two blocks of two and a half. Two spells "
+            + "are two possessions — the line goes back to traffic in between, so a job has "
+            + "to fit one of them end to end."}
+      </p>
+      {fouled !== undefined && fouled.length > 0 ? (
+        <p className="text-[11.5px] mt-2" style={{ color: "var(--ink-2)" }}>
+          <strong>{fouled.length}</strong> corridor windows are crossed by charted paths
+          {" "}(<strong>{booked.toLocaleString()}</strong> services
+          {premier > 0 ? `, ${premier} premier` : ""}). Para 2.0 answers this: where
+          margins are inadequate the corridor is provided by rescheduling trains within
+          the zone. That count is the demand this plan puts on the working time table,
+          not a defect in the plan.
+        </p>
+      ) : null}
+    </Card>
   );
 }
 

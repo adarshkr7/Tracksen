@@ -111,6 +111,27 @@ def test_p90_beats_the_demanded_figure(session):
     assert result["p90_coverage"] > result["demanded_coverage"] + 0.3
 
 
+def test_burst_rate_is_the_coverage_figure_in_the_railways_own_words(session):
+    """Same measurement, two vocabularies -- and they must not drift apart.
+
+    "P90 covers 92% of true durations" and "8% of these blocks would burst" are one
+    number. If a refactor ever lets them disagree, one of the two will be quoted.
+    """
+    r = session.duration.evaluate_against_truth(session.tasks)
+    assert r["burst_rate_at_p90"] == pytest.approx(1.0 - r["p90_coverage"])
+    assert r["burst_rate_as_demanded"] == pytest.approx(1.0 - r["demanded_coverage"])
+
+
+def test_reserving_at_p90_prevents_most_bursting(session):
+    """The safety claim, stated as bursting: what we reserve is what does not burst."""
+    r = session.duration.evaluate_against_truth(session.tasks)
+    assert r["burst_rate_as_demanded"] > 0.5, "the demanded figure should burst often"
+    assert r["burst_rate_at_p90"] < 0.15
+    # A block that bursts does not burst by a rounding error. If this ever came out
+    # near zero the over-run would be operationally invisible and the finding hollow.
+    assert r["median_burst_min_as_demanded"] > 0
+
+
 # --------------------------------------------------------------------------- #
 # Cancellation
 # --------------------------------------------------------------------------- #

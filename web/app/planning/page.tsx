@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ExpandableCard from "../components/Expandable";
 import Gate from "../components/Gate";
 import BlockDetail from "../components/BlockDetail";
 import TimeDistanceChart from "../components/TimeDistanceChart";
 import { usePlan } from "../components/PlanProvider";
 import {
-  Badge, Button, Card, Chip, DemoNote, DeptBadge, Empty, Lamp, Metric, MetricRow,
+  Badge, Bar, Button, Card, Chip, DemoNote, DeptBadge, Empty, Lamp, Metric, MetricRow,
   PageHead, Seg,
 } from "../components/ui";
 import { resolve } from "../lib/api";
@@ -35,7 +35,10 @@ function PlanningBody() {
   const [which, setWhich] = useState<"optimised" | "baseline">("optimised");
   const [selected, setSelected] = useState<Block | null>(null);
   const [day, setDay] = useState(0);
-  const [line, setLine] = useState<LineName | "BOTH">("BOTH");
+  // One direction at a time. Drawing both overlays UP and DN in the same band, which
+  // doubles the crossings for no information a planner uses -- a block sits on one line,
+  // never both -- and halves the height each block gets drawn at.
+  const [line, setLine] = useState<LineName | "BOTH">("DN");
   const [solving, setSolving] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -60,15 +63,17 @@ function PlanningBody() {
     setNote(null);
     const before = plan!.metrics.optimised.risk_retired_per_block_hour;
     try {
-      const next = await resolve([], 30, CURRENT_PLAN_ID, token);
+      const next = await resolve([], SOLVER_BUDGET_S, CURRENT_PLAN_ID, token);
       if (!next) {
         setNote("Solver service did not respond. Showing the plan already loaded.");
       } else {
         const after = (next as PlanData).metrics.optimised.risk_retired_per_block_hour;
+        const gap = (next as PlanData).meta.solver?.gap_pct;
         setPlan(next as PlanData);
         setNote(
           `Schedule re-optimised. Risk retired per block-hour ${before.toFixed(2)} → ` +
-          `${after.toFixed(2)} (${after >= before ? "+" : ""}${(after - before).toFixed(2)}).`,
+          `${after.toFixed(2)} (${after >= before ? "+" : ""}${(after - before).toFixed(2)})` +
+          (gap === undefined ? "." : `, within ${Number(gap).toFixed(1)}% of the bound.`),
         );
       }
     } catch (e) {
@@ -98,12 +103,7 @@ function PlanningBody() {
 
       <div className="mb-4"><DemoNote /></div>
 
-      {solving && (
-        <div className="mb-4 card px-4 py-3 text-[12px] solving" style={{ color: "var(--ink-2)" }}>
-          CP-SAT running over {plan.tasks.length} jobs and the enumerated corridor
-          windows. This takes about half a minute.
-        </div>
-      )}
+      {solving && <SolverProgress jobs={plan.tasks.length} />}
       {note && (
         <div className="mb-4 card px-4 py-2.5 text-[12px] fade-in flex items-center gap-3"
           style={{ color: "var(--ink-2)" }}>
@@ -294,3 +294,50 @@ function Row({ k, v }: { k: string; v: string }) {
   );
 }
 
+/** The solver's time budget, in seconds. Also what the progress bar is measured against. */
+const SOLVER_BUDGET_S = 30;
+
+/**
+ * How far through the solve we are.
+ *
+ * Measured in SECONDS SPENT, not in closeness to the optimum, and it says so. CP-SAT
+ * does not publish a monotonic notion of progress -- it holds a bound and an incumbent,
+ * and the gap between them can sit still for ten seconds and then collapse -- so a bar
+ * claiming to show "72% optimised" would be an invention. The budget is the one thing
+ * genuinely known in advance, and running out of it is genuinely what ends most solves.
+ *
+ * A solve that proves its bound early returns before the bar fills, which is the good
+ * outcome rather than a broken indicator; the note that follows carries the gap it
+ * actually reached.
+ */
+function SolverProgress({ jobs }: { jobs: number }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const started = Date.now();
+    const id = setInterval(() => setElapsed((Date.now() - started) / 1000), 200);
+    return () => clearInterval(id);
+  }, []);
+
+  // Held just short of full: the solve is not finished until the response lands, and a
+  // bar sitting at 100% while nothing happens reads as a hang.
+  const pct = Math.min(99, (elapsed / SOLVER_BUDGET_S) * 100);
+
+  return (
+    <div className="mb-4 card px-4 py-3">
+      <div className="flex items-baseline justify-between gap-3 mb-2">
+        <span className="text-[12px]" style={{ color: "var(--ink-2)" }}>
+          CP-SAT over {jobs} jobs and the enumerated corridor windows
+        </span>
+        <span className="tnum text-[13px] font-semibold" style={{ color: "var(--rail)" }}>
+          {pct.toFixed(0)}%
+        </span>
+      </div>
+      <Bar value={pct} />
+      <div className="text-[11px] mt-1.5 tnum" style={{ color: "var(--ink-3)" }}>
+        {elapsed.toFixed(1)}s of a {SOLVER_BUDGET_S}s solver budget — time spent, not
+        distance to the optimum. It returns early if it proves the bound.
+      </div>
+    </div>
+  );
+}

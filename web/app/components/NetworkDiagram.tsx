@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Branch, RouteInfo, Section, Station, Task } from "../lib/plan";
+import { ChainageZoomBar, useChainageZoom } from "./ChainageZoom";
 import { Band, BAND_COLOR, BAND_LABEL, band } from "./PlanProvider";
 import { DEPT_COLOR, DEPT_NAME } from "./ui";
 
@@ -66,7 +67,16 @@ export default function NetworkDiagram({
 
   const maxKm = stations.length ? stations[stations.length - 1].km : 100;
   const plotW = VB_W - M.left - M.right;
-  const x = (km: number) => M.left + (km / maxKm) * plotW;
+
+  // Chainage domain. Zoomed out this is the whole division; zoomed in it is one block
+  // section and a margin. Everything on the drawing is positioned through x(), so the
+  // window is the only thing that has to change.
+  const zoom = useChainageZoom(sections, maxKm);
+  const { km0: viewKm0, km1: viewKm1 } = zoom.view;
+  const span = Math.max(1, viewKm1 - viewKm0);
+  const x = (km: number) => M.left + ((km - viewKm0) / span) * plotW;
+  const inView = (km: number) => km >= viewKm0 - 1e-6 && km <= viewKm1 + 1e-6;
+  const overlaps = (km0: number, km1: number) => km1 > viewKm0 && km0 < viewKm1;
 
   const kmOf = useMemo(() => {
     const m = new Map<string, number>();
@@ -87,6 +97,7 @@ export default function NetworkDiagram({
 
     for (const t of [...tasks].sort((a, b) => a.km - b.km)) {
       if (branchSectionIds.has(t.section)) continue;   // drawn on the branch
+      if (!inView(t.km)) continue;                     // outside the zoom window
       const px = x(t.km);
       const track = lastAt[t.line];
       let lane = 0;
@@ -96,7 +107,7 @@ export default function NetworkDiagram({
       (t.line === "UP" ? up : dn).push({ t, px, lane });
     }
     return { up, dn };
-  }, [tasks, maxKm, branchSectionIds]);
+  }, [tasks, maxKm, branchSectionIds, viewKm0, viewKm1]);
 
   const markerY = (line: "UP" | "DN", lane: number) =>
     line === "UP"
@@ -131,6 +142,7 @@ export default function NetworkDiagram({
         const jn = route.stations[0].code;
         const jnKm = kmOf.get(jn);
         if (jnKm === undefined) return null;
+        if (!inView(jnKm)) return null;   // its junction is off the zoom window
 
         const meta = branches.find(
           (b) => b.junction === jn && route.name.includes(b.name));
@@ -170,20 +182,32 @@ export default function NetworkDiagram({
         at: (km: number) => { px: number; py: number };
         north: boolean; label: string; note: string;
       }[];
-  }, [routes, branches, kmOf, maxKm]);
+  }, [routes, branches, kmOf, maxKm, viewKm0, viewKm1]);
+
+  const shown = placed.up.length + placed.dn.length;
 
   return (
     <div className="relative">
+      <div className="pb-2">
+        <ChainageZoomBar zoom={zoom} />
+      </div>
       <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full h-auto select-none"
         role="img" aria-label="Railway corridor schematic with pending maintenance">
 
         {/* ---- section bands, alternating so the divisions read ---- */}
-        {mainSections.map((sec, i) => (
-          <rect key={sec.id}
-            x={x(sec.km0)} width={x(sec.km1) - x(sec.km0)}
-            y={M.top} height={VB_H - M.top - 40}
-            fill={i % 2 ? "var(--surface-2)" : "transparent"} />
-        ))}
+        {/* Banding is indexed off the full section list, not the visible slice, so
+            zooming never flips which sections are shaded. */}
+        {mainSections.map((sec, i) => {
+          if (!overlaps(sec.km0, sec.km1)) return null;
+          const x0 = Math.max(x(sec.km0), M.left);
+          const x1 = Math.min(x(sec.km1), VB_W - M.right);
+          return (
+            <rect key={sec.id}
+              x={x0} width={Math.max(0, x1 - x0)}
+              y={M.top} height={VB_H - M.top - 40}
+              fill={i % 2 ? "var(--surface-2)" : "transparent"} />
+          );
+        })}
 
         {/* ---- lane guides ---- */}
         {Array.from({ length: LANES - 1 }, (_, i) => i + 1).map((l) => (
@@ -217,7 +241,7 @@ export default function NetworkDiagram({
           fill="var(--ink-3)" letterSpacing="0.08em">DN</text>
 
         {/* ---- stations; junctions get a heavier mark ---- */}
-        {stations.map((st) => {
+        {stations.filter((st) => inView(st.km)).map((st) => {
           const isJn = Boolean(st.junction);
           return (
             <g key={st.code}>
@@ -243,8 +267,9 @@ export default function NetworkDiagram({
 
         {/* ---- section identifiers along the formation ---- */}
         {mainSections.map((sec) => {
-          const mid = (x(sec.km0) + x(sec.km1)) / 2;
-          if (x(sec.km1) - x(sec.km0) < 74) return null;
+          if (!overlaps(sec.km0, sec.km1)) return null;
+          const mid = (Math.max(x(sec.km0), M.left) + Math.min(x(sec.km1), VB_W - M.right)) / 2;
+          if (Math.min(x(sec.km1), VB_W - M.right) - Math.max(x(sec.km0), M.left) < 74) return null;
           return (
             <text key={sec.id} x={mid} y={RAIL_Y + 4} textAnchor="middle"
               fontSize={8.5} fontWeight={600} fill="var(--ink-3)"
@@ -383,7 +408,9 @@ export default function NetworkDiagram({
           junction
         </span>
         <span className="ml-auto tnum">
-          {tasks.length} pending jobs positioned by chainage
+          {zoom.zoomed
+            ? `${shown} of ${tasks.length} jobs in view`
+            : `${tasks.length} pending jobs positioned by chainage`}
         </span>
       </div>
 

@@ -8,7 +8,7 @@ import MonthView from "../components/MonthView";
 import TimeDistanceChart from "../components/TimeDistanceChart";
 import { usePlan } from "../components/PlanProvider";
 import { Card, Chip, DemoNote, Empty, Metric, MetricRow, PageHead, Seg } from "../components/ui";
-import { Block, CLASS_COLOR, CLASS_LABEL, LineName, dayLabel } from "../lib/plan";
+import { Block, LineName, dayLabel } from "../lib/plan";
 
 /**
  * The control chart.
@@ -27,7 +27,10 @@ function TimetableBody() {
   const { plan, taskById } = usePlan();
   const [horizon, setHorizon] = useState<"week" | "month">("week");
   const [day, setDay] = useState(0);
-  const [line, setLine] = useState<LineName | "BOTH">("BOTH");
+  // One direction at a time. Drawing both overlays UP and DN in the same band, which
+  // doubles the crossings for no information a planner uses -- a block sits on one line,
+  // never both -- and halves the height each block gets drawn at.
+  const [line, setLine] = useState<LineName | "BOTH">("DN");
   const [selected, setSelected] = useState<Block | null>(null);
 
   if (!plan) return null;
@@ -90,14 +93,8 @@ function TimetableBody() {
 
           <div className="flex items-center gap-x-5 gap-y-2 flex-wrap px-4 pb-3.5 pt-1 text-[10.5px]"
             style={{ color: "var(--ink-3)" }}>
-            {CLASS_LABEL.map((label, i) => (
-              <span key={label} className="inline-flex items-center gap-1.5">
-                <i style={{
-                  width: 16, height: 2, background: CLASS_COLOR[i], display: "inline-block",
-                }} />
-                {label}
-              </span>
-            ))}
+            {/* The train key lives on the chart itself now, where it also switches
+                each series on and off. Only what the chart does not key stays here. */}
             <span className="inline-flex items-center gap-1.5">
               <i style={{
                 width: 16, height: 9, background: "var(--rail)", opacity: 0.12,

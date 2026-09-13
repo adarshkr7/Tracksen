@@ -36,9 +36,15 @@ function WhatIfBody() {
   const { plan, setPlan, taskById, apiUp } = usePlan();
   const { token } = useRole();
   const [day, setDay] = useState(0);
-  const [line, setLine] = useState<LineName | "BOTH">("BOTH");
+  // One direction at a time. Drawing both overlays UP and DN in the same band, which
+  // doubles the crossings for no information a planner uses -- a block sits on one line,
+  // never both -- and halves the height each block gets drawn at.
+  const [line, setLine] = useState<LineName | "BOTH">("DN");
   const [selected, setSelected] = useState<Block | null>(null);
   const [moves, setMoves] = useState<Map<string, number>>(new Map());
+  // Held durations, separate from starts: a planner argues about when a possession
+  // begins and about how long the line is given up for, and they are different levers.
+  const [lengths, setLengths] = useState<Map<string, number>>(new Map());
   const [solving, setSolving] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -52,25 +58,32 @@ function WhatIfBody() {
     for (const [id, start] of moves) {
       const b = plan.blocks.find((x) => x.id === id);
       if (!b) continue;
-      if (findConflicts(b, start, plan, plan.blocks, moves, taskById).length > 0) out.add(id);
+      if (findConflicts(b, start, plan, plan.blocks, moves, taskById, lengths).length > 0)
+      out.add(id);
     }
     return out;
-  }, [plan, moves, taskById]);
+  }, [plan, moves, lengths, taskById]);
 
   const totals = useMemo(
-    () => (plan ? planTotals(plan.blocks, moves, plan, pathIndex, conflictedIds) : null),
-    [plan, moves, pathIndex, conflictedIds],
+    () => (plan
+      ? planTotals(plan.blocks, moves, plan, pathIndex, conflictedIds, lengths) : null),
+    [plan, moves, lengths, pathIndex, conflictedIds],
   );
   const basis = useMemo(
     () => (plan ? planTotals(plan.blocks, new Map(), plan, pathIndex, new Set()) : null),
     [plan, pathIndex],
   );
 
+  const onResize = useCallback((blockId: string, minutes: number) => {
+    setLengths((prev) => new Map(prev).set(blockId, minutes));
+  }, []);
+
   const onMove = useCallback((blockId: string, startMin: number) => {
     setMoves((prev) => new Map(prev).set(blockId, startMin));
   }, []);
   const onReset = useCallback((blockId: string) => {
     setMoves((prev) => { const n = new Map(prev); n.delete(blockId); return n; });
+    setLengths((prev) => { const n = new Map(prev); n.delete(blockId); return n; });
   }, []);
 
   const apply = useCallback(async () => {
@@ -86,7 +99,8 @@ function WhatIfBody() {
       if (!next) { setNote("Solver service did not respond."); return; }
       const after = (next as PlanData).metrics.optimised.risk_retired_per_block_hour;
       const rejected = (next as PlanData).meta.rejectedPins ?? [];
-      setPlan(next as PlanData); setMoves(new Map()); setSelected(null);
+      setPlan(next as PlanData);
+      setMoves(new Map()); setLengths(new Map()); setSelected(null);
       setNote(
         `Re-solved around ${pins.length - rejected.length} pinned block` +
         `${pins.length - rejected.length === 1 ? "" : "s"}. ` +
@@ -112,10 +126,13 @@ function WhatIfBody() {
       />
       <div className="mb-4"><DemoNote /></div>
 
-      {moves.size > 0 && (
+      {(moves.size > 0 || lengths.size > 0) && (
         <div className="mb-4 card px-4 py-2.5 flex items-center gap-x-6 gap-y-2 flex-wrap fade-in"
           style={{ borderColor: conflictedIds.size ? "var(--crit)" : "var(--line-2)" }}>
-          <span className="sig">{moves.size} block{moves.size > 1 ? "s" : ""} moved</span>
+          <span className="sig">
+            {moves.size} block{moves.size === 1 ? "" : "s"} moved
+            {lengths.size > 0 && `, ${lengths.size} resized`}
+          </span>
           <span className="text-[12px] tnum" style={{ color: "var(--ink-2)" }}>
             traffic cost <b style={{ color: "var(--ink)" }}>{totals.trafficCost.toFixed(0)}</b>
             {Math.abs(costDelta) >= 0.5 && (
@@ -132,13 +149,25 @@ function WhatIfBody() {
               {" "}from {Math.round(basis.corridorAdherence * 100)}%
             </span>
           </span>
+          {lengths.size > 0 && (
+            // Said here rather than discovered after pressing Apply. A pin fixes WHERE a
+            // block sits; the solver sizes it from the P90 of the work inside it, so
+            // there is no field on a pin for a length and nothing to send. The window is
+            // still worth pricing -- extending a possession is negotiated with
+            // operations, not asked of CP-SAT.
+            <span className="text-[11.5px]" style={{ color: "var(--warn)" }}>
+              Lengths are priced here, not sent — the solver sizes a possession from the
+              work in it.
+            </span>
+          )}
           {conflictedIds.size > 0 && (
             <Badge color="var(--crit)" bg="var(--crit-bg)">
               {conflictedIds.size} in conflict — not a valid plan
             </Badge>
           )}
           <div className="ml-auto flex items-center gap-2">
-            <Button onClick={() => setMoves(new Map())} disabled={solving}>Reset</Button>
+            <Button onClick={() => { setMoves(new Map()); setLengths(new Map()); }}
+              disabled={solving}>Reset</Button>
             <Button variant="primary" onClick={apply}
               disabled={!apiUp || solving || conflictedIds.size > 0}
               title={conflictedIds.size
@@ -213,7 +242,8 @@ function WhatIfBody() {
             trains={plan.trains}
             corridors={plan.corridors} blocks={plan.blocks} day={day} line={line}
             onSelect={setSelected} selectedId={selected?.id ?? null}
-            moves={moves} onMove={onMove} conflictedIds={conflictedIds} draggable
+            moves={moves} lengths={lengths} onMove={onMove}
+            conflictedIds={conflictedIds} draggable
           />
         </div>
       </Card>
@@ -222,6 +252,7 @@ function WhatIfBody() {
         <div className="mt-4">
           <WhatIfPanel
             block={selected} data={plan} blocks={plan.blocks} moves={moves}
+            lengths={lengths} onResize={onResize}
             index={pathIndex} taskById={taskById} onMove={onMove}
             onReset={onReset} onClose={() => setSelected(null)}
           />

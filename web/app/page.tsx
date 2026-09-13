@@ -140,7 +140,7 @@ function DashboardBody() {
           <TimeDistanceChart
             sections={plan.sections} stations={plan.stations} paths={plan.paths}
             trains={plan.trains}
-            corridors={plan.corridors} blocks={plan.blocks} day={0} line="BOTH"
+            corridors={plan.corridors} blocks={plan.blocks} day={0} line="DN"
           />
         </ExpandableCard>
 

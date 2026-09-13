@@ -58,6 +58,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .domain import (
+    DAY_END_MIN,
+    DAY_START_MIN,
     MINUTES_PER_DAY,
     BlockSection,
     CorridorWindow,
@@ -714,30 +716,268 @@ def generate_timetable(days: int, seed: int = 7) -> list[TrainPath]:
 # --------------------------------------------------------------------------- #
 # Corridor
 # --------------------------------------------------------------------------- #
+#
+# The corridor is not a modelling choice. Railway Board's Joint Circular
+# No. 2015/Track-III/TK/15 of 28.12.2016 sets two different obligations, and they are
+# routinely confused with each other:
+#
+#   para 2.0  the working time table shall carry a corridor block of ASSURED duration --
+#             "One Block of four hours or two blocks of two and half hours".
+#   para 3.0  the joint monthly programme shall entail MINIMUM three hours maintenance
+#             blocks, even by regulating Mail/Express or short-terminating trains.
+#
+# Three hours is the floor beneath which a section may not fall. Four is the norm the
+# timetable is supposed to be built around. Hard-coding the floor made every result
+# downstream -- how much work fits a corridor, how much must go up as an extended block --
+# an artefact of the weaker rule.
 
-CORRIDOR_HOURS = 3
+
+@dataclass(frozen=True)
+class CorridorRegime:
+    """A corridor policy, named as the circular names it.
+
+    `spells` are the anchor hour and length of each corridor window in a day. Two spells
+    means two separate possessions, not one split in half: work cannot run across the
+    traffic between them.
+    """
+
+    name: str
+    spells: tuple[tuple[int, int], ...]   # (anchor hour offset, minutes)
+
+    @property
+    def longest_spell_min(self) -> int:
+        return max(m for _, m in self.spells)
+
+    @property
+    def daily_minutes(self) -> int:
+        return sum(m for _, m in self.spells)
 
 
-def generate_corridors(days: int) -> list[CorridorWindow]:
-    """The mandated maintenance corridor, staggered along the planned road.
+# Anchors are offsets from the per-section stagger, and every spell is kept inside the
+# 06:00-18:00 day-work window so that night-restricted work is not excluded from the
+# corridor by the corridor's own placement.
+CORRIDOR_REGIMES: dict[str, CorridorRegime] = {
+    # para 2.0, first limb -- one block of four hours
+    "single-240": CorridorRegime("single-240", ((0, 240),)),
+    # para 2.0, second limb -- two blocks of two and a half hours
+    "split-150x2": CorridorRegime("split-150x2", ((-4, 150), (0, 150))),
+    # para 3.0 -- the minimum, which is what this project used to assume was the norm
+    "min-180": CorridorRegime("min-180", ((0, 180),)),
+}
+
+DEFAULT_CORRIDOR_REGIME = "single-240"
+
+CORRIDOR_HOURS = 3      # retained: the para-3.0 floor, in hours
+
+
+def resolve_regime(regime: str | CorridorRegime | None) -> CorridorRegime:
+    """Accept a name or a regime, and refuse an unknown name by name."""
+    if regime is None:
+        return CORRIDOR_REGIMES[DEFAULT_CORRIDOR_REGIME]
+    if isinstance(regime, CorridorRegime):
+        return regime
+    try:
+        return CORRIDOR_REGIMES[regime]
+    except KeyError:
+        known = ", ".join(sorted(CORRIDOR_REGIMES))
+        raise ValueError(f"unknown corridor regime {regime!r}; known: {known}") from None
+
+
+def _staggered_spells(
+    section_index: int, day: int, reg: CorridorRegime
+) -> list[tuple[int, int]]:
+    """Fixed placement: the tenth, eleventh or twelfth hour, by section."""
+    start_hour = 10 + (section_index % 3)
+    base = day * MINUTES_PER_DAY
+    return [
+        (base + (start_hour + offset) * 60, length) for offset, length in reg.spells
+    ]
+
+
+def _cheapest_spells(
+    section_id: str, day: int, reg: CorridorRegime, traffic
+) -> list[tuple[int, int]]:
+    """Placement by what the hour actually costs, which is what Sr.DOM does.
+
+    The Rolling Block Programme puts this decision in one person's hands: "Sr. DOM shall
+    indicate a suitable corridor for giving the blocks demanded taking into consideration
+    the integrated maintenance corridor block provided in the working timetable,
+    historical data and operational patterns." Historical data and operational patterns
+    is the traffic model, so the corridor goes where the road is quietest.
+
+    Placing it on a stagger instead -- which is what this project did first -- produces a
+    corridor that is a scoring preference rather than a possession: the solver collects
+    the adherence bonus for putting a block in a window the chart runs nineteen trains
+    through. `audit_corridors` is the check that caught it.
+
+    Premier paths are a fence rather than a price. A section is not handed over in a
+    window a Rajdhani is due to run, so a window that fouls one is not a corridor at any
+    cost -- unless every window does, in which case the cheapest is returned and the
+    audit reports it.
+    """
+    base = day * MINUTES_PER_DAY
+    lines = lines_for_section(section_id)
+    chosen: list[tuple[int, int]] = []
+
+    # Longest spell first: it has the fewest legal placements, so letting a short one
+    # take the quietest hour first can leave the long one nowhere sensible to go.
+    for length in sorted((m for _, m in reg.spells), reverse=True):
+        best: tuple[int, int] | None = None          # (start, cost), clean only
+        best_fouling: tuple[int, int] | None = None  # best among premier-fouling starts
+
+        for hour in range(DAY_START_MIN // 60, (DAY_END_MIN // 60) + 1):
+            start = base + hour * 60
+            if start + length > base + DAY_END_MIN:
+                break
+            if any(start < c_start + c_len and c_start < start + length
+                   for c_start, c_len in chosen):
+                continue
+
+            cost = sum(
+                traffic.cost_of_block(section_id, line, start, start + length)
+                for line in lines
+            )
+            fouls = any(
+                traffic.fouls_premier(section_id, line, start, start + length)
+                for line in lines
+            )
+            target = best_fouling if fouls else best
+            if target is None or cost < target[1]:
+                if fouls:
+                    best_fouling = (start, int(cost))
+                else:
+                    best = (start, int(cost))
+
+        pick = best or best_fouling
+        if pick is None:
+            continue      # no legal placement left in the working day for this spell
+        chosen.append((pick[0], length))
+
+    return sorted(chosen)
+
+
+def generate_corridors(
+    days: int,
+    regime: str | CorridorRegime | None = None,
+    traffic=None,
+) -> list[CorridorWindow]:
+    """The mandated maintenance corridor along the planned road.
 
     Only sections that carry work get a corridor. A corridor on a section nobody plans
     on would inflate the slot count the monthly view reports as available.
+
+    A regime with two spells yields two windows per section-day. They are separate
+    possessions: the line is handed back between them.
+
+    With a `TrafficModel`, each corridor is placed where that section's road is quietest
+    on that day. Without one -- there are callers with no timetable to hand -- it falls
+    back to a fixed stagger, which is cheap and reproducible but is not a window anybody
+    cleared. Which of the two was used is worth knowing, so anything reading corridors
+    for a headline figure should also read `audit_corridors`.
     """
+    reg = resolve_regime(regime)
     out: list[CorridorWindow] = []
     for day in range(days):
         for idx, sec in enumerate(planned_sections()):
-            start_hour = 10 + (idx % 3)
-            base = day * MINUTES_PER_DAY
-            out.append(
-                CorridorWindow(
-                    section_id=sec.id, day=day,
-                    start_min=base + start_hour * 60,
-                    end_min=base + (start_hour + CORRIDOR_HOURS) * 60,
+            if traffic is None:
+                spells = _staggered_spells(idx, day, reg)
+            else:
+                spells = _cheapest_spells(sec.id, day, reg, traffic)
+            for start, length in spells:
+                out.append(
+                    CorridorWindow(
+                        section_id=sec.id, day=day,
+                        start_min=start,
+                        end_min=start + length,
+                    )
                 )
-            )
     return out
 
 
-def corridor_lookup(corridors: list[CorridorWindow]) -> dict[tuple[str, int], CorridorWindow]:
-    return {(c.section_id, c.day): c for c in corridors}
+def corridor_lookup(
+    corridors: list[CorridorWindow],
+) -> dict[tuple[str, int], list[CorridorWindow]]:
+    """Every corridor window on a section-day, in start order.
+
+    A list rather than a single window, because para 2.0's second limb grants two.
+    """
+    out: dict[tuple[str, int], list[CorridorWindow]] = {}
+    for c in corridors:
+        out.setdefault((c.section_id, c.day), []).append(c)
+    for windows in out.values():
+        windows.sort(key=lambda c: c.start_min)
+    return out
+
+
+@dataclass(frozen=True)
+class CorridorFouling:
+    """A corridor the timetable itself runs trains through."""
+
+    section_id: str
+    line: Line
+    day: int
+    start_min: int
+    end_min: int
+    booked: int                 # scheduled services crossing it
+    forecast: float             # expected goods paths crossing it
+    premier: int                # of the booked services, how many are protected
+    examples: tuple[str, ...]   # a few train numbers, for the message
+
+
+def audit_corridors(
+    paths: list[TrainPath],
+    corridors: list[CorridorWindow],
+    examples: int = 4,
+) -> list[CorridorFouling]:
+    """Which mandated corridors does the working timetable run trains through?
+
+    This is the CAG's second finding on planned blocks, reproduced against a real
+    division: "during planning for the corridor block for maintenance, trains were
+    scheduled for running during corridor blocks. This hampered the maintenance work, as
+    corridor blocks could not be utilised."
+
+    It is worth checking because the corridor is supposed to be a promise. Para 2.0 of the
+    28.12.2016 joint circular tells railways to review the working time table so that the
+    corridor exists with *assured* duration, rescheduling trains where the margins are
+    inadequate. A corridor with a Mail/Express booked through the middle of it is a line
+    in the timetable, not a possession anybody can work in -- and nothing in the plan says
+    so, because the block is still marked "inside mandated corridor".
+
+    Goods are forecast rather than booked, so they are counted as an expectation and kept
+    separate: a corridor crossed by a 0.4-probability freight path is a different problem
+    from one crossed by a charted Rajdhani.
+    """
+    by_key: dict[tuple[str, int], list[TrainPath]] = {}
+    for p in paths:
+        by_key.setdefault((p.section_id, p.day), []).append(p)
+
+    out: list[CorridorFouling] = []
+    for corr in corridors:
+        for line in lines_for_section(corr.section_id):
+            booked = 0
+            forecast = 0.0
+            premier = 0
+            names: list[str] = []
+            for p in by_key.get((corr.section_id, corr.day), ()):
+                if p.line is not line:
+                    continue
+                # Any overlap at all: a train entering the section one minute before the
+                # corridor ends still takes the road away from the gang.
+                if p.exit_min <= corr.start_min or p.enter_min >= corr.end_min:
+                    continue
+                if p.train_class is TrainClass.GOODS:
+                    forecast += p.probability
+                    continue
+                booked += 1
+                if p.train_class is TrainClass.PREMIER:
+                    premier += 1
+                if len(names) < examples:
+                    names.append(p.train_no)
+            if booked or forecast >= 1.0:
+                out.append(CorridorFouling(
+                    section_id=corr.section_id, line=line, day=corr.day,
+                    start_min=corr.start_min, end_min=corr.end_min,
+                    booked=booked, forecast=round(forecast, 2), premier=premier,
+                    examples=tuple(names),
+                ))
+    return out

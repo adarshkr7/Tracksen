@@ -50,6 +50,22 @@ python scripts/run_pipeline.py --clubbing 40 --traffic 0.12 --corridor 60 --over
 | `--corridor` | bonus per block inside the mandated corridor | 40 |
 | `--overdue` | μ — penalty per task-day past the statutory date | 1.5 |
 
+The corridor itself is not a weight but a policy, and it is set by circular rather than by
+taste:
+
+```bash
+python scripts/run_pipeline.py --corridor-regime split-150x2
+```
+
+| `--corridor-regime` | What it is | Longest spell |
+|---|---|---:|
+| `single-240` *(default)* | para 2.0, first limb — one block of four hours | 240 min |
+| `split-150x2` | para 2.0, second limb — two blocks of two and a half hours | 150 min |
+| `min-180` | para 3.0 — the three-hour floor, not the norm | 180 min |
+
+See [ROADMAP.md](ROADMAP.md) for why the default moved, and what it cost to have had the
+floor hard-coded.
+
 ---
 
 ## What it produces
@@ -59,25 +75,33 @@ Central Railway, against an FCFS baseline on the identical task population:
 
 | Measure | Baseline | TRACKSEN | |
 |---|---:|---:|---|
-| **Risk retired per block-hour** | 8.4 | **21.3** | **+154%** |
-| Blocks used | 191 | 121 | −37% |
-| Block hours consumed | 643.0 | 393.0 | −39% |
-| Clubbing ratio (depts per block) | 1.00 | 1.59 | +59% |
-| Line closures saved | 0 | 71 | — |
-| Traffic cost (wtd detention min) | 155,321 | 77,838 | −50% |
-| Corridor adherence | 31% | 60% | +94% |
-| Unplanned failures | 71 | 63 | −11% |
-| High-criticality unplanned failures | 18 | 13 | −28% |
-| Overdue task-days | 3,880 | 4,001 | **+3% worse** |
+| **Risk retired per block-hour** | 7.8 | **17.9** | **+129%** |
+| Tasks scheduled | 190 | 190 | = |
+| Criticality retired | 4,977 | **8,329** | +67% |
+| Blocks used | 190 | 142 | −25% |
+| Block hours consumed | 639.0 | 464.0 | −27% |
+| Clubbing ratio (depts per block) | 1.00 | 1.34 | +34% |
+| Line closures saved | 0 | 48 | — |
+| Traffic cost (wtd detention min) | 129,288 | 80,742 | −38% |
+| Corridor adherence | 55% | 82% | +49% |
+| Blocks written to burst | 4 | 3 | −25% |
+| Unplanned failures | 69 | 64 | −7% |
+| High-criticality unplanned failures | 17 | 13 | −24% |
+| Overdue task-days | 3,896 | 3,980 | **+2% worse** |
 
-Solver: monthly **`OPTIMAL`**, weekly `FEASIBLE` at a **12.9% gap**, 600 s each.
+Solver: weekly and monthly `FEASIBLE`, **240 s each**, on the four-hour corridor regime.
 
-**The weekly gap is budget-sensitive, and it is worth knowing why.** At 240 s it is 76.6%
-on this timetable. The real road is 2.2x busier than the hand-written one this replaced,
-so the objective's traffic term has gone from a tenth of the total to half of it, and
-criticality and traffic now genuinely contend where criticality used to dominate. More
-time closes it — 600 s reaches 12.9% — so it is a search-effort problem, not a broken
-formulation. The gap prints on every run; check it before quoting.
+**The same number of tasks, two thirds more risk retired.** Both plans place 190 tasks —
+the week is capacity-bound, not selection-bound — so the whole of the gain is in *which*
+190, and in doing them in 48 fewer closures and 175 fewer block-hours.
+
+**The gaps are wide at this budget and you should know it before quoting anything.**
+Weekly reaches 65.3% and monthly 91.1% at 240 s. The monthly gap in particular got *worse*
+when the corridor moved to the mandated four hours, and that is not a regression in the
+model: a 240-minute slot holds more work than a 180-minute one and 172 fewer tasks are
+excluded as needing an extended block, so the solver is being handed a substantially
+larger problem in the same time. Results are a floor — more solver time closes them. The
+gap prints on every run.
 
 The gain is not in doing more work. It is in doing the *right* work, in *fewer* closures,
 at *cheaper* hours.
@@ -99,14 +123,30 @@ a tamping machine to 11:15 on the 24th four weeks out — they commit it to *a c
 the 24th*. The monthly solve therefore drops the fine time grid and allocates the mandated
 corridor itself, one slot per section, line and day.
 
-Over 30 days on this division: **201 of 900 corridor slots** allocated, **237 tasks
-placed**, backlog burning down **577 → 363**.
+Over 30 days on this division: **199 of 900 corridor slots** allocated, **310 tasks
+placed**, backlog burning down **575 → 290**.
 
-**311 tasks cannot fit a corridor at all** — their P90 plus the setup and restoration
-their withdrawal needs exceeds 180 minutes. On the real railway these go up as extended or mega blocks
-negotiated separately with operations, and the monthly plan names them rather than quietly
-leaving them unscheduled. That list is itself an output: it is the division's extended-block
-demand for the month.
+**139 tasks cannot fit a corridor at all** — their P90 plus the setup and restoration
+their withdrawal needs exceeds the longest spell. On the real railway these go up as extended
+or mega blocks negotiated separately with operations, and the monthly plan names them rather
+than quietly leaving them unscheduled. That list is itself an output: it is the division's
+extended-block demand for the month.
+
+**That number is mostly a policy choice, and it used to be ours by accident.** The same 600
+tasks against the three corridor regimes:
+
+| Regime | Longest spell | Cannot fit a corridor |
+|---|---:|---:|
+| `split-150x2` | 150 min | 447 of 600 |
+| `min-180` — the old hard-coded value | 180 min | 311 of 600 |
+| `single-240` — para 2.0, now the default | 240 min | **139 of 600** |
+
+**More than half the extended-block demand this project used to report was manufactured by
+its own constant.** The split limb is worse again, and that is a real operational finding
+rather than a bug: it grants *more* corridor minutes per day (300 against 240) but its
+longest single spell is shorter, and a four-hour job cannot be done in two halves with the
+line handed back to traffic in between. Which limb a division takes is a genuine trade, and
+TRACKSEN can now price it.
 
 In the UI, **Week / Month** switches horizons; `?view=month` links straight to it.
 
@@ -136,6 +176,7 @@ samanvay/
     cpsat.py         OR-Tools CP-SAT: the scheduling model, with pinned placements
     baseline.py      First-come-first-served — current practice, reproduced
   evaluate.py        KPIs, computed identically for both plans
+  reports.py         The weekly DRM and monthly GM returns para 3.0 requires
   session.py         Estate + models built once, solved repeatedly (with pins)
   serialize.py       The one payload builder, shared by plan.json and the API
 ```
@@ -175,11 +216,11 @@ defects that in-sample diagnostics had hidden completely.
 
 | Model | Held-out | Note |
 |---|---:|---|
-| Criticality classifier AUC | **0.826 +/- 0.017** | against 0.665 majority-class |
-| Cox concordance | **0.765 +/- 0.035** | ordering of time-to-failure |
-| Duration P90 coverage | **0.924 +/- 0.023** | target 0.90, conformalised |
-| Duration P50 MAE | **15.5 min** | vs 48.0 for a median baseline |
-| Cancellation AUC | **0.663 +/- 0.057** | oracle ceiling 0.662 |
+| Criticality classifier AUC | **0.898 +/- 0.019** | against 0.615 majority-class |
+| Cox concordance | **0.785 +/- 0.015** | ordering of time-to-failure |
+| Duration P90 coverage | **0.907 +/- 0.028** | target 0.90, conformalised |
+| Duration P50 MAE | **14.1 min** | vs 46.0 for a median baseline |
+| Cancellation AUC | **0.627 +/- 0.038** | oracle ceiling 0.651 |
 
 **What it caught, and what changed as a result.**
 
@@ -187,13 +228,13 @@ defects that in-sample diagnostics had hidden completely.
 **0.81** - roughly one block in five would have over-run the window reserved for it,
 quietly falsifying the central duration argument. The P90 is now **conformalised**: a
 calibration split the quantile model never fits on supplies an empirical offset
-(~10 min here) that restores the guarantee.
-Held-out coverage is now 0.924.
+(9.2 min here) that restores the guarantee.
+Held-out coverage is now 0.907.
 
 *The cancellation model was memorising noise.* In-sample AUC 0.92, held-out **0.57** -
 barely better than a coin flip. It is now a **logistic regression**, reaching
-0.663 against an oracle scored on the data generator's
-own cancellation probabilities of 0.662. The simple model is within 0.002 of
+0.627 against an oracle scored on the data generator's
+own cancellation probabilities of 0.651. The simple model is within 0.024 of
 the information ceiling: whether a given block gets cancelled is mostly irreducible, and
 no amount of capacity recovers it. Treat that output as a weak prior - by nature, not by
 neglect.
@@ -309,10 +350,61 @@ curl -H "Authorization: Bearer <token>" http://127.0.0.1:8000/api/me
 The identity *store* is the stand-in now, not the identity *check*: a deployment swaps it
 for the divisional directory, and the seam is one function wide.
 
+## The returns the circular already requires
+
+Railway Board's joint circular of 28.12.2016, para 3.0, does not leave this to anyone's
+discretion:
+
+> "All cases of cancellation/deviation from agreed block, **productivity of blocks given**
+> and **overdue maintenance details**, etc. shall be put up **weekly to DRM by Sr. DEN/Co-ord.**
+> and **monthly to GM by PCE**."
+
+Every quantity in that sentence was already being computed here. What was missing was the
+shape — so a division adopting TRACKSEN would have had to invent a process that already
+exists and that somebody is already signing.
+
+```bash
+python scripts/report.py --which both --markdown -o out/
+```
+
+The weekly return carries blocks programmed, corridor, productivity of blocks given,
+cancellation and deviation, and overdue maintenance. The monthly return replaces the first
+two with corridor-slot allocation and the **extended and mega block demand** — the tasks
+that cannot fit one corridor, by department, which *is* the division's extended-block
+requirement for the month.
+
+**The deviation part is deliberately empty**, and that is the point. Para 3.0 asks which
+agreed blocks were not given and which given blocks went unused. Nothing here ingests what
+happened, so both rows say so rather than being filled in from the cancellation model —
+the DRM reads that part as a record, and a forecast dressed as one is the most misleading
+thing this document could do. The model's number sits below, labelled as a prior. A test
+asserts it stays that way.
+
+## The corridor audit
+
+The CAG's second finding on planned blocks was that "trains were scheduled for running
+during corridor blocks", so the corridor could not be used. The repository holds a
+543-service timetable and the corridor windows, so that check is a query — and on the first
+run it caught **this project**: every corridor was a fixed stagger at 10:00, 11:00 or 12:00,
+and the solver was collecting the adherence bonus for blocks in windows the chart runs
+nineteen trains through.
+
+Corridors are now placed where each section's road is actually quietest — which is Sr.DOM's
+job under the Rolling Block Programme, "taking into consideration the integrated maintenance
+corridor block provided in the working timetable, historical data and operational patterns".
+Premier paths became a fence rather than a price, and premier fouling went to zero.
+
+It is **still every window**, and that is the honest answer: on a division working 543
+services there is no four-hour window on any section with nothing charted through it. Para
+2.0 anticipates it — where margins are inadequate the corridor is to be provided "by
+necessary rescheduling of trains within Zonal Railway" — so the pipeline reports which
+windows are **cheapest to clear**. That list is the rescheduling demand this plan puts on
+the working time table, not a defect in the plan.
+
 ## Tests
 
 ```bash
-python -m pytest              # 152 tests, ~40 s
+python -m pytest              # 256 tests, ~90 s
 python scripts/mutation_check.py
 ```
 
@@ -324,17 +416,22 @@ producers, model behaviour including a **ground-truth leakage guard**, and gener
 calibration. Physical constraints are asserted against the baseline too — if the baseline
 were allowed to break rules the optimiser obeys, the comparison above would be rigged.
 
-`mutation_check.py` re-applies eleven defects this project actually shipped — the INFEASIBLE
+`mutation_check.py` re-applies fifteen defects this project actually shipped — the INFEASIBLE
 clubbing constraint, the disabled conformal offset, ground truth in a feature set, the 10×
 duration calibration error, the removed positioning buffer, the metres/kilometres
 confusion, the un-inverted priority scale, four governance failures including an
-authority check removed and a chain verifier that always passes — and confirms a test
-goes red for each. **11/11 caught.** A suite that passes proves nothing on its own; it may simply be
-unable to fail.
+authority check removed and a chain verifier that always passes, the corridor reverting to
+the para-3.0 floor, two corridor spells placed so they overlap, a burst check that forgets
+the withdrawal inside the possession, and a monthly return that reports the weekly plan's
+blocks — and confirms a test goes red for each. **15/15 caught.** A suite that passes proves
+nothing on its own; it may simply be unable to fail.
 
-Writing that check found a sixth problem: the plant-positioning test read the same constant
-it was validating, so zeroing the constant relaxed the assertion too and the mutation walked
-straight through. It now asserts an independent floor.
+Writing that check has now found two problems rather than one. The plant-positioning test
+read the same constant it was validating, so zeroing the constant relaxed the assertion too
+and the mutation walked straight through; it now asserts an independent floor. And the first
+version of the monthly-return test did not catch a return built from the *weekly* plan's
+blocks — the overdue total comes from the metrics, and the worst-offender list filled with
+deferred tasks either way. It now asserts on a day only the monthly plan has.
 
 ## Honest notes
 
@@ -352,11 +449,14 @@ straight through. It now asserts an independent floor.
   assets left alone longer, and is documented in `_label_within_horizon`. Cox uses the
   full sample, censoring included — which is why it is there.
 - **The optimality gap is time-limit dependent**, and the figures above come from a 240 s
-  solve: **weekly 1.1%, monthly 5.8%**. Both were far worse until the model stopped
-  offering the solver work it could never place — a task whose P90 plus its withdrawal
+  solve: **weekly 65.3%, monthly 91.1%**. Both widened when the corridor moved from the
+  para-3.0 floor to the para-2.0 norm, which is a bigger problem rather than a worse model:
+  a 240-minute slot holds more work, and 172 fewer of the 600 tasks are excluded up front
+  as needing an extended block. Both were far worse still until the model stopped offering
+  the solver work it could never place at all — a task whose P90 plus its withdrawal
   overruns the corridor was being handed over as though it fitted, and its criticality
   inflated the objective's upper bound. The gap prints on every run; check it before
-  quoting.
+  quoting, and buy a smaller one with `--time-limit` if you need it.
 - **Consequence weighting now discriminates** (0.698–1.000 across the planned road).
   On the earlier single-corridor topology it did not (0.87–0.98) because all traffic ran
   through. On a division it separates properly: the Patna throat sections carry the most
@@ -372,13 +472,21 @@ straight through. It now asserts an independent floor.
 
 The most quotable result is not the scheduler's. Across the pending queue:
 
-- The duration each department **demanded** would have contained the actual work
-  **12%** of the time.
-- The **P90** reservation contains it **92%** of the time.
-- Median difference: **+45 minutes** per block.
+- As demanded, **86%** of these blocks are **written to burst** — the department's own
+  figure would not have contained the work.
+- Reserved at **P90**, **8%** would burst.
+- Median difference: **+45 minutes** per block; median over-run where one occurs, +19 min.
 
-Nearly nine blocks in ten, as currently demanded, are written to over-run before anyone
-starts work.
+*Block bursting* is the railway's own term for a possession worked beyond its sanctioned
+time, and it is a counted, audited event rather than a modelling abstraction: the CAG found
+**1,905 cases of block bursting on the Delhi–Howrah route in 2018-19 alone, delaying 4,659
+trains**, with the cause recorded as "lack of proper coordination between men, machine and
+materials". Nearly nine blocks in ten, as currently demanded, are written to burst before
+anyone starts work.
+
+**The plan-level count does not separate the two plans, and the comparison table says so.**
+TRACKSEN and the baseline both reserve at P90, so both burst on the same handful of blocks.
+Protection against bursting comes from the duration model, not from the solver.
 
 ---
 

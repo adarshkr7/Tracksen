@@ -3,11 +3,13 @@
 import { useCallback, useId, useMemo, useRef, useState } from "react";
 import {
   Block,
-  CLASS_COLOR,
   CLASS_LABEL,
-  CLASS_WIDTH,
   CorridorRow,
   DEPT_COLOR,
+  LIVERY_COLOR,
+  LIVERY_GOODS,
+  LIVERY_LABEL,
+  LIVERY_WIDTH,
   LineName,
   MIN_PER_DAY,
   PROVENANCE,
@@ -16,8 +18,10 @@ import {
   Station,
   TrainRow,
   hhmm,
+  liveryOf,
 } from "../lib/plan";
-import { snap } from "../lib/whatif";
+import { durationOf, snap } from "../lib/whatif";
+import { ChainageZoomBar, useChainageZoom } from "./ChainageZoom";
 
 /**
  * The time–distance chart: time across, chainage down.
@@ -47,7 +51,8 @@ const PLOT_H = VB_H - M.top - M.bottom;
 interface TrainRun {
   key: string;
   train: number;          // index into trains[]
-  cls: number;
+  cls: number;            // the solver's priority class
+  liv: number;            // how it is drawn: its series, not its price
   prob: number;
   points: string;
   from: string;
@@ -72,6 +77,8 @@ interface Props {
   selectedId?: string | null;
   /** Proposed starts, keyed by block id. Absent means the block sits where planned. */
   moves?: Map<string, number>;
+  /** Proposed held durations. Absent means the block runs for as long as planned. */
+  lengths?: Map<string, number>;
   onMove?: (blockId: string, startMin: number) => void;
   conflictedIds?: Set<string>;
   draggable?: boolean;
@@ -79,7 +86,7 @@ interface Props {
 
 export default function TimeDistanceChart({
   sections, stations, paths, trains, corridors, blocks, day, line,
-  routeId = "MAIN", onSelect, selectedId, moves, onMove, conflictedIds,
+  routeId = "MAIN", onSelect, selectedId, moves, lengths, onMove, conflictedIds,
   draggable = false,
 }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -88,19 +95,49 @@ export default function TimeDistanceChart({
   const [dragging, setDragging] = useState<string | null>(null);
   const [trainHover, setTrainHover] =
     useState<{ run: TrainRun; x: number; y: number } | null>(null);
+  // Liveries switched OFF, held as the exclusion rather than the inclusion.
+  //
+  // Goods starts hidden. It is 661 of the 945 runs on a Monday -- seven tenths of the
+  // ink -- and it is the one class that is FORECAST rather than booked: each of those
+  // paths carries a probability that it runs at all. Drawing them as 661 crisp lines
+  // is both the reason the chart is unreadable and a claim about certainty the data
+  // does not support. The 284 paths that remain are the ones a block is planned around.
+  //
+  // Hidden, not removed. The count stays on the chip and one click brings them back.
+  const [hiddenLiveries, setHiddenLiveries] =
+    useState<ReadonlySet<number>>(new Set([LIVERY_GOODS]));
   const clipId = useId();
 
   const maxKm = stations.length ? stations[stations.length - 1].km : 100;
   const both = line === "BOTH";
   const lineIdx = line === "UP" ? 0 : 1;
 
+  // The time axis is always a whole day -- a chart that hid part of the day would hide
+  // train paths a block has to be planned around. Zoom acts on chainage only.
+  const zoom = useChainageZoom(sections, maxKm, routeId);
+  const { km0: viewKm0, km1: viewKm1 } = zoom.view;
+  const kmSpan = Math.max(1, viewKm1 - viewKm0);
+
   const x = (minOfDay: number) => M.left + (minOfDay / MIN_PER_DAY) * PLOT_W;
-  const y = (km: number) => M.top + (km / maxKm) * PLOT_H;
+  const y = (km: number) => M.top + ((km - viewKm0) / kmSpan) * PLOT_H;
+
+  /** Does this section have any chainage inside the window? */
+  const secInView = useCallback(
+    (i: number) => {
+      const sec = sections[i];
+      return Boolean(sec) && sec.km1 > viewKm0 && sec.km0 < viewKm1;
+    },
+    [sections, viewKm0, viewKm1],
+  );
 
   const dayStart = day * MIN_PER_DAY;
   const startOf = useCallback(
     (b: Block) => moves?.get(b.id) ?? b.s,
     [moves],
+  );
+  const heldFor = useCallback(
+    (b: Block) => durationOf(b, lengths ?? undefined),
+    [lengths],
   );
 
   /**
@@ -156,6 +193,7 @@ export default function TimeDistanceChart({
           key: `${train}-${part++}`,
           train,
           cls: first[2],
+          liv: liveryOf(first[2], trains?.[train]?.[1] ?? ""),
           prob: first[5],
           points: pts.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(" "),
           from: first[1] === 0 ? fs.a : fs.b,
@@ -187,16 +225,40 @@ export default function TimeDistanceChart({
       flush();
     }
     return out;
-  }, [paths, onRoute, both, lineIdx, dayStart, sections, maxKm]);
+  }, [paths, onRoute, both, lineIdx, dayStart, sections, trains, maxKm, viewKm0, viewKm1]);
+
+  /**
+   * Counted over every run on the chart, not over the drawn ones -- a filter whose
+   * counts fell to zero as you switched a series off could not be switched back on with
+   * any confidence about what you were getting.
+   */
+  const liveryCount = useMemo(() => {
+    const n = LIVERY_LABEL.map(() => 0);
+    for (const r of runs) n[r.liv] += 1;
+    return n;
+  }, [runs]);
+
+  const shownRuns = useMemo(
+    () => (hiddenLiveries.size ? runs.filter((r) => !hiddenLiveries.has(r.liv)) : runs),
+    [runs, hiddenLiveries],
+  );
+
+  const toggleLivery = useCallback((i: number) => {
+    setHiddenLiveries((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(i)) next.add(i);
+      return next;
+    });
+  }, []);
 
   const visibleBlocks = useMemo(
     () =>
       blocks.filter((b) => {
-        if (!onRoute.has(b.sec)) return false;
+        if (!onRoute.has(b.sec) || !secInView(b.sec)) return false;
         if (!both && b.line !== line) return false;
         return Math.floor(startOf(b) / MIN_PER_DAY) === day;
       }),
-    [blocks, line, both, day, startOf, onRoute],
+    [blocks, line, both, day, startOf, onRoute, secInView],
   );
 
   // Blocks whose original position was this day but have been dragged away — drawn
@@ -206,19 +268,22 @@ export default function TimeDistanceChart({
       blocks.filter((b) => {
         const s = startOf(b);
         if (s === b.s) return false;
-        if (!onRoute.has(b.sec)) return false;
+        if (!onRoute.has(b.sec) || !secInView(b.sec)) return false;
         if (!both && b.line !== line) return false;
         return Math.floor(b.s / MIN_PER_DAY) === day;
       }),
-    [blocks, line, both, day, startOf, onRoute],
+    [blocks, line, both, day, startOf, onRoute, secInView],
   );
 
   const visibleCorridors = useMemo(
-    () => corridors.filter((c) => c[1] === day && onRoute.has(c[0])),
-    [corridors, day, onRoute],
+    () => corridors.filter((c) => c[1] === day && onRoute.has(c[0]) && secInView(c[0])),
+    [corridors, day, onRoute, secInView],
   );
 
-  const active = hover ?? blocks.find((b) => b.id === selectedId) ?? null;
+  // Only a block that is actually drawn may raise a tooltip. Searching all blocks
+  // would park one off the frame for a selection on another day, or -- now that the
+  // chainage axis can be windowed -- for a selection outside the zoom.
+  const active = hover ?? visibleBlocks.find((b) => b.id === selectedId) ?? null;
 
   /* ---------------- drag ---------------- */
 
@@ -245,7 +310,7 @@ export default function TimeDistanceChart({
   const onPointerMove = (e: React.PointerEvent, b: Block) => {
     const d = dragRef.current;
     if (!d || d.id !== b.id || !onMove) return;
-    const duration = b.e - b.s;
+    const duration = heldFor(b);
     const raw = clientToMin(e.clientX) - d.grabOffsetMin;
     const clamped = Math.max(0, Math.min(MIN_PER_DAY - duration, raw));
     onMove(b.id, dayStart + snap(clamped));
@@ -287,6 +352,19 @@ export default function TimeDistanceChart({
 
   return (
     <div className="relative">
+      <div className="pb-2 flex flex-col gap-1.5">
+        <ChainageZoomBar
+          zoom={zoom}
+          right={`${visibleBlocks.length} block${visibleBlocks.length === 1 ? "" : "s"} in view`}
+        />
+        <LiveryFilter
+          counts={liveryCount}
+          hidden={hiddenLiveries}
+          onToggle={toggleLivery}
+          onShowAll={() => setHiddenLiveries(new Set())}
+          onHideAll={() => setHiddenLiveries(new Set(LIVERY_LABEL.map((_, i) => i)))}
+        />
+      </div>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VB_W} ${VB_H}`}
@@ -315,7 +393,9 @@ export default function TimeDistanceChart({
           );
         })}
 
-        {stations.map((st) => (
+        {stations
+          .filter((st) => st.km >= viewKm0 - 1e-6 && st.km <= viewKm1 + 1e-6)
+          .map((st) => (
           <g key={st.code}>
             <line
               x1={M.left} x2={VB_W - M.right} y1={y(st.km)} y2={y(st.km)}
@@ -347,15 +427,18 @@ export default function TimeDistanceChart({
         ))}
 
         <g className="train-paths" clipPath={`url(#${clipId})`}>
-          {runs.map((r) => {
+          {shownRuns.map((r) => {
             const on = r.train === hoveredTrain;
             return (
               <polyline
                 key={r.key}
                 points={r.points}
                 fill="none"
-                stroke={on ? "var(--rail)" : CLASS_COLOR[r.cls]}
-                strokeWidth={on ? CLASS_WIDTH[r.cls] + 1.8 : CLASS_WIDTH[r.cls]}
+                // A hovered path keeps its own colour. It used to go maroon, which
+                // erased the one thing you were pointing at it to read. Weight and
+                // opacity carry the highlight instead.
+                stroke={LIVERY_COLOR[r.liv]}
+                strokeWidth={on ? LIVERY_WIDTH[r.liv] + 2.2 : LIVERY_WIDTH[r.liv]}
                 strokeOpacity={on ? 1 : r.prob * 0.85}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -368,7 +451,7 @@ export default function TimeDistanceChart({
             be pointed at. Drawn before the blocks so a block always wins the hover. */}
         {trains && (
           <g clipPath={`url(#${clipId})`}>
-            {runs.map((r) => (
+            {shownRuns.map((r) => (
               <polyline
                 key={`hit-${r.key}`}
                 points={r.points}
@@ -412,7 +495,7 @@ export default function TimeDistanceChart({
           const isActive = active?.id === b.id;
           const s = startOf(b);
           const bx = x(s - dayStart);
-          const bw = Math.max(3, x(s + (b.e - b.s) - dayStart) - bx);
+          const bw = Math.max(3, x(s + heldFor(b) - dayStart) - bx);
           const { by, bh } = bandOf(b);
 
           return (
@@ -486,12 +569,23 @@ export default function TimeDistanceChart({
               <span className="tnum font-medium" style={{ color: "var(--ink)" }}>
                 {no}
               </span>
-              <span className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>
-                {CLASS_LABEL[run.cls]}
+              <span className="text-[10.5px] font-medium"
+                style={{ color: LIVERY_COLOR[run.liv] }}>
+                {LIVERY_LABEL[run.liv]}
               </span>
             </div>
             {name && (
               <div className="mb-1" style={{ color: "var(--ink)" }}>{name}</div>
+            )}
+            {/* Colour is the series; price and protection are the class. Where the two
+                disagree -- a Garib Rath is drawn premium and priced as an express -- say
+                so, rather than letting the livery imply a fence the train is not behind. */}
+            {(run.cls === 0 || LIVERY_LABEL[run.liv] !== CLASS_LABEL[run.cls]) && (
+              <div className="text-[10.5px] mb-1" style={{ color: "var(--ink-3)" }}>
+                {run.cls === 0
+                  ? "Premier — a block may not foul this path"
+                  : `Priced as ${CLASS_LABEL[run.cls]} — not behind the premier fence`}
+              </div>
             )}
             <div className="tnum mb-1.5">
               {run.from}–{run.to} · {hhmm(run.enter)}–{hhmm(run.exit)}
@@ -533,7 +627,7 @@ export default function TimeDistanceChart({
                 {sec.a}–{sec.b} · {active.line}
               </span>
               <span className="tnum" style={{ color: "var(--ink-3)" }}>
-                {hhmm(s)}–{hhmm(s + (active.e - active.s))}
+                {hhmm(s)}–{hhmm(s + heldFor(active))}
               </span>
             </div>
             <div className="flex flex-wrap gap-1 mb-1.5">
@@ -559,5 +653,83 @@ export default function TimeDistanceChart({
         );
       })()}
     </div>
+  );
+}
+
+/**
+ * The legend, made to do something.
+ *
+ * A chart carrying six colours needs a key whatever happens, and a key whose entries
+ * are already one per series is the obvious place to put the filter -- so it is the
+ * same row. Switching the goods paths off is how you see the coaching pattern
+ * underneath them, and goods is two thirds of the roster.
+ *
+ * The counts are of every run on the chart for this day and direction, not of the drawn
+ * ones: a count that fell to zero as you switched a series off would tell you nothing
+ * about what switching it back on would bring.
+ */
+function LiveryFilter({ counts, hidden, onToggle, onShowAll, onHideAll }: {
+  counts: number[];
+  hidden: ReadonlySet<number>;
+  onToggle: (i: number) => void;
+  onShowAll: () => void;
+  onHideAll: () => void;
+}) {
+  const anyShown = hidden.size < LIVERY_LABEL.length;
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Clearing the whole chart of paths is its own gesture. Switching six series off
+          one at a time to read the blocks underneath is six clicks to say one thing. */}
+      <button
+        type="button"
+        aria-pressed={anyShown}
+        onClick={anyShown ? onHideAll : onShowAll}
+        title={anyShown ? "Hide every train path" : "Show the train paths again"}
+        className="chip legend inline-flex items-center gap-1.5"
+      >
+        <PathIcon on={anyShown} />
+        Train paths
+      </button>
+      <span className="w-px h-4 mx-0.5" style={{ background: "var(--line-2)" }} />
+      {LIVERY_LABEL.map((label, i) => {
+        const on = !hidden.has(i);
+        const n = counts[i] ?? 0;
+        return (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onToggle(i)}
+            title={n === 0
+              ? `No ${label.toLowerCase()} paths on this day`
+              : on ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+            className="chip legend inline-flex items-center gap-1.5"
+            style={{ opacity: n === 0 ? 0.5 : 1 }}
+          >
+            <i style={{
+              width: 14, height: 2.5, display: "inline-block", flex: "none",
+              background: LIVERY_COLOR[i], opacity: on ? 1 : 0.35,
+            }} />
+            {label}
+            <span className="tnum" style={{ color: "var(--ink-3)" }}>{n}</span>
+          </button>
+        );
+      })}
+      {hidden.size > 0 && (
+        <button type="button" className="chip" onClick={onShowAll}>Show all</button>
+      )}
+    </div>
+  );
+}
+
+function PathIcon({ on }: { on: boolean }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      style={{ display: "block", opacity: on ? 1 : 0.45 }}>
+      <path d="M3 20L21 4M3 12l9-8M11 20l10-9" stroke="currentColor" strokeWidth="1.9"
+        strokeLinecap="round" />
+      {!on && <path d="M4 4l16 16" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" />}
+    </svg>
   );
 }

@@ -82,6 +82,49 @@ export interface Metrics {
   expected_cancellations: number;
   unplanned_failures: number;
   critical_unplanned_failures: number;
+  /**
+   * Block bursting: a possession worked beyond its sanctioned time.
+   *
+   * The railway's own term, and a counted one — it is a named cause of punctuality loss.
+   * Measured here against the duration model, so it says how many of these windows are
+   * too short for the work, not how many over-ran on the ground. Nothing yet ingests
+   * what happened.
+   */
+  blocks_written_to_burst: number;
+  burst_rate: number;
+  burst_minutes: number;
+}
+
+/**
+ * Which limb of Railway Board's 28.12.2016 joint circular this plan was built under.
+ *
+ * para 2.0 is the norm the working time table is supposed to carry — one block of four
+ * hours, or two of two and a half. para 3.0 is a three-hour floor. They are not the same
+ * rule, and a 180-minute corridor must never be described in the UI as the mandated norm.
+ */
+export interface CorridorRegime {
+  name: string;
+  spells: number[];
+  longestSpellMin: number;
+  dailyMinutes: number;
+}
+
+/**
+ * A mandated corridor the working timetable itself runs trains through.
+ *
+ * The CAG's finding, checked against this division: a block marked "inside mandated
+ * corridor" in one of these is inside a promise the chart does not keep.
+ */
+export interface CorridorFouling {
+  section: number;
+  line: number;
+  day: number;
+  start: number;
+  end: number;
+  booked: number;
+  forecast: number;
+  premier: number;
+  examples: string[];
 }
 
 /** [sectionIdx, line(0=UP,1=DN), classIdx, enterMin, exitMin, probability, trainIdx] */
@@ -168,6 +211,8 @@ export interface PlanData {
     pinned?: { block_id: string; start_min: number }[];
     /** Pins the solver refused, each with the reason. */
     rejectedPins?: string[];
+    /** Which corridor policy this plan was built under. */
+    corridorRegime?: CorridorRegime;
   };
   model_checks: Record<string, Record<string, number>>;
   /** Present when the pipeline was run with --validate. All held-out. */
@@ -178,6 +223,8 @@ export interface PlanData {
   routes?: RouteInfo[];
   sections: Section[];
   corridors: CorridorRow[];
+  /** Corridors the chart runs trains through. Empty is a result, not a default. */
+  corridorAudit?: CorridorFouling[];
   trainClasses: string[];
   /** Which coaching timetable is in force, and whether its times are published. */
   timetable?: { file: string; imported: boolean; services: number };
@@ -223,17 +270,84 @@ export const DEPT_SYSTEM: Record<Dept, string> = {
   TRD: "TDMS",
 };
 
-/** Muted enough that train paths stay behind the blocks, distinct enough to read. */
-export const CLASS_COLOR = ["var(--rail)", "#42566b", "#8496a8", "#b9c4cf"];
+export const CLASS_LABEL = ["Premier", "Mail / Express", "Passenger", "Goods"];
+
+/* ---------------------------------------------------------------- liveries */
+
+/**
+ * Train livery — what a path is coloured by.
+ *
+ * Deliberately NOT the priority class. The solver knows four classes, because four is
+ * what detention pricing needs; an operator reading the chart knows the train by its
+ * series, and "is that the Vande Bharat or a Garib Rath" is a question the four classes
+ * cannot answer. So the class stays the model's business and the livery is the reader's.
+ *
+ * They disagree in a way worth knowing about: Humsafar, Duronto and Garib Rath carry a
+ * premium livery here but are priced as Mail/Express by the solver, so they are not
+ * behind the premier fence. The path tooltip says so rather than letting the colour
+ * imply a protection the train does not have.
+ */
+export const LIVERY_RAJDHANI = 0;
+export const LIVERY_VANDE = 1;
+export const LIVERY_PREMIUM = 2;
+export const LIVERY_EXPRESS = 3;
+export const LIVERY_PASSENGER = 4;
+export const LIVERY_GOODS = 5;
+
+export const LIVERY_LABEL = [
+  "Rajdhani", "Vande Bharat", "Premium", "Mail / Express", "Passenger", "Goods",
+];
+
+/**
+ * Calibrated rather than named: pure #f00/#ff0 on a white ground either glares or, for
+ * yellow, disappears at hairline width. Each is the darkest version of its hue that still
+ * reads as that hue, and each is kept clear of the three department colours the blocks
+ * are drawn in.
+ */
+export const LIVERY_COLOR = [
+  "#d12c2c",   // Rajdhani     — red
+  "#e2711d",   // Vande Bharat — orange
+  "#1e7a4d",   // Premium      — green
+  "#3a6ea5",   // Mail/Express — blue
+  "#c2900c",   // Passenger    — yellow, darkened to survive a 0.55px stroke
+  "#b0bcc8",   // Goods        — light grey
+];
 
 /**
  * Hairlines. Around 250 trains cross the main line on a working day, and at any width
  * that reads comfortably on its own they merge into a wash in the busy hours — you
  * cannot see a block through them, let alone pick one out. Drawn thin, the chart stays
  * legible and an individual path is recovered by hovering it instead.
+ *
+ * Weight still ranks: a Rajdhani path is the one a block must not foul, so it is the
+ * one that survives the crowd.
+ *
+ * Widened by roughly 60% over the first pass, which read as thread rather than line. The
+ * honest cost is that weight and density trade against each other: at 945 runs on a
+ * Monday, two thirds of them forecast goods, bolder strokes buy legibility per path and
+ * spend it on the crowd. Switching goods off in the filter is what makes the extra
+ * weight pay -- see the note on LIVERY_GOODS.
  */
-export const CLASS_WIDTH = [0.9, 0.65, 0.5, 0.35];
-export const CLASS_LABEL = ["Premier", "Mail / Express", "Passenger", "Goods"];
+export const LIVERY_WIDTH = [1.7, 1.7, 1.35, 1.0, 0.95, 0.6];
+
+const RAJDHANI = /RAJDHANI|TEJAS\s*RAJ/;
+const VANDE = /VANDE\s*BHARAT/;
+// Jan Shatabdi is deliberately absent: it is a chair-car express, not a Shatabdi, and
+// matching the substring would promote fourteen of them. A true Shatabdi arrives through
+// the class fallback below instead.
+const PREMIUM = /HUMSAF|DURONTO|DURANTO|GARIB\s*RATH|GARIBRATH/;
+
+/** Which livery a path is drawn in. `cls` is the solver's class, `name` the roster name. */
+export function liveryOf(cls: number, name = ""): number {
+  if (cls === 3) return LIVERY_GOODS;        // goods is forecast and never named
+  if (cls === 2) return LIVERY_PASSENGER;
+  const n = name.toUpperCase();
+  if (RAJDHANI.test(n)) return LIVERY_RAJDHANI;
+  if (VANDE.test(n)) return LIVERY_VANDE;
+  if (PREMIUM.test(n)) return LIVERY_PREMIUM;
+  // A premier-class train the markers did not name is a Shatabdi, Tejas or Gatimaan.
+  return cls === 0 ? LIVERY_PREMIUM : LIVERY_EXPRESS;
+}
 
 export const MIN_PER_DAY = 1440;
 

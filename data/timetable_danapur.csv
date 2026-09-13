@@ -61,8 +61,8 @@ train_no,name,class,route,enter_at,leave_at,main_leg,enter_time,runs,provenance
 # MAIN LINE — Howrah / Sealdah / Kolkata – Delhi trunk via Patna
 # ===========================================================================
 #
-12305,Howrah – New Delhi Rajdhani,PREMIER,MAIN,JAJ,BXR,,22:40,MoWeThSa,named
-12306,New Delhi – Howrah Rajdhani,PREMIER,MAIN,BXR,JAJ,,02:05,TuThFrSu,named
+12305,Howrah – New Delhi Rajdhani,PREMIER,MAIN,JAJ,BXR,,22:40,Su,named
+12306,New Delhi – Howrah Rajdhani,PREMIER,MAIN,BXR,JAJ,,02:05,Th,named
 12313,Sealdah – New Delhi Rajdhani,PREMIER,MAIN,JAJ,BXR,,23:25,daily,named
 12314,New Delhi – Sealdah Rajdhani,PREMIER,MAIN,BXR,JAJ,,01:10,daily,named
 22349,Patna – Howrah Vande Bharat Express,PREMIER,MAIN,PNBE,JAJ,,06:05,MoTuWeThFrSa,named
