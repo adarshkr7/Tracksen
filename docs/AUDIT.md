@@ -2,7 +2,7 @@
 
 **Date:** 12 September 2026
 **Scope:** whole repository — backend, solver, governance, web client, documentation
-**Test suite:** 211 passing · mutation check 11/11
+**Test suite:** 296 passing · mutation check 21/21
 **Plan:** 7 days, 600 tasks, Danapur division (41 sections, 15 planned), 600 s solve
 **Solver:** monthly `OPTIMAL` · weekly `FEASIBLE` 12.9% at 600 s (76.6% at 240 s)
 **Web build:** clean (Next.js 16, TypeScript, 14 static routes)
@@ -199,17 +199,41 @@ Ordered by how much they threaten the claims the project makes.
       the service always plans the same world. A stored plan therefore references task
       ids that only exist because the seed is fixed. Persisting the estate is the next
       layer, and is what `STATUS.md` means by PostgreSQL.
-- [ ] **Tokens are bearer credentials with no expiry and no revocation list.** Losing one
-      means deleting the identity file and reissuing every token, because there is no way
-      to withdraw a single one. A directory binding solves this; a `revoked` flag would
-      be the cheap interim.
+- [x] **Tokens were bearer credentials with no expiry and no revocation list.** Closed,
+      and by replacement rather than by patch. There are accounts now — per person, with
+      an scrypt-derived password and a lockout — and sessions issued by signing in, which
+      expire on an absolute clock and an idle clock and can be revoked individually, for a
+      whole account, or implicitly by changing a password. `samanvay/governance/accounts.py`
+      and `sessions.py`; `POST /api/login`, `/api/logout`, `/api/password`, `/api/sessions`.
+
+      The claim this was really blocking was the audit trail's. A token per *role* meant
+      "the DRM sanctioned this" could only ever mean "somebody holding the DRM token did".
+      A session names a person, and sign-ins and refusals now go to their own hash-chained
+      trail so the name in a sanction is backed by a record of how it was obtained.
 - [ ] **The service distinguishes "no such plan" (409) from "not permitted" (403) before
       checking authority**, so an unauthorised caller can probe which plan ids exist.
       Minor — ids are sequential and guessable anyway — and reversing the order would put
       DENIED entries in the audit log for plans that do not exist. Recorded rather than
       changed.
-- [ ] **No rate limiting on the token endpoint.** Tokens are 24 random bytes so guessing
-      is not a practical attack, but nothing slows an attempt down either.
+- [x] **No rate limiting on the token endpoint.** Closed for the case that matters: five
+      failed sign-ins lock an account for fifteen minutes, and the lockout is written to
+      the accounts file, so "guess, restart the service, guess again" is not a way around
+      it. There is still no per-IP limit and no global one — a distributed attempt against
+      many usernames at once is slowed by scrypt and by nothing else.
+
+- [ ] **Session state is a JSON file, rewritten whole.** Fine for a division's worth of
+      users and wrong for anything concurrent: two workers signing somebody in at the same
+      moment can lose one of the sessions, because the file is read, mutated and written
+      without a lock. The service is single-process today, which is the only reason this
+      is a note rather than a defect.
+- [ ] **There is no administrative surface.** Accounts can be disabled and sessions
+      revoked in code — `AccountStore.set_disabled`, `AuthService.revoke_all_for` — but
+      nothing exposes either over HTTP, so removing somebody's access means editing a file
+      and restarting. A DRM-only admin endpoint is the obvious next piece.
+- [ ] **Passwords are policy-checked on length alone.** No breach-list check, no rotation,
+      no history. Deliberate — a policy that demands three character classes pushes people
+      toward `Passw0rd!` — but a real deployment binds to the divisional directory and
+      inherits its policy rather than keeping this one.
 
 ### Found by putting real data through it
 

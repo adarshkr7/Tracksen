@@ -11,8 +11,10 @@
  * drop out in order of importance instead: solver first, then section, then the estate
  * lamp's label. Nothing that drops is unavailable — it is on the page it belongs to.
  *
- * The identity shown is not a selector. It is whatever the service resolved the bearer
- * token to; there is nothing here to pick, which is the point.
+ * The identity shown is not a selector. It is whatever the service resolved this tab's
+ * session to; there is nothing here to pick, which is the point. It carries an expiry,
+ * so it is shown -- a control-room screen that says "DRM" without saying "for another
+ * 40 minutes" is telling half the truth.
  */
 
 import { useState } from "react";
@@ -20,9 +22,24 @@ import { usePlan } from "./PlanProvider";
 import { useRole } from "./RoleProvider";
 import SignIn from "./SignIn";
 
+/**
+ * How much of this session is left, in words a glance can take in.
+ *
+ * Rounded down deliberately: "expires in 1 minute" and then a refusal is worse than
+ * "expires in under a minute" and then a refusal.
+ */
+function remaining(expiresAt: string): string {
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (!Number.isFinite(ms) || ms <= 0) return "expired";
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "under a minute left";
+  if (minutes < 60) return `${minutes}m left`;
+  return `${Math.floor(minutes / 60)}h ${minutes % 60}m left`;
+}
+
 export default function TopBar() {
   const { plan, apiUp, loading } = usePlan();
-  const { session, checking, signOut } = useRole();
+  const { session, checking, signOut, endedReason } = useRole();
   const [signingIn, setSigningIn] = useState(false);
 
   const horizon = plan?.meta.horizon_days ?? 7;
@@ -72,7 +89,14 @@ export default function TopBar() {
           ) : session ? (
             <>
               <span className="text-right leading-none hidden sm:block">
-                <span className="sig block">{session.role}</span>
+                <span className="sig block">
+                  {session.role}
+                  {session.expiresAt && (
+                    <span style={{ color: "var(--ink-3)" }}>
+                      {" · "}{remaining(session.expiresAt)}
+                    </span>
+                  )}
+                </span>
                 <span className="block text-[12px] font-medium mt-[3px]"
                   style={{ color: "var(--ink)" }}>
                   {session.name}
@@ -80,7 +104,7 @@ export default function TopBar() {
               </span>
               <button
                 onClick={signOut}
-                title="Discard the token held for this tab"
+                title="End this session, here and on the service"
                 className="rounded-[3px] border px-2.5 py-[5px] text-[11.5px] font-medium"
                 style={{ borderColor: "var(--line-2)", background: "var(--surface)",
                          color: "var(--ink-2)" }}
@@ -90,7 +114,11 @@ export default function TopBar() {
             </>
           ) : (
             <>
-              <span className="sig hidden sm:inline">Read-only</span>
+              <span className="sig hidden sm:inline"
+                style={endedReason ? { color: "var(--warn)" } : undefined}
+                title={endedReason ?? undefined}>
+                {endedReason ? "Session ended" : "Read-only"}
+              </span>
               <button
                 onClick={() => setSigningIn(true)}
                 className="rounded-[3px] px-3 py-[5px] text-[11.5px] font-medium"

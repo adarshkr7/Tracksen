@@ -22,15 +22,19 @@ fastapi_testclient = pytest.importorskip("fastapi.testclient")
 
 @pytest.fixture(scope="module")
 def api(tmp_path_factory):
-    """The service, with its audit log and identity file in a temp directory.
+    """The service, with its audit log, accounts and sessions in a temp directory.
 
     Imported with the paths redirected so a test run never writes into out/ or, worse,
-    authenticates against whatever tokens happen to be on the developer's machine.
+    authenticates against whatever accounts happen to be on the developer's machine.
+
+    The tokens handed back are real session tokens, obtained by signing each bootstrap
+    account in with its minted password -- the same path a browser takes. Keying them by
+    role rather than by username keeps these tests about the approval route, which is
+    what they are for; who holds the DRM account is test_identity.py's business.
     """
     tmp = tmp_path_factory.mktemp("api")
-    import samanvay.governance.identity as identity_mod
     from samanvay.domain import BlockType, Department, Line, Plan, ScheduledBlock
-    from samanvay.governance import PlanStore
+    from samanvay.governance import AuthService, PlanStore
 
     serve = importlib.import_module("serve")
     serve.audit.__init__(tmp / "audit.jsonl")                  # fresh chain
@@ -38,8 +42,12 @@ def api(tmp_path_factory):
     serve.workflow.plans.clear()
     serve.plans = PlanStore(tmp / "plans")                     # never touch out/
 
-    store, tokens = identity_mod.bootstrap(tmp / "identities.json")
-    serve.identities = store
+    serve.auth = AuthService(tmp / "accounts.json", tmp / "sessions.json",
+                             tmp / "auth.jsonl")
+    tokens = {}
+    for username, password in serve.auth.minted.items():
+        result = serve.auth.login(username, password)
+        tokens[result.account.role.value] = result.token
 
     # A plan to submit. Solving a real one here would fit four models for the sake of
     # testing an HTTP surface; what these tests need is something with a content hash.
@@ -60,6 +68,19 @@ def api(tmp_path_factory):
 
 def auth(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
+
+
+def who(serve, role: str) -> str:
+    """The display name the service holds for a role, rather than a literal in a test.
+
+    The bootstrap names are demo dressing and have changed once already. What these tests
+    are actually asserting is that the trail carries the name the SERVICE resolved, so
+    that is what they should read it from.
+    """
+    for account in serve.auth.accounts.accounts:
+        if account.role.value == role:
+            return account.display_name
+    raise AssertionError(f"no bootstrap account for {role}")
 
 
 # --------------------------------------------------------------------------- #
@@ -143,7 +164,7 @@ def test_the_full_route_works_with_the_right_tokens(api):
     r = client.post(f"/api/plans/{pid}/sanction", json={}, headers=auth(tokens["DRM"]))
     assert r.status_code == 200
     assert r.json()["state"] == "SANCTIONED"
-    assert r.json()["sanctioned_by"] == "DRM (demo)"
+    assert r.json()["sanctioned_by"] == who(serve, "DRM")
 
 
 def test_the_wrong_head_cannot_concur_for_another_department(api):
@@ -167,9 +188,11 @@ def test_the_audit_records_the_authenticated_name_not_a_claimed_one(api):
 
     entries = [e for e in serve.audit if e.plan_id == pid]
     assert entries, "nothing was recorded"
-    assert all(e.actor == "JE (demo)" for e in entries), (
+    expected = who(serve, "JE")
+    assert all(e.actor == expected for e in entries), (
         f"the audit trusted a name from the body: {[e.actor for e in entries]}"
     )
+    assert all(e.actor != "Impostor" for e in entries)
     assert all(e.role == "JE" for e in entries)
 
 
@@ -235,3 +258,124 @@ def test_submitting_before_anything_is_solved_is_refused(api):
         assert r.status_code == 409
     finally:
         serve._last_plan = held
+
+
+# --------------------------------------------------------------------------- #
+# Signing in over HTTP
+# --------------------------------------------------------------------------- #
+#
+# These use an account of their own. Changing a password revokes every other session for
+# that account, so exercising it against one of the bootstrap logins would sign the rest
+# of this file out halfway through and the failures would look like authorisation bugs.
+
+TEST_PASSWORD = "a-perfectly-adequate-password"
+NEW_PASSWORD = "an-entirely-different-password"
+
+
+@pytest.fixture
+def tester(api):
+    """A throwaway account, recreated per test so password changes cannot leak across."""
+    _, _, serve = api
+    from samanvay.governance import Role, new_account
+
+    account = new_account("tester", "T. Tester", Role.VIEWER, TEST_PASSWORD)
+    store = serve.auth.accounts
+    store._by_username["tester"] = account
+    store.accounts = [a for a in store.accounts if a.username != "tester"] + [account]
+    serve.auth.sessions.revoke_all_for("tester")
+    return account
+
+
+def test_signing_in_returns_a_session(api, tester):
+    client, _, _ = api
+    r = client.post("/api/login",
+                    json={"username": "tester", "password": TEST_PASSWORD})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["token"] and body["role"] == "Viewer"
+    assert body["expires_at"], "a session with no expiry is the thing this replaced"
+    assert client.get("/api/me", headers=auth(body["token"])).status_code == 200
+
+
+def test_a_wrong_password_is_refused_the_same_way_as_an_unknown_user(api, tester):
+    client, _, _ = api
+    wrong = client.post("/api/login",
+                        json={"username": "tester", "password": "nope-not-this"})
+    unknown = client.post("/api/login",
+                          json={"username": "no-such-person", "password": "nope-not-this"})
+    assert wrong.status_code == unknown.status_code == 401
+    assert wrong.json()["detail"] == unknown.json()["detail"], (
+        "the login form tells an attacker which usernames are real"
+    )
+
+
+def test_the_login_response_never_carries_the_password_back(api, tester):
+    client, _, _ = api
+    body = client.post("/api/login",
+                       json={"username": "tester", "password": TEST_PASSWORD}).text
+    assert TEST_PASSWORD not in body
+
+
+def test_signing_out_makes_the_token_useless(api, tester):
+    client, _, _ = api
+    token = client.post("/api/login",
+                        json={"username": "tester", "password": TEST_PASSWORD}
+                        ).json()["token"]
+    assert client.post("/api/logout", headers=auth(token)).status_code == 200
+    assert client.get("/api/me", headers=auth(token)).status_code == 401
+
+
+def test_a_weak_new_password_is_refused_without_signing_the_caller_out(api, tester):
+    client, _, _ = api
+    token = client.post("/api/login",
+                        json={"username": "tester", "password": TEST_PASSWORD}
+                        ).json()["token"]
+    r = client.post("/api/password", headers=auth(token),
+                    json={"current_password": TEST_PASSWORD, "new_password": "short"})
+    assert r.status_code == 422, (
+        "a rejected password sent the caller back to the sign-in screen; the problem is "
+        "the new password, not their identity"
+    )
+    assert client.get("/api/me", headers=auth(token)).status_code == 200
+
+
+def test_changing_the_password_ends_other_sessions_over_http(api, tester):
+    client, _, _ = api
+    elsewhere = client.post("/api/login",
+                            json={"username": "tester", "password": TEST_PASSWORD}
+                            ).json()["token"]
+    here = client.post("/api/login",
+                       json={"username": "tester", "password": TEST_PASSWORD}
+                       ).json()["token"]
+
+    r = client.post("/api/password", headers=auth(here),
+                    json={"current_password": TEST_PASSWORD,
+                          "new_password": NEW_PASSWORD})
+    assert r.status_code == 200
+    assert client.get("/api/me", headers=auth(elsewhere)).status_code == 401
+    assert client.get("/api/me", headers=auth(here)).status_code == 200
+
+
+def test_the_sessions_endpoint_names_the_current_one(api, tester):
+    client, _, _ = api
+    token = client.post("/api/login",
+                        json={"username": "tester", "password": TEST_PASSWORD}
+                        ).json()["token"]
+    client.post("/api/login", json={"username": "tester", "password": TEST_PASSWORD})
+
+    body = client.get("/api/sessions", headers=auth(token)).json()
+    assert len(body["sessions"]) == 2
+    assert sum(1 for s in body["sessions"] if s["current"]) == 1
+
+    assert client.post("/api/sessions/revoke-others",
+                       headers=auth(token)).json()["ended"] == 1
+    assert client.get("/api/me", headers=auth(token)).status_code == 200
+
+
+def test_the_verifier_checks_the_sign_in_trail_too(api, tester):
+    client, _, _ = api
+    client.post("/api/login", json={"username": "tester", "password": TEST_PASSWORD})
+    body = client.get("/api/audit/verify").json()
+    assert body["auth"] is not None
+    assert body["auth"]["intact"]
+    assert body["auth"]["entries"] > 0

@@ -122,8 +122,9 @@ function ApprovalsBody() {
         }
       />
       <div className="mb-4"><DemoNote>
-        Roles are <b>authenticated</b> — a bearer token resolves to a name and a role
-        server-side. The identity <b>store</b> is the stand-in: a deployment reads the
+        Roles are <b>authenticated</b> — a username and password resolve to a session,
+        and the session to a name and a role, server-side. Sessions expire and can be
+        revoked. The account <b>store</b> is the stand-in: a deployment reads the
         divisional directory instead, under the same rules.
       </DemoNote></div>
 
@@ -269,7 +270,7 @@ function ApprovalsBody() {
             <div className="rounded-[3px] border px-3 py-2.5 mb-3 text-[11.5px] leading-relaxed"
               style={{ borderColor: "var(--line-2)", background: "var(--surface-2)",
                        color: "var(--ink-2)" }}>
-              <b>Not signed in.</b> The approval route needs a bearer token — sign in from
+              <b>Not signed in.</b> The approval route needs an account — sign in from
               the top bar. The plan itself is readable without one.
             </div>
           )}
@@ -331,8 +332,8 @@ function ApprovalsBody() {
               : role === "Sr.DOM"
               ? "Traffic clearance comes after departmental concurrence, not before."
               : role
-              ? "This role cannot concur, clear or sanction. Sign in with a token that can."
-              : "Sign in to act. Browsing the plan needs no token; acting on it does."}
+              ? "This role cannot concur, clear or sanction. Sign in as somebody who can."
+              : "Sign in to act. Browsing the plan needs no account; acting on it does."}
           </p>
         </Card>
       </div>

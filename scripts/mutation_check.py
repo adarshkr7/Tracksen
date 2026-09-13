@@ -117,6 +117,51 @@ MUTANTS = [
         "tests/test_bursting.py::test_the_withdrawal_counts_against_the_window",
     ),
     (
+        "password check always passes",
+        "samanvay/governance/accounts.py",
+        "return hmac.compare_digest(candidate.hex(), self.password_hash)",
+        "return True",
+        "tests/test_identity.py::test_a_wrong_password_is_refused",
+    ),
+    (
+        "session expiry is written but never checked",
+        "samanvay/governance/sessions.py",
+        "        reason = found.expiry_reason()\n        if reason:",
+        "        reason = None\n        if reason:",
+        "tests/test_identity.py::test_an_expired_session_is_refused",
+    ),
+    (
+        "using a session extends its absolute lifetime",
+        "samanvay/governance/sessions.py",
+        "        now = _now()\n        previous = _parse(found.last_seen)",
+        "        now = _now()\n        found.expires_at = _iso(now + dt.timedelta(hours=ABSOLUTE_LIFETIME_HOURS))\n"
+        "        previous = _parse(found.last_seen)",
+        "tests/test_identity.py::test_use_moves_the_idle_clock_but_not_the_absolute_one",
+    ),
+    (
+        "failed sign-ins no longer lock the account",
+        "samanvay/governance/accounts.py",
+        "            if account.failed_attempts >= MAX_FAILED_ATTEMPTS:",
+        "            if False:",
+        "tests/test_identity.py::test_repeated_failures_lock_the_account",
+    ),
+    (
+        "an unknown username is refused differently from a wrong password",
+        "samanvay/governance/accounts.py",
+        '            _derive(password or "", _DUMMY_SALT, SCRYPT_N, SCRYPT_R, SCRYPT_P, DK_LEN)\n'
+        "            raise AuthenticationError(refusal)",
+        '            _derive(password or "", _DUMMY_SALT, SCRYPT_N, SCRYPT_R, SCRYPT_P, DK_LEN)\n'
+        '            raise AuthenticationError("no such user")',
+        "tests/test_identity.py::test_an_unknown_user_and_a_wrong_password_are_indistinguishable",
+    ),
+    (
+        "changing a password leaves other sessions alive",
+        "samanvay/governance/identity.py",
+        "        ended = self.sessions.revoke_all_for(account.username, except_token=token)",
+        "        ended = 0",
+        "tests/test_identity.py::test_changing_the_password_ends_every_other_session",
+    ),
+    (
         "monthly return reports the weekly plan's blocks",
         "samanvay/reports.py",
         '_overdue(payload, metrics, monthly.get("blocks", []), monthly["days"])',

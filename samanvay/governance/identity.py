@@ -1,189 +1,188 @@
-"""Who is calling, decided by the server.
+"""The login service: accounts, sessions and the trail of who signed in.
 
-The workflow rules were always real -- only the DRM may sanction, a head may concur only
-for their own department, a refusal is recorded. What was not real was the identity they
-were enforced against: the caller sent `{"actor": "...", "role": "DRM"}` and was believed.
-Every rule in `workflow.py` was one JSON field away from being nothing at all.
+`accounts.py` knows how to prove somebody is who they say. `sessions.py` knows how to
+carry that proof for the next few hours and how to take it away. This is the one object
+that puts them together, so that the service has a single seam to a real directory rather
+than three, and so that every path that grants or withdraws access records that it did.
 
-This module is the other half. A caller presents a bearer token; the token resolves to a
-name and a role held here; and the role in the request body is ignored entirely -- not
-validated, not preferred, ignored, because a field that is sometimes trusted eventually
-is.
+    auth = AuthService(ACCOUNTS_PATH, SESSIONS_PATH, AUTH_LOG_PATH)
+    result = auth.login("drm", password, user_agent="...")   -> token
+    account, session = auth.resolve(token)                   -> who is calling
+    auth.logout(token)
 
-WHAT THIS IS AND IS NOT
+WHY THE SIGN-IN TRAIL IS HASH-CHAINED TOO
 
-It is real authentication: a caller must possess a secret to act, secrets are stored as
-hashes so the identity file is not a password list, and comparison is constant-time.
+The plan audit log answers "who sanctioned this, and on whose authority". It is only as
+strong as the claim that the person named is the person who acted. A sign-in record that
+could be quietly edited afterwards -- to remove the failed attempts that preceded a
+sanction, say -- would undercut the log it is supposed to support. It is the same
+`AuditLog` machinery, in its own file, so the two trails verify independently and a plan's
+history is not cluttered with sessions.
 
-It is not a directory. A division runs on its own AD or SSO, and a deployment binds
-`IdentityStore.resolve` to that instead. The seam is one function wide on purpose. What
-matters is that the seam is on the server side of the wire, which is the part that was
-missing.
+A password is never written to it, obviously. Neither is a session token: the trail names
+people and events, never secrets.
 """
 
 from __future__ import annotations
 
-import hashlib
-import hmac
-import json
-import secrets
 from dataclasses import dataclass
 from pathlib import Path
 
-from .workflow import Actor, Role
+from .accounts import (
+    Account,
+    AccountStore,
+    AuthenticationError,
+    PasswordPolicyError,
+    check_password_policy,
+)
+from .audit import AuditLog
+from .sessions import Session, SessionStore
+from .workflow import Actor
 
-# Long enough that guessing is not a strategy, short enough to paste.
-TOKEN_BYTES = 24
+# Actions in the auth trail. Strings rather than the plan `Action` enum, which is
+# documented as "everything that can happen to a plan" and should stay that way.
+SIGN_IN = "SIGN_IN"
+SIGN_IN_DENIED = "SIGN_IN_DENIED"
+SIGN_OUT = "SIGN_OUT"
+PASSWORD_CHANGED = "PASSWORD_CHANGED"
+SESSIONS_REVOKED = "SESSIONS_REVOKED"
 
-
-class AuthenticationError(Exception):
-    """No identity could be established. Distinct from 'not permitted'.
-
-    401 and 403 are different answers and the caller can act on the difference: one means
-    sign in, the other means you did and it is not your decision to make.
-    """
-
-
-def hash_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+# The auth trail is not about plans, and inventing a plan id for it would make the field
+# lie. This is the explicit absence.
+NO_PLAN = "-"
 
 
 @dataclass(frozen=True)
-class Identity:
-    """One person the service will accept, and what they may do."""
+class LoginResult:
+    """What a successful sign-in hands back. The token appears here and nowhere else."""
 
-    name: str
-    role: Role
-    token_hash: str
+    token: str
+    account: Account
+    session: Session
 
     @property
     def actor(self) -> Actor:
-        return Actor(self.name, self.role)
+        return self.account.actor
 
     def to_dict(self) -> dict:
-        return {"name": self.name, "role": self.role.value,
-                "token_hash": self.token_hash}
-
-
-class IdentityStore:
-    """Bearer token -> Actor, backed by a file of hashed tokens.
-
-    The file holds no plaintext token. Losing it therefore leaks who may act and in what
-    capacity -- worth protecting -- but not the ability to act as them.
-    """
-
-    def __init__(self, identities: list[Identity]):
-        self._by_hash = {i.token_hash: i for i in identities}
-        self.identities = list(identities)
-
-    # ------------------------------------------------------------------ #
-
-    @classmethod
-    def load(cls, path: Path) -> "IdentityStore":
-        raw = json.loads(Path(path).read_text(encoding="utf-8"))
-        out = []
-        for entry in raw.get("identities", []):
-            try:
-                role = Role(entry["role"])
-            except (KeyError, ValueError) as exc:
-                raise ValueError(
-                    f"{path}: identity {entry.get('name', '?')!r} has an unusable role "
-                    f"{entry.get('role')!r}; expected one of "
-                    f"{', '.join(r.value for r in Role)}"
-                ) from exc
-            if not entry.get("token_hash"):
-                raise ValueError(
-                    f"{path}: identity {entry.get('name', '?')!r} has no token_hash. "
-                    "Tokens are stored hashed; write the hash, never the token."
-                )
-            out.append(Identity(entry["name"], role, entry["token_hash"]))
-        if not out:
-            raise ValueError(f"{path}: no identities. A service nobody can act on is "
-                             "not a safe default, it is a broken one.")
-        return cls(out)
-
-    def save(self, path: Path) -> None:
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        payload = {
-            "_comment": (
-                "Bearer tokens for the TRACKSEN approval route. Tokens are stored as "
-                "SHA-256 hashes: this file cannot be used to obtain one. Keep it out of "
-                "version control anyway -- it names who may sanction."
-            ),
-            "identities": [i.to_dict() for i in self.identities],
+        return {
+            "token": self.token,
+            "name": self.account.display_name,
+            "username": self.account.username,
+            "role": self.account.role.value,
+            "expires_at": self.session.expires_at,
+            "must_change_password": self.account.must_change_password,
         }
-        tmp = path.with_suffix(path.suffix + ".partial")
-        tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-        tmp.replace(path)
+
+
+class AuthService:
+    """Sign in, stay signed in, stop being signed in."""
+
+    def __init__(self, accounts_path: Path, sessions_path: Path,
+                 auth_log_path: Path | None = None):
+        from .accounts import load_or_bootstrap
+
+        self.accounts, self.minted = load_or_bootstrap(Path(accounts_path))
+        self.sessions = SessionStore.load(Path(sessions_path))
+        self.trail = AuditLog(Path(auth_log_path)) if auth_log_path else None
 
     # ------------------------------------------------------------------ #
 
-    def resolve(self, token: str | None) -> Actor:
-        """The actor this token belongs to, or refuse.
+    def _record(self, action: str, *, actor: str, role: str, detail: dict) -> None:
+        if self.trail is None:
+            return
+        self.trail.append(actor=actor, role=role, action=action,
+                          plan_id=NO_PLAN, detail=detail)
 
-        Compared in constant time against every known hash. A dictionary lookup on the
-        hash would be faster and would also leak, through timing, whether a prefix was
-        right -- and the whole point of this module is that the answer to "who are you"
-        is not negotiable from the client side.
+    # ------------------------------------------------------------------ #
+
+    def login(self, username: str, password: str, user_agent: str = "") -> LoginResult:
+        """Verify a password and issue a session, or refuse and record the refusal.
+
+        A refused attempt is recorded against the username that was TRIED, which may not
+        name anybody. That is the point: five failures against `drm` from one afternoon is
+        the signal, and it does not exist if only successful sign-ins are written down.
         """
-        if not token:
-            raise AuthenticationError("no bearer token supplied")
+        attempted = (username or "").strip().lower()
+        try:
+            account = self.accounts.verify(attempted, password)
+        except AuthenticationError as exc:
+            self._record(SIGN_IN_DENIED, actor=attempted or "(blank)", role="-",
+                         detail={"reason": str(exc), "user_agent": user_agent[:200]})
+            raise
 
-        candidate = hash_token(token)
-        found: Identity | None = None
-        for identity in self.identities:
-            if hmac.compare_digest(candidate, identity.token_hash):
-                found = identity
-        if found is None:
-            raise AuthenticationError("token not recognised")
-        return found.actor
+        token, session = self.sessions.issue(account, user_agent=user_agent)
+        self._record(SIGN_IN, actor=account.display_name, role=account.role.value,
+                     detail={"username": account.username,
+                             "expires_at": session.expires_at,
+                             "must_change_password": account.must_change_password})
+        return LoginResult(token=token, account=account, session=session)
 
-    def __len__(self) -> int:
-        return len(self.identities)
+    def resolve(self, token: str | None) -> tuple[Account, Session]:
+        """Who is calling. Raises `AuthenticationError` with a reason the client can use."""
+        return self.sessions.resolve(token, self.accounts)
+
+    def actor(self, token: str | None) -> Actor:
+        account, _ = self.resolve(token)
+        return account.actor
+
+    def logout(self, token: str) -> bool:
+        """End one session. Idempotent: signing out twice is not an error worth raising."""
+        try:
+            account, _ = self.resolve(token)
+            who, role = account.display_name, account.role.value
+        except AuthenticationError:
+            who, role = "(unknown)", "-"
+        ended = self.sessions.revoke(token)
+        if ended:
+            self._record(SIGN_OUT, actor=who, role=role, detail={})
+        return ended
+
+    def change_password(self, token: str, current_password: str,
+                        new_password: str) -> Account:
+        """Change your own password, then sign out everywhere else.
+
+        The current password is required even though the caller already holds a valid
+        session. A session proves the screen was signed in at some point, not that the
+        person at it now is the same one -- which is the exact situation an idle timeout
+        is for, and an unlocked terminal is how it goes wrong.
+
+        Every other session for the account is revoked. A password change that left the
+        old ones alive is the most dangerous kind of half-measure: the person doing it
+        believes they have just locked somebody out, and they have not.
+        """
+        account, _ = self.resolve(token)
+
+        if not current_password or not account.matches(current_password):
+            self._record(SIGN_IN_DENIED, actor=account.display_name,
+                         role=account.role.value,
+                         detail={"reason": "wrong current password on change"})
+            raise AuthenticationError("current password is not correct")
+
+        check_password_policy(new_password)
+        if account.matches(new_password):
+            raise PasswordPolicyError("the new password must differ from the current one")
+
+        self.accounts.set_password(account.username, new_password)
+        ended = self.sessions.revoke_all_for(account.username, except_token=token)
+        self._record(PASSWORD_CHANGED, actor=account.display_name,
+                     role=account.role.value,
+                     detail={"other_sessions_ended": ended})
+        return account
+
+    def revoke_all_for(self, username: str, by: Actor | None = None) -> int:
+        """Sign an account out everywhere. The administrative half of revocation."""
+        ended = self.sessions.revoke_all_for(username)
+        if ended:
+            self._record(SESSIONS_REVOKED,
+                         actor=by.name if by else "system",
+                         role=by.role.value if by else "-",
+                         detail={"username": username, "sessions_ended": ended})
+        return ended
 
 
-# --------------------------------------------------------------------------- #
-# First run
-# --------------------------------------------------------------------------- #
-
-# One identity per role, so the whole approval route can be walked end to end. A real
-# deployment has one per person and several people per role; this is the smallest set
-# that exercises every gate.
-BOOTSTRAP_ROLES: list[tuple[str, Role]] = [
-    ("JE (demo)", Role.JE),
-    ("Sr.DEN (demo)", Role.SR_DEN),
-    ("Sr.DSTE (demo)", Role.SR_DSTE),
-    ("Sr.DEE/TrD (demo)", Role.SR_DEE),
-    ("Sr.DOM (demo)", Role.SR_DOM),
-    ("DRM (demo)", Role.DRM),
-    ("Viewer (demo)", Role.VIEWER),
+__all__ = [
+    "Account", "AccountStore", "AuthService", "AuthenticationError", "LoginResult",
+    "PasswordPolicyError", "Session", "SessionStore",
+    "SIGN_IN", "SIGN_IN_DENIED", "SIGN_OUT", "PASSWORD_CHANGED", "SESSIONS_REVOKED",
 ]
-
-
-def bootstrap(path: Path) -> tuple["IdentityStore", dict[str, str]]:
-    """Create an identity file with fresh random tokens. Returns the tokens ONCE.
-
-    Deliberately not a bypass. A service that fell back to "trust the caller" when no
-    identity file was present would have an authentication system and a hole beside it,
-    and the hole is what would get used. Instead the first run mints real secrets, prints
-    them once, and never stores them.
-    """
-    tokens: dict[str, str] = {}
-    identities: list[Identity] = []
-    for name, role in BOOTSTRAP_ROLES:
-        token = secrets.token_urlsafe(TOKEN_BYTES)
-        tokens[role.value] = token
-        identities.append(Identity(name, role, hash_token(token)))
-
-    store = IdentityStore(identities)
-    store.save(path)
-    return store, tokens
-
-
-def load_or_bootstrap(path: Path) -> tuple["IdentityStore", dict[str, str] | None]:
-    """Load the identity file, creating one on first run. Tokens returned only if minted."""
-    path = Path(path)
-    if path.exists():
-        return IdentityStore.load(path), None
-    return bootstrap(path)

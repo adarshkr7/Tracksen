@@ -27,9 +27,10 @@ from samanvay.domain import Department  # noqa: E402
 from samanvay.governance import (  # noqa: E402
     Actor,
     AuthenticationError,
+    AuthService,
+    PasswordPolicyError,
     PlanStore,
     PlanStoreError,
-    load_or_bootstrap,
     ApprovalWorkflow,
     AuditLog,
     AuthorityError,
@@ -50,27 +51,37 @@ workflow = ApprovalWorkflow(audit)
 PLAN_STORE_PATH = Path(__file__).resolve().parents[1] / "out" / "plans"
 plans = PlanStore(PLAN_STORE_PATH)
 
-# Who the service will accept. On first run this mints one token per role and prints
-# them once; thereafter it reads the hashes. There is deliberately no "no identity file
-# means trust the caller" path -- that would be an authentication system with a hole
-# beside it, and the hole is what would get used.
-IDENTITY_PATH = Path(__file__).resolve().parents[1] / "out" / "identities.json"
-identities, _minted = load_or_bootstrap(IDENTITY_PATH)
-if _minted:
+# Who the service will accept. Accounts with passwords, sessions that expire and can be
+# revoked, and a hash-chained trail of who signed in. On first run this mints one account
+# per role with a random password, prints them once, and flags every one of them
+# must-change-password. There is deliberately no "no accounts file means trust the caller"
+# path -- that would be an authentication system with a hole beside it, and the hole is
+# what would get used.
+OUT_DIR = Path(__file__).resolve().parents[1] / "out"
+ACCOUNTS_PATH = OUT_DIR / "accounts.json"
+SESSIONS_PATH = OUT_DIR / "sessions.json"
+AUTH_LOG_PATH = OUT_DIR / "auth.jsonl"
+
+auth = AuthService(ACCOUNTS_PATH, SESSIONS_PATH, AUTH_LOG_PATH)
+if auth.minted:
     print()
     print("=" * 72)
-    print("  FIRST RUN -- bearer tokens minted. Shown once here and never stored.")
-    print(f"  Only their hashes go to {IDENTITY_PATH}")
+    print("  FIRST RUN -- accounts created. Passwords shown once here and never stored.")
+    print(f"  Only their scrypt derivations go to {ACCOUNTS_PATH}")
     print("=" * 72)
-    for role, token in _minted.items():
-        print(f"  {role:12} {token}")
+    for _username, _password in auth.minted.items():
+        print(f"  {_username:10} {_password}")
     print("=" * 72)
-    print("  Use one as:  Authorization: Bearer <token>")
-    print("  Lost a token? Delete the file above and restart to mint a fresh set.")
+    print("  Sign in at http://localhost:3000, or:")
+    print("    curl -X POST localhost:8000/api/login "
+          "-H 'Content-Type: application/json' \\")
+    print("         -d '{\"username\":\"drm\",\"password\":\"...\"}'")
+    print("  Every one of these must be changed on first use.")
+    print("  Lost them? Delete the file above and restart to mint a fresh set.")
     print()
     # Flushed explicitly. stdout is block-buffered when it is a file or a pipe, and a
     # server does not exit -- so without this the one-time secrets sit in a buffer
-    # forever and are unrecoverable, because only their hashes were stored. Found by
+    # forever and are unrecoverable, because only their derivations were stored. Found by
     # starting the service with its output redirected and getting an empty log.
     sys.stdout.flush()
 
@@ -88,27 +99,34 @@ _last_plan = None
 _plan_counter = 0
 
 
-def caller(authorization: str = Header(default="")) -> Actor:
-    """The authenticated caller, from the bearer token. FastAPI dependency.
-
-    The request body has no say in this. It used to: `{"actor": "...", "role": "DRM"}`
-    was taken at face value, which meant every rule in the approval route was one JSON
-    field away from being nothing. The role now comes from the identity store and the
-    body's copy is gone rather than ignored -- a field that is sometimes trusted
-    eventually is.
-    """
+def bearer(authorization: str) -> str:
+    """The session token out of an Authorization header, or 401."""
     scheme, _, token = authorization.partition(" ")
     if scheme.lower() != "bearer" or not token.strip():
         raise HTTPException(
             status_code=401,
-            detail="an approval action needs a bearer token: Authorization: Bearer <token>",
+            detail="sign in first: POST /api/login, then Authorization: Bearer <token>",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    return token.strip()
+
+
+def caller(authorization: str = Header(default="")) -> Actor:
+    """The authenticated caller, from their session. FastAPI dependency.
+
+    The request body has no say in this. It used to: `{"actor": "...", "role": "DRM"}`
+    was taken at face value, which meant every rule in the approval route was one JSON
+    field away from being nothing. The role now comes from the account the session
+    belongs to, and the body's copy is gone rather than ignored -- a field that is
+    sometimes trusted eventually is.
+    """
     try:
-        return identities.resolve(token.strip())
+        return auth.actor(bearer(authorization))
     except AuthenticationError as exc:
         # 401, not 403. The caller has not established who they are; telling them they
-        # lack permission would send them looking for the wrong problem.
+        # lack permission would send them looking for the wrong problem. The reason is
+        # passed through because "session idle for more than 60 minutes" and "session not
+        # recognised" send a user to different places.
         raise HTTPException(status_code=401, detail=str(exc),
                             headers={"WWW-Authenticate": "Bearer"})
 
@@ -200,14 +218,85 @@ def _store_plan(plan_id: str, revision: int, plan, metrics=None) -> None:
               file=sys.stderr, flush=True)
 
 
+# --------------------------------------------------------------------------- #
+# Sign in, sign out, change password
+# --------------------------------------------------------------------------- #
+
+class LoginIn(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
+    # Bounded so a multi-megabyte "password" cannot be turned into a memory-hard
+    # derivation the server performs on the attacker's behalf.
+    password: str = Field(min_length=1, max_length=256)
+
+
+class PasswordIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=256)
+    new_password: str = Field(min_length=1, max_length=256)
+
+
+@app.post("/api/login")
+def login(body: LoginIn, user_agent: str = Header(default="")) -> dict:
+    """Exchange a username and password for a session.
+
+    Every refusal is a 401 with the same message, whether the username exists or not.
+    The honest user knows which half they got wrong; an attacker learning that `drm` is
+    a real account and `drn` is not would be the only party helped by a more specific
+    answer. The one exception is the lockout, which says so: it is actionable, and it
+    tells an attacker only what they already caused.
+    """
+    try:
+        result = auth.login(body.username, body.password, user_agent=user_agent)
+    except AuthenticationError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    return result.to_dict()
+
+
+@app.post("/api/logout")
+def logout(authorization: str = Header(default="")) -> dict:
+    """End this session. Idempotent -- signing out twice is not an error."""
+    ended = auth.logout(bearer(authorization))
+    return {"ended": ended}
+
+
+@app.post("/api/password")
+def change_password(body: PasswordIn, authorization: str = Header(default="")) -> dict:
+    """Change your own password, which signs you out everywhere else.
+
+    The current password is required even though the caller already holds a valid
+    session: a session proves the screen was signed in at some point, not that the person
+    at it now is the same one.
+    """
+    try:
+        account = auth.change_password(
+            bearer(authorization), body.current_password, body.new_password)
+    except AuthenticationError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    except PasswordPolicyError as exc:
+        # 422, not 401. The caller proved who they are; the new password is the problem,
+        # and sending them back to the sign-in screen would be the wrong instruction.
+        raise HTTPException(status_code=422, detail=str(exc))
+    return {"username": account.username, "must_change_password": False}
+
+
 @app.get("/api/me")
-def me(actor: Actor = Depends(caller)) -> dict:
-    """Who the presented token belongs to.
+def me(authorization: str = Header(default="")) -> dict:
+    """Who this session belongs to, and how long it has left.
 
     The client shows the role this returns rather than one the user picked. A role
     selector on the client was always decoration; this is where the answer lives.
     """
-    return {"name": actor.name, "role": actor.role.value}
+    try:
+        account, session_ = auth.resolve(bearer(authorization))
+    except AuthenticationError as exc:
+        raise HTTPException(status_code=401, detail=str(exc),
+                            headers={"WWW-Authenticate": "Bearer"})
+    return {
+        "name": account.display_name,
+        "username": account.username,
+        "role": account.role.value,
+        "expires_at": session_.expires_at,
+        "must_change_password": account.must_change_password,
+    }
 
 
 @app.get("/api/plan")
@@ -468,11 +557,66 @@ def sources() -> dict:
 
 @app.get("/api/audit/verify")
 def audit_verify() -> dict:
-    """Anyone may check the trail has not been rewritten."""
+    """Anyone may check the trail has not been rewritten.
+
+    Both trails. The plan log answers "who sanctioned this"; the sign-in log is what
+    makes the name in that answer worth anything, so a verifier that checked only the
+    first would be checking the weaker half.
+    """
     chain = audit.verify()
-    return {"intact": chain.intact, "entries": chain.entries,
-            "broken_at": chain.broken_at, "reason": chain.reason,
-            "head": audit.head_hash}
+    auth_chain = auth.trail.verify() if auth.trail else None
+    return {
+        "intact": chain.intact and (auth_chain.intact if auth_chain else True),
+        "plan": {"intact": chain.intact, "entries": chain.entries,
+                 "broken_at": chain.broken_at, "reason": chain.reason,
+                 "head": audit.head_hash},
+        "auth": ({"intact": auth_chain.intact, "entries": auth_chain.entries,
+                  "broken_at": auth_chain.broken_at, "reason": auth_chain.reason,
+                  "head": auth.trail.head_hash} if auth_chain else None),
+        # The plan trail's own fields stay at the top level: this endpoint was already
+        # public and something is reading them.
+        "entries": chain.entries,
+        "broken_at": chain.broken_at,
+        "reason": chain.reason,
+        "head": audit.head_hash,
+    }
+
+
+@app.get("/api/sessions")
+def my_sessions(authorization: str = Header(default="")) -> dict:
+    """Where else you are signed in, and a way to end all of it.
+
+    The question "is anybody else holding a session as me" has no answer at all under a
+    bearer token printed at startup, which is most of why that scheme had to go.
+    """
+    try:
+        account, current = auth.resolve(bearer(authorization))
+    except AuthenticationError as exc:
+        raise HTTPException(status_code=401, detail=str(exc),
+                            headers={"WWW-Authenticate": "Bearer"})
+    live = auth.sessions.sessions_for(account.username)
+    return {
+        "username": account.username,
+        "sessions": [
+            {"issued_at": s.issued_at, "expires_at": s.expires_at,
+             "last_seen": s.last_seen, "user_agent": s.user_agent,
+             "current": s.token_hash == current.token_hash}
+            for s in sorted(live, key=lambda s: s.issued_at)
+        ],
+    }
+
+
+@app.post("/api/sessions/revoke-others")
+def revoke_other_sessions(authorization: str = Header(default="")) -> dict:
+    """Sign out everywhere except here."""
+    token = bearer(authorization)
+    try:
+        account, _ = auth.resolve(token)
+    except AuthenticationError as exc:
+        raise HTTPException(status_code=401, detail=str(exc),
+                            headers={"WWW-Authenticate": "Bearer"})
+    ended = auth.sessions.revoke_all_for(account.username, except_token=token)
+    return {"ended": ended}
 
 
 if __name__ == "__main__":

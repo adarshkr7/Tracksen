@@ -2,7 +2,7 @@
 
 *Audited against the repository, not from memory. Every figure below is reproducible —
 see "Check these claims yourself". Last updated 12 September 2026.*
-**8,181 lines Python · 6,411 lines TypeScript/CSS · 2,544 lines of tests across 11 files · 211 tests passing.**
+**Tests: 296 across 16 files · mutation check 21/21.**
 
 > This document says what is **built**. [AUDIT.md](AUDIT.md) says what is **broken or
 > unfinished**, with severities. Read that one before quoting a number off a screen.
@@ -17,7 +17,7 @@ line breakdown below and the open list in [AUDIT.md](AUDIT.md).
 
 | Denominator | Complete | What it means |
 |---|---:|---|
-| **Demo / prototype for the finals** | **~95%** | Runs end to end on published timetable data, held-out validated, 211 tests, ten screens a judge can drive |
+| **Demo / prototype for the finals** | **~95%** | Runs end to end on published timetable data, held-out validated, 296 tests, ten screens a judge can drive |
 | **The problem statement's four stated requirements** | **~90%** | All four met, plus the governance the PS implies. Held back by requirement 1: the defect feeds are still mocks |
 | **A system that could be piloted on a division** | **~65%** | Adapters, approvals, tamper-evident audit, authentication and hash-verified plan storage all exist. The estate still regenerates from a fixed seed, identity is not bound to a directory, and nothing ingests what actually happened |
 
@@ -153,18 +153,19 @@ divisional directory, with no expiry and no per-token revocation. `caller()` in
 | Session, pinning, re-solve | ✅ | `session.py`, `scripts/serve.py` |
 | Held-out validation | ✅ | `validation.py`, `scripts/validate.py` |
 | **Approval workflow + audit trail** | ✅ | `governance/workflow.py`, `governance/audit.py` |
-| **Test suite (211 tests, 11 files)** | ✅ | `tests/`, `scripts/mutation_check.py` |
+| **Test suite (296 tests, 16 files)** | ✅ | `tests/`, `scripts/mutation_check.py` |
 | Time–distance chart, month view | ✅ | `web/app/components/` |
 | What-if simulator | ✅ | `web/app/components/WhatIfPanel.tsx`, `lib/whatif.ts` |
 | Approved plan content | ✅ | `governance/planstore.py`, hash-verified |
 | **Estate persistence** | ❌ | regenerated from `seed=42` every start |
-| Authentication (bearer token → role) | ✅ | `governance/identity.py`, `/api/me` |
-| **Directory / SSO binding** | ❌ | tokens in a file, no expiry or revocation |
+| Authentication (password → session → role) | ✅ | `governance/accounts.py`, `sessions.py`, `/api/login` |
+| Session expiry and revocation | ✅ | `governance/sessions.py`, two clocks, `/api/logout` |
+| **Directory / SSO binding** | ❌ | accounts in a file, no SSO, no central policy |
 | Approvals UI | ✅ | `web/app/approvals/`, with sign-in |
 
 ### On the tests
 
-211 tests, ~43 s. They cover governance (only the DRM sanctions, heads concur only
+296 tests. They cover governance (only the DRM sanctions, heads concur only
 for their own department, the sanction gate, tamper detection on the audit chain),
 ingestion (round-trip fidelity, metres→km conversion,
 the inverted SMMS priority scale, degradation, read-only discipline, rejection by name),
@@ -179,7 +180,7 @@ payload shape from both producers, model behaviour including a **ground-truth le
 guard**, and generator calibration.
 
 `scripts/mutation_check.py` re-applies **eleven** defects this project actually shipped
-and confirms a test goes red for each — **11/11 caught**. Among them: the clubbing
+and confirms a test goes red for each — **21/21 caught**. Among them: the clubbing
 constraint that made the model INFEASIBLE, the disabled conformal offset, ground truth in
 a feature set, the 10× duration calibration error, the two silent ingestion corruptions
 that raise no exception (metres read as kilometres, the un-inverted priority scale), an
@@ -235,8 +236,8 @@ straight through. It now asserts an independent floor.
 Nothing above should be taken on trust. Every number in this document comes from one of:
 
 ```bash
-python -m pytest                    # 211 tests, ~43 s
-python scripts/mutation_check.py    # 11/11 — proves the tests can fail
+python -m pytest                    # 296 tests
+python scripts/mutation_check.py    # 21/21 — proves the tests can fail
 python scripts/validate.py          # held-out model performance, 5-fold
 python scripts/run_pipeline.py --days 7 --tasks 600 --time-limit 600 --monthly --validate
 python scripts/ingest.py            # native schemas -> UTM -> plan

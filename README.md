@@ -165,7 +165,7 @@ tests/        the suite, plus the mutants that prove it can fail
 data/         the two timetables; the datasets they derive from are fetched, not vendored
 docs/         everything else in prose — see docs/README.md
 web/          Next.js client, reads out/plan.json and the API
-out/          run artefacts, gitignored — plan, hints, audit log, identities
+out/          run artefacts, gitignored — plan, hints, audit trails, accounts, sessions
 ```
 
 ```
@@ -183,6 +183,9 @@ samanvay/
   governance/
     workflow.py      Who may approve what, and in what order
     audit.py         Hash-chained, append-only, tamper-evident trail
+    accounts.py      Who exists, and how they prove it -- scrypt, lockout, policy
+    sessions.py      Staying signed in, and being able to stop -- expiry, revocation
+    identity.py      The login service: accounts + sessions + the sign-in trail
   ingestion/
     sources.py       Mock TMS / SMMS / TDMS in their native schemas
     adapters.py      REST -> read-only DB view -> CSV, and normalisation into the UTM
@@ -347,22 +350,66 @@ GET  /api/plans/{id}/audit      the trail for one plan, with chain status
 GET  /api/audit/verify          has the log been rewritten?
 ```
 
-**Every approval action needs a bearer token.** `caller()` in `scripts/serve.py` resolves
-it to a name and a role; `actor` and `role` are gone from the request bodies rather than
-validated, because a field that is sometimes trusted eventually is. Tokens are stored as
-SHA-256 hashes and compared in constant time, so the identity file names who may act
-without conferring the ability to act.
+## Signing in
 
-On first run the service mints one token per role, prints them once, and stores only the
-hashes. There is deliberately no fallback that trusts an unauthenticated caller.
+**Every approval action needs an account.** `caller()` in `scripts/serve.py` resolves the
+session to a name and a role; `actor` and `role` are gone from the request bodies rather
+than validated, because a field that is sometimes trusted eventually is.
 
 ```bash
-python scripts/serve.py          # prints the tokens once, on first run
-curl -H "Authorization: Bearer <token>" http://127.0.0.1:8000/api/me
+POST /api/login                 username + password -> a session token
+POST /api/logout                ends this session
+POST /api/password              change your own; signs you out everywhere else
+GET  /api/me                    who this session is, and how long it has left
+GET  /api/sessions              where else you are signed in
+POST /api/sessions/revoke-others
 ```
 
-The identity *store* is the stand-in now, not the identity *check*: a deployment swaps it
-for the divisional directory, and the seam is one function wide.
+This replaced a bearer token printed at startup. That was real authentication — a caller
+had to possess a secret, it was stored hashed, and it was compared in constant time — and
+it was the wrong **shape** for a system whose whole argument is that a sanction can be
+attributed to a person. A token could not expire, could not be revoked without reissuing
+every token in the file, and belonged to a *role*, so "the DRM sanctioned this" meant
+"somebody holding the DRM token did".
+
+**Passwords** are derived with `scrypt` and a per-account salt, so the accounts file
+cannot be turned back into a password list. The parameters are stored per account rather
+than as a constant, because cost has to rise over the life of a system and an
+installation that hard-codes one value can only raise it by invalidating every password
+at once. A wrong password and an unknown username are refused with the *same* message:
+the honest user knows which half they got wrong, and telling them apart would only help
+somebody working out which of your DRMs to spend guesses on. Five failures lock the
+account for fifteen minutes, and the lockout is held in the file, so the attack is not
+"guess, restart, guess".
+
+**Sessions** carry that proof afterwards, and they run down two clocks. An absolute
+lifetime of 12 hours bounds a token that leaks and is used quietly; an idle timeout of 60
+minutes covers the case this is actually built for — somebody signs in, walks away, and
+the next person sits down at a screen still authenticated as a DRM. Only the SHA-256 of a
+session token is stored. Opaque server-side sessions rather than JWTs, deliberately: a
+signed token carrying its own claims cannot be withdrawn before it expires without
+building the revocation list you were trying to avoid, and for a system whose point is
+that authority is checked, "we cannot actually stop them until Tuesday" is the wrong
+answer.
+
+**Sign-ins are recorded, refusals included**, in their own hash-chained trail. The plan
+log answers "who sanctioned this, and on whose authority"; that answer is only as good as
+the claim that the person named is the person who acted, so a sign-in record that could be
+quietly edited afterwards — to remove the five failed attempts that preceded a sanction —
+would undercut the log it exists to support. `GET /api/audit/verify` walks both chains. No
+password and no token ever reaches either one.
+
+On first run the service mints one account per role with a random password, prints them
+once, stores only their derivations, and flags every one of them must-change-password.
+There is deliberately no fallback that trusts an unauthenticated caller.
+
+```bash
+python scripts/serve.py          # prints the passwords once, on first run
+curl -X POST localhost:8000/api/login -H 'Content-Type: application/json'      -d '{"username":"drm","password":"..."}'
+```
+
+The account *store* is the stand-in, not the account *check*: a deployment swaps it for
+the divisional directory, and the seam is one function wide.
 
 ## The returns the circular already requires
 
@@ -614,10 +661,10 @@ See [AUDIT.md](docs/AUDIT.md) for the full list with severities. The short versi
 - **Real execution feedback.** Nothing ingests what actually happened — actual durations,
   overruns, cancellations, failures — so the models cannot be monitored for drift or
   retrained against outcomes.
-- **A real identity store.** Callers now authenticate with a bearer token and the
-  service resolves the role — the request body has no say. What is still a stand-in is
-  the *store*: tokens in a file rather than the divisional directory, with no expiry and
-  no way to revoke one without reissuing all of them.
+- **A real identity store.** Callers sign in with a username and password, sessions
+  expire on two clocks and can be revoked, and every sign-in and refusal is recorded in
+  its own hash-chained trail. What is still a stand-in is the *store*: accounts in a file
+  rather than the divisional directory, with no SSO and no central password policy.
 - **Persistence beyond the audit log.** Approvals replay from the log on restart, but the
   plan *content* they approved is not stored — only the decision is.
 - **A single-vintage timetable.** Published times now come from IRCTC_cleaned and real

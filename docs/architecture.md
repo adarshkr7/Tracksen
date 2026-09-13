@@ -75,7 +75,7 @@ flowchart TB
         direction LR
         WF["workflow.py<br/>JE → dept heads concur → Sr.DOM clears → <b>DRM sanctions</b>"]
         AUD["audit.py<br/>hash-chained, append-only, tamper-evident"]
-        IDENT["identity.py<br/>bearer tokens, SHA-256, constant-time"]
+        IDENT["accounts.py + sessions.py<br/>scrypt passwords, lockout<br/>sessions that expire and can be revoked"]
     end
 
     WEB["<b>12 · Web</b> — Next.js 16 / React 19<br/>time–distance chart · unified queue · what-if · month view<br/>approvals · audit · data sources"]
