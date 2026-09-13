@@ -35,6 +35,25 @@ These were real. Each is fixed, with a regression test unless noted.
 | 7 | **Unknown department returned HTTP 500** | `scripts/serve.py:207` | `Department("ENG")` raises `ValueError`, which FastAPI renders as a server error. The caller could not tell "you sent a bad code" from "the service is broken". Now 422 with the valid codes listed. |
 | 8 | **No error boundary anywhere in the web app** | `web/app/error.tsx` *(new)* | A throw during render blanked the page — no message, no way back. For a control-room screen that is the worst failure mode, because a blank panel and a working panel showing nothing look identical. |
 
+### Found later, by the corridor audit — 13 September
+
+Two defects that no test could have caught, because nothing in the repository knew what
+the rule was. Both were found by building the check in [ROADMAP.md](ROADMAP.md) item 3 and
+pointing it at our own output. See [RESEARCH.md](RESEARCH.md) for the sources.
+
+| # | Defect | Where | Why it mattered |
+|---|--------|-------|-----------------|
+| 9 | **The corridor was the wrong length, by circular** | `samanvay/network.py:718` | `CORRIDOR_HOURS = 3` hard-coded para 3.0's *floor* of Railway Board's joint circular of 28.12.2016 as though it were para 2.0's *norm* — "One Block of four hours or two blocks of two and half hours". Every downstream figure about what fits a corridor was therefore an artefact of the weaker rule: the monthly plan reported **311 tasks needing an extended block** where the mandated four-hour corridor holds all but a fraction of them. On the 200-task run the count falls from **99 to 40**. Now a named regime with all three settings, defaulting to `single-240`. |
+| 10 | **The corridor was a scoring preference, not a cleared window** | `samanvay/network.py:721` | Corridors were placed on a fixed stagger at 10:00, 11:00 or 12:00 by section, with no reference to traffic. The first run of the new audit reported **210 of 210 corridor windows crossed by charted paths — 2,969 services, 17 of them premier** — while the solver collected a +40 adherence bonus for putting blocks there. Corridors are now placed where each section's road is quietest, which is what the Rolling Block Programme says Sr.DOM does, and premier paths are a fence rather than a price: premier fouling went to **zero**. |
+
+It is **still 210 of 210** for booked traffic and that is the correct answer, not a
+residual defect: on a division working 543 services there is no four-hour window on any
+section with nothing charted through it. Para 2.0 anticipates it — the corridor is then to
+be provided "by necessary rescheduling of trains within Zonal Railway" — so the pipeline
+reports which windows are cheapest to clear. **A block marked "inside mandated corridor"
+on this division is inside a promise the chart does not currently keep**, and both the
+pipeline and the Data Sources screen now say so.
+
 ### Already fixed before this pass
 
 An external review flagged three more. All three were **real in `HEAD`** and **already

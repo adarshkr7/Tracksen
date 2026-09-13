@@ -23,7 +23,13 @@ from .models.cancellation import CancellationModel
 from .models.criticality import CriticalityModel
 from .models.duration import DurationModel
 from .models.traffic import TrafficModel
-from .network import SECTIONS, generate_corridors, generate_timetable
+from .network import (
+    SECTIONS,
+    audit_corridors,
+    generate_corridors,
+    generate_timetable,
+    resolve_regime,
+)
 from .optimizer.baseline import schedule_fcfs
 from .optimizer.cpsat import (
     BlockOptimiser,
@@ -78,10 +84,11 @@ class PlanningSession:
     """Holds everything expensive; solves cheaply and repeatedly."""
 
     def __init__(self, horizon_days: int = 7, n_tasks: int = 200, seed: int = 42,
-                 monthly_days: int = 30):
+                 monthly_days: int = 30, corridor_regime: str | None = None):
         self.horizon_days = horizon_days
         self.monthly_days = monthly_days
         self.seed = seed
+        self.corridor_regime = resolve_regime(corridor_regime)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -89,7 +96,8 @@ class PlanningSession:
             self.assets_by_id = {a.id: a for a in self.ds.assets}
             self.paths = generate_timetable(horizon_days)
             self.traffic = TrafficModel(self.paths, horizon_days)
-            self.corridors = generate_corridors(horizon_days)
+            self.corridors = generate_corridors(
+                horizon_days, self.corridor_regime, self.traffic)
 
             self.criticality = CriticalityModel().fit(self.ds.history_defects)
             breakdowns = self.criticality.score(
@@ -102,6 +110,11 @@ class PlanningSession:
 
             self.cancellation = CancellationModel().fit(self.ds.history_blocks)
             self.cancellation.predict(self.ds.pending)
+
+        # Computed once: which mandated corridors the chart itself runs trains
+        # through. It depends on the timetable and the regime, neither of which
+        # changes between solves.
+        self.corridor_audit = audit_corridors(self.paths, self.corridors)
 
         self.tasks: list[MaintenanceTask] = self.ds.pending
         self.task_by_id = {t.id: t for t in self.tasks}
@@ -254,7 +267,7 @@ class PlanningSession:
                 warnings.simplefilter("ignore")
                 paths = generate_timetable(days)
                 traffic = TrafficModel(paths, days)
-                corridors = generate_corridors(days)
+                corridors = generate_corridors(days, self.corridor_regime, traffic)
                 cands, missing = build_monthly_candidates(
                     [s.id for s in SECTIONS], days, traffic, corridors
                 )
@@ -276,7 +289,9 @@ class PlanningSession:
         weights = weights or OptimiserWeights()
         paths, traffic, corridors, candidates, missing = self.monthly_context()
 
-        corridor_min = candidates[0].capacity_min if candidates else 0
+        # The longest single spell, not the first and not the day's total: a task has to
+        # fit one possession end to end.
+        corridor_min = max((c.capacity_min for c in candidates), default=0)
         extended = [t for t in self.tasks if needs_extended_block(t, corridor_min)]
         fits = [t for t in self.tasks if not needs_extended_block(t, corridor_min)]
 
@@ -349,6 +364,8 @@ class PlanningSession:
             breakdowns=self.breakdowns,
             paths=self.paths,
             corridors=self.corridors,
+            corridor_regime=self.corridor_regime,
+            corridor_audit=self.corridor_audit,
             metrics=metrics,
             weights=weights,
             report=opt.report,

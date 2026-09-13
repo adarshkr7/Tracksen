@@ -83,7 +83,7 @@ def main() -> int:
           f"{sorted(t.p90_duration_min for t in tasks)[len(tasks)//2]} min")
 
     rule("4  OPTIMISE  --  the same solver")
-    corridors = generate_corridors(args.days)
+    corridors = generate_corridors(args.days, traffic=traffic)
     candidates = build_candidates([s.id for s in SECTIONS], args.days, traffic, corridors)
     opt = BlockOptimiser(time_limit_s=args.time_limit)
     plan = opt.solve(tasks, candidates, traffic, args.days)

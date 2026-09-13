@@ -69,8 +69,15 @@ def traffic(session):
 
 
 @pytest.fixture(scope="session")
-def corridors():
-    return generate_corridors(TEST_DAYS)
+def corridors(session):
+    """The session's own corridors.
+
+    Not a fresh `generate_corridors(TEST_DAYS)`: corridors are now placed against the
+    traffic model, so a second set built without one would sit at different hours from
+    the ones the candidates were enumerated from, and every test comparing the two would
+    be quietly asserting against a plan nobody solved.
+    """
+    return session.corridors
 
 
 @pytest.fixture(scope="session")

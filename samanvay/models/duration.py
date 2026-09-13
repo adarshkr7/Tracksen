@@ -169,6 +169,14 @@ class DurationModel:
         `p90_coverage` is the number that matters operationally: the share of tasks
         whose true duration fits inside the window we reserved. It should sit near
         0.90 -- materially below means we are still writing over-runs into the plan.
+
+        The same quantities are reported a second time as burst rates, because that is
+        the word the railway uses. A block worked beyond its sanctioned time has *burst*,
+        and bursting is a counted, audited event: the CAG found 1,905 cases on the
+        Delhi-Howrah route in 2018-19 alone, delaying 4,659 trains, with the cause
+        recorded as "lack of proper coordination between men, machine and materials".
+        A coverage figure of 0.12 and a burst rate of 88% are the same measurement, and
+        only one of them is in the vocabulary of the person who has to sign the block.
         """
         scored = [t for t in tasks if t.p90_duration_min is not None]
         if not scored:
@@ -178,9 +186,21 @@ class DurationModel:
         p90 = np.array([t.p90_duration_min for t in scored], dtype=float)
         demanded = np.array([t.demanded_duration_min for t in scored], dtype=float)
 
+        over_demanded = true - demanded
+        burst_as_demanded = over_demanded > 0
+
         return {
             "p50_mae_min": float(np.mean(np.abs(true - p50))),
             "p90_coverage": float(np.mean(true <= p90)),
             "demanded_coverage": float(np.mean(true <= demanded)),
             "median_p90_minus_demanded_min": float(np.median(p90 - demanded)),
+            # The same two numbers, in the railway's own words.
+            "burst_rate_as_demanded": float(np.mean(burst_as_demanded)),
+            "burst_rate_at_p90": float(np.mean(true > p90)),
+            # How far the ones that do burst run over, which is what the section
+            # controller has to absorb. Reported only when something bursts.
+            "median_burst_min_as_demanded": (
+                float(np.median(over_demanded[burst_as_demanded]))
+                if burst_as_demanded.any() else 0.0
+            ),
         }

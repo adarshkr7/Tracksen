@@ -95,6 +95,34 @@ MUTANTS = [
         "if False:\n            self._deny(actor, Action.MODIFY",
         "tests/test_governance.py::test_a_sanctioned_plan_cannot_be_modified",
     ),
+    (
+        "corridor reverts to the para-3.0 floor as though it were the norm",
+        "samanvay/network.py",
+        'DEFAULT_CORRIDOR_REGIME = "single-240"',
+        'DEFAULT_CORRIDOR_REGIME = "min-180"',
+        "tests/test_corridor.py::test_the_default_is_the_norm_not_the_floor",
+    ),
+    (
+        "two corridor spells placed so they overlap",
+        "samanvay/network.py",
+        '"split-150x2": CorridorRegime("split-150x2", ((-4, 150), (0, 150))),',
+        '"split-150x2": CorridorRegime("split-150x2", ((-1, 150), (0, 150))),',
+        "tests/test_corridor.py::test_spells_on_a_section_day_never_overlap",
+    ),
+    (
+        "burst check forgets the withdrawal inside the possession",
+        "samanvay/evaluate.py",
+        "over = longest + overhead - b.duration_min",
+        "over = longest - b.duration_min",
+        "tests/test_bursting.py::test_the_withdrawal_counts_against_the_window",
+    ),
+    (
+        "monthly return reports the weekly plan's blocks",
+        "samanvay/reports.py",
+        '_overdue(payload, metrics, monthly.get("blocks", []), monthly["days"])',
+        '_overdue(payload, metrics, payload.get("blocks", []), monthly["days"])',
+        "tests/test_reports.py::test_the_monthly_return_reads_the_monthly_plan_not_the_weekly_one",
+    ),
 ]
 
 results = []

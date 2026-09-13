@@ -348,6 +348,15 @@ class Plan:
 MINUTES_PER_DAY = 24 * 60
 SLOT_MIN = 15  # planning granularity for the weekly horizon
 
+# Daylight, for work types that cannot be done under lights.
+#
+# Here rather than in the optimiser because two places need the same window and a second
+# copy would drift: the solver refuses to place night-restricted work outside it, and the
+# corridor generator refuses to place a corridor outside it. A corridor at 20:00 is not
+# wrong in itself -- it is wrong when half the queue is barred from working in it and
+# nothing on screen says why.
+DAY_START_MIN, DAY_END_MIN = 6 * 60, 18 * 60
+
 
 def plan_content_hash(rows: Iterable[tuple[str, str, int, int, Iterable[str]]]) -> str:
     """Fingerprint a plan from its operative rows: (section, line, start, end, tasks).

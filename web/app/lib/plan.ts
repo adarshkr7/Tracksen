@@ -82,6 +82,49 @@ export interface Metrics {
   expected_cancellations: number;
   unplanned_failures: number;
   critical_unplanned_failures: number;
+  /**
+   * Block bursting: a possession worked beyond its sanctioned time.
+   *
+   * The railway's own term, and a counted one — it is a named cause of punctuality loss.
+   * Measured here against the duration model, so it says how many of these windows are
+   * too short for the work, not how many over-ran on the ground. Nothing yet ingests
+   * what happened.
+   */
+  blocks_written_to_burst: number;
+  burst_rate: number;
+  burst_minutes: number;
+}
+
+/**
+ * Which limb of Railway Board's 28.12.2016 joint circular this plan was built under.
+ *
+ * para 2.0 is the norm the working time table is supposed to carry — one block of four
+ * hours, or two of two and a half. para 3.0 is a three-hour floor. They are not the same
+ * rule, and a 180-minute corridor must never be described in the UI as the mandated norm.
+ */
+export interface CorridorRegime {
+  name: string;
+  spells: number[];
+  longestSpellMin: number;
+  dailyMinutes: number;
+}
+
+/**
+ * A mandated corridor the working timetable itself runs trains through.
+ *
+ * The CAG's finding, checked against this division: a block marked "inside mandated
+ * corridor" in one of these is inside a promise the chart does not keep.
+ */
+export interface CorridorFouling {
+  section: number;
+  line: number;
+  day: number;
+  start: number;
+  end: number;
+  booked: number;
+  forecast: number;
+  premier: number;
+  examples: string[];
 }
 
 /** [sectionIdx, line(0=UP,1=DN), classIdx, enterMin, exitMin, probability, trainIdx] */
@@ -168,6 +211,8 @@ export interface PlanData {
     pinned?: { block_id: string; start_min: number }[];
     /** Pins the solver refused, each with the reason. */
     rejectedPins?: string[];
+    /** Which corridor policy this plan was built under. */
+    corridorRegime?: CorridorRegime;
   };
   model_checks: Record<string, Record<string, number>>;
   /** Present when the pipeline was run with --validate. All held-out. */
@@ -178,6 +223,8 @@ export interface PlanData {
   routes?: RouteInfo[];
   sections: Section[];
   corridors: CorridorRow[];
+  /** Corridors the chart runs trains through. Empty is a result, not a default. */
+  corridorAudit?: CorridorFouling[];
   trainClasses: string[];
   /** Which coaching timetable is in force, and whether its times are published. */
   timetable?: { file: string; imported: boolean; services: number };

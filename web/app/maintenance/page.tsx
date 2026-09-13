@@ -45,13 +45,18 @@ function MaintenanceBody() {
           <Metric label="Scheduled" value={String(counts.scheduled)} tone="ok"
             compare={`${counts.deferred} deferred beyond horizon`} />
           <Metric
-            label="Demanded Duration Holds"
-            value={dur.demanded_coverage !== undefined
-              ? `${Math.round(dur.demanded_coverage * 100)}%` : "—"}
+            label="Written To Burst"
+            value={dur.burst_rate_as_demanded !== undefined
+              ? `${Math.round(dur.burst_rate_as_demanded * 100)}%`
+              : dur.demanded_coverage !== undefined
+                ? `${Math.round((1 - dur.demanded_coverage) * 100)}%` : "—"}
             tone="crit"
-            compare={dur.p90_coverage !== undefined
-              ? `P90 reservation holds ${Math.round(dur.p90_coverage * 100)}%` : ""}
-            hint="Share of jobs whose true duration fits the figure the department demanded"
+            compare={dur.burst_rate_at_p90 !== undefined
+              ? `${Math.round(dur.burst_rate_at_p90 * 100)}% at the P90 reservation` : ""}
+            hint={"Block bursting is the railway's own term for a possession worked beyond "
+              + "its sanctioned time — a counted, audited cause of punctuality loss. This "
+              + "is the share of jobs the department's own demanded figure would not have "
+              + "contained."}
           />
         </MetricRow>
       </div>

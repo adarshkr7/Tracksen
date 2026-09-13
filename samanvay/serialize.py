@@ -21,6 +21,7 @@ from .network import (
     ROUTES,
     SECTIONS,
     STATIONS,
+    resolve_regime,
 )
 from .optimizer.cpsat import (
     MACHINE_POSITIONING_MIN,
@@ -155,8 +156,11 @@ def plan_payload(
     pinned: list[dict] | None = None,
     monthly: Any = None,
     validation: dict | None = None,
+    corridor_regime: Any = None,
+    corridor_audit: list | None = None,
 ) -> dict[str, Any]:
     train_roster, train_index = dump_trains(paths)
+    regime = resolve_regime(corridor_regime)
     return {
         "meta": {
             "horizon_days": horizon_days,
@@ -165,6 +169,14 @@ def plan_payload(
             "weights": weights.__dict__,
             "solver": report.__dict__,
             "pinned": pinned or [],
+            # Which limb of the 28.12.2016 joint circular this plan was built under.
+            # The UI must not describe a 180-minute corridor as the mandated norm.
+            "corridorRegime": {
+                "name": regime.name,
+                "spells": [m for _, m in regime.spells],
+                "longestSpellMin": regime.longest_spell_min,
+                "dailyMinutes": regime.daily_minutes,
+            },
         },
         "model_checks": model_checks,
         "validation": validation,
@@ -208,6 +220,23 @@ def plan_payload(
         ],
         "corridors": [
             [SECTION_INDEX[c.section_id], c.day, c.start_min, c.end_min] for c in corridors
+        ],
+        # Corridors the working timetable itself runs trains through. A block marked
+        # "inside mandated corridor" in one of these is inside a promise the chart does
+        # not keep, and the UI has to be able to say so.
+        "corridorAudit": [
+            {
+                "section": SECTION_INDEX[f.section_id],
+                "line": 0 if f.line.value == "UP" else 1,
+                "day": f.day,
+                "start": f.start_min,
+                "end": f.end_min,
+                "booked": f.booked,
+                "forecast": f.forecast,
+                "premier": f.premier,
+                "examples": list(f.examples),
+            }
+            for f in (corridor_audit or [])
         ],
         "trainClasses": list(CLASS_INDEX),
         "detentionWeights": DETENTION_WEIGHTS,

@@ -25,6 +25,7 @@ parallel across departments, which is what clubbing means operationally.
 
 from __future__ import annotations
 
+import hashlib
 import os
 
 from dataclasses import dataclass, field
@@ -33,6 +34,8 @@ from typing import Iterable
 from ortools.sat.python import cp_model
 
 from ..domain import (
+    DAY_END_MIN,
+    DAY_START_MIN,
     MINUTES_PER_DAY,
     SLOT_MIN,
     BlockType,
@@ -49,6 +52,7 @@ from ..network import (
     JUNCTION_GROUPS,
     JUNCTION_THROAT_KM,
     SECTION_BY_ID,
+    corridor_lookup,
     junction_km,
     lines_for_section,
 )
@@ -115,8 +119,6 @@ def withdrawal_overhead(block_types: Iterable[BlockType]) -> int:
     types = list(block_types) or [BlockType.TRAFFIC]
     return max(SETUP_MIN[t] for t in types) + max(RESTORE_MIN[t] for t in types)
 
-# Daylight, for work types that cannot be done under lights.
-DAY_START_MIN, DAY_END_MIN = 6 * 60, 18 * 60
 
 
 @dataclass
@@ -189,11 +191,12 @@ def build_candidates(
 ) -> list[Candidate]:
     """Enumerate placements: the mandated corridor, plus the cheapest alternatives.
 
-    Every section-day gets its corridor window. We add a small number of non-corridor
+    Every section-day gets its corridor windows -- one under the circular's four-hour
+    limb, two under its two-and-a-half-hour limb. We add a small number of non-corridor
     starts drawn from the cheapest hours so the solver has somewhere to go when the
     corridor is full -- priced at what those hours actually cost.
     """
-    corridor_by_key = {(c.section_id, c.day): c for c in corridors}
+    corridor_by_key = corridor_lookup(corridors)
     out: list[Candidate] = []
     cid = 0
 
@@ -202,11 +205,10 @@ def build_candidates(
         # would invent capacity the division cannot use.
         for line in lines_for_section(sid):
             for day in range(horizon_days):
-                starts: list[tuple[int, bool]] = []
-
-                corr = corridor_by_key.get((sid, day))
-                if corr is not None:
-                    starts.append((corr.start_min, True))
+                windows = corridor_by_key.get((sid, day), [])
+                starts: list[tuple[int, CorridorWindow | None]] = [
+                    (w.start_min, w) for w in windows
+                ]
 
                 cheap = traffic.cheapest_hours(sid, line, day, k=alternatives_per_day + 3)
                 base = day * MINUTES_PER_DAY
@@ -215,14 +217,22 @@ def build_candidates(
                     if added >= alternatives_per_day:
                         break
                     start = base + hour * 60
-                    if corr is not None and corr.start_min <= start < corr.end_min:
-                        continue           # already covered by the corridor candidate
-                    starts.append((start, False))
+                    if any(w.start_min <= start < w.end_min for w in windows):
+                        continue           # already covered by a corridor candidate
+                    starts.append((start, None))
                     added += 1
 
-                for start, inside in starts:
-                    for cap in CAPACITY_OPTIONS_MIN:
-                        if inside and corr is not None and start + cap > corr.end_min:
+                for start, window in starts:
+                    inside = window is not None
+                    caps = CAPACITY_OPTIONS_MIN
+                    if window is not None:
+                        # The corridor's own length is always on offer. Without it a
+                        # 150-minute corridor could only ever be granted for 120, and
+                        # thirty minutes of a mandated possession would go unused.
+                        span = window.end_min - window.start_min
+                        caps = sorted({c for c in CAPACITY_OPTIONS_MIN if c <= span} | {span})
+                    for cap in caps:
+                        if window is not None and start + cap > window.end_min:
                             continue       # a corridor block cannot outrun the corridor
                         if start + cap > horizon_days * MINUTES_PER_DAY:
                             continue
@@ -266,55 +276,66 @@ def build_monthly_candidates(
 
     Returns the candidates and the unavailable section-day slots, so a caller can
     report a missing or unsafe corridor rather than silently planning nothing there.
+
+    Under the circular's two-spell limb a section-day carries two corridors, and each is
+    its own slot: the line goes back to traffic in between, so work cannot straddle them.
     """
-    by_key = {(c.section_id, c.day): c for c in corridors}
+    by_key = corridor_lookup(corridors)
     out: list[Candidate] = []
     missing: list[str] = []
     cid = 0
 
     for sid in section_ids:
         for day in range(horizon_days):
-            corr = by_key.get((sid, day))
-            if corr is None:
+            windows = by_key.get((sid, day), [])
+            if not windows:
                 missing.append(f"{sid} day {day}")
                 continue
-            capacity = corr.end_min - corr.start_min
-            for line in lines_for_section(sid):
-                # Monthly candidates are built directly from corridor slots rather
-                # than through build_candidates, so the premier-path fence must be
-                # repeated here. A malformed master chart must result in an explicit
-                # unavailable slot, never in a block over a protected train.
-                if traffic.fouls_premier(sid, line, corr.start_min, corr.end_min):
-                    missing.append(f"{sid} {line.value} day {day}: corridor fouls premier path")
-                    continue
-                cid += 1
-                out.append(
-                    Candidate(
-                        id=cid,
-                        section_id=sid,
-                        line=line,
-                        day=day,
-                        start_min=corr.start_min,
-                        capacity_min=capacity,
-                        traffic_cost=traffic.cost_of_block(
-                            sid, line, corr.start_min, corr.end_min
-                        ),
-                        inside_corridor=True,
-                        trains_affected=traffic.trains_affected(
-                            sid, line, corr.start_min, corr.end_min
-                        ),
+            multi = len(windows) > 1
+            for spell, corr in enumerate(windows, start=1):
+                capacity = corr.end_min - corr.start_min
+                label = f"{sid} day {day}" + (f" spell {spell}" if multi else "")
+                for line in lines_for_section(sid):
+                    # Monthly candidates are built directly from corridor slots rather
+                    # than through build_candidates, so the premier-path fence must be
+                    # repeated here. A malformed master chart must result in an explicit
+                    # unavailable slot, never in a block over a protected train.
+                    if traffic.fouls_premier(sid, line, corr.start_min, corr.end_min):
+                        missing.append(
+                            f"{label} {line.value}: corridor fouls premier path")
+                        continue
+                    cid += 1
+                    out.append(
+                        Candidate(
+                            id=cid,
+                            section_id=sid,
+                            line=line,
+                            day=day,
+                            start_min=corr.start_min,
+                            capacity_min=capacity,
+                            traffic_cost=traffic.cost_of_block(
+                                sid, line, corr.start_min, corr.end_min
+                            ),
+                            inside_corridor=True,
+                            trains_affected=traffic.trains_affected(
+                                sid, line, corr.start_min, corr.end_min
+                            ),
+                        )
                     )
-                )
     return out, missing
 
 
 def needs_extended_block(task: MaintenanceTask, corridor_min: int) -> bool:
     """Work too long for the mandated corridor.
 
-    Deep screening and rail renewal routinely outrun a three-hour corridor. On the
-    real railway these go up as a separate extended or mega block negotiated with
-    operations. The monthly plan cannot absorb them, so it names them instead of
-    quietly leaving them unscheduled.
+    Deep screening and rail renewal routinely outrun the corridor. On the real railway
+    these go up as a separate extended or mega block negotiated with operations. The
+    monthly plan cannot absorb them, so it names them instead of quietly leaving them
+    unscheduled.
+
+    `corridor_min` is the LONGEST single spell on offer, never the day's total. Two
+    two-and-a-half-hour corridors are not a five-hour one: the line is handed back to
+    traffic in between, and a job cannot be left half-done across it.
 
     The withdrawal counts. A 170-minute disconnection does not fit a 180-minute corridor:
     disconnecting and reconnecting the signalling costs 35 of those minutes, so the job
@@ -353,6 +374,33 @@ def _eligible(task: MaintenanceTask, cand: Candidate) -> bool:
 # The model
 # --------------------------------------------------------------------------- #
 
+def model_fingerprint(tasks: list[MaintenanceTask],
+                      candidates: list[Candidate]) -> str:
+    """Identifies the model a set of hints was produced against.
+
+    A hint is a (task id, candidate id) pair, and BOTH of those are positional. Candidate
+    ids are handed out in enumeration order, so anything that changes what is enumerated
+    renumbers everything after it -- a different capacity option, a different horizon,
+    another section, and most easily missed, a different TIMETABLE, because the premier
+    fence withholds windows and moves every id behind them. Tonight's import work took
+    the count from 5,340 to 5,119 on its own.
+
+    Hints are not constraints, so a stale one cannot produce a wrong plan. It can do
+    something more annoying: send the search confidently at the wrong windows and cost
+    exactly the time it was meant to save, with nothing on screen to say so.
+
+    Hashing the candidate tuples and the task identities catches every cause of drift,
+    including ones nobody thought to enumerate here.
+    """
+    h = hashlib.sha256()
+    for c in candidates:
+        h.update(f"{c.section_id}|{c.line.value}|{c.day}|"
+                 f"{c.start_min}|{c.capacity_min};".encode())
+    for t in tasks:
+        h.update(f"{t.id}|{t.section_id}|{t.chainage_km};".encode())
+    return h.hexdigest()[:16]
+
+
 def default_workers() -> int:
     """One search worker per core.
 
@@ -372,6 +420,7 @@ class BlockOptimiser:
         self.time_limit_s = time_limit_s
         self.workers = workers or default_workers()
         self.report: SolveReport | None = None
+        self.hinted = 0
 
     def solve(
         self,
@@ -381,6 +430,7 @@ class BlockOptimiser:
         horizon_days: int,
         warm_start: Plan | None = None,
         forced: dict[str, int] | None = None,
+        hints: dict[str, int] | None = None,
     ) -> Plan:
         m = cp_model.CpModel()
         w = self.w
@@ -628,18 +678,23 @@ class BlockOptimiser:
         # Warm-starting from the sanctioned plan keeps the schedule recognisable
         # night to night. A scheduler that reshuffles the whole week every run is
         # technically optimal and operationally useless.
+        pairs: list[tuple[str, int]] = []
         if warm_start is not None:
-            hinted: set[tuple[str, int]] = set()
             for blk in warm_start.blocks:
                 try:
                     cid = int(blk.id)
                 except (TypeError, ValueError):
                     continue          # baseline blocks carry composite ids
-                for tid in blk.task_ids:
-                    key = (tid, cid)
-                    if key in assign and key not in hinted:
-                        m.AddHint(assign[key], 1)
-                        hinted.add(key)
+                pairs.extend((tid, cid) for tid in blk.task_ids)
+        if hints:
+            pairs.extend(hints.items())
+
+        hinted: set[tuple[str, int]] = set()
+        for key in pairs:
+            if key in assign and key not in hinted:
+                m.AddHint(assign[key], 1)
+                hinted.add(key)
+        self.hinted = len(hinted)
 
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = self.time_limit_s
