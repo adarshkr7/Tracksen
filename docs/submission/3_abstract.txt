@@ -1,0 +1,22 @@
+TRACKSEN is an AI decision-support system that turns three separate maintenance queues into one integrated, traffic-aware, risk-ranked block plan for a railway division, weekly and monthly. It is already built and running end to end.
+
+THE PROBLEM
+Engineering (TMS), Signal & Telecom (SMMS) and Traction Distribution (TDMS) each demand blocks for the same scarce block sections, and none of them can see the other two queues. Railway Board's Joint Circular of 28.12.2016 requires integrated corridor blocks "where all departments take advantage of the block". Yet the CAG found that in March 2019 only 2.2% of blocks across 11 zones were integrated; the other 97.8% were taken in isolation. The same audit recorded 1,905 cases of block bursting on the Delhi-Howrah route in 2018-19, delaying 4,659 trains. The result: more line closures than needed, blocks outside the corridor and across busy paths, and critical defects waiting behind routine work that simply asked first.
+
+OUR SOLUTION
+1. Integrate - read-only adapters (REST, then read-only database view, then nightly file) pull defect and overdue-maintenance records from TMS, SMMS and TDMS into one Unified Task Model keyed by section, line and chainage, overlaid with the working timetable, goods forecast and corridor windows.
+2. Predict - machine learning scores every pending task. A LightGBM failure-risk model and a Cox survival model combine with traffic consequence into an explainable Criticality Index (SHAP reasons on every score). A quantile model predicts how long each job will really take, and the line is reserved at a conformally calibrated P90, so blocks are no longer demanded short and burst.
+3. Optimise - a Google OR-Tools CP-SAT model places every block to maximise risk retired per block-hour. It clubs departments into shared closures, keeps work inside the mandated corridor, never crosses a premier train path, and respects line exclusivity, track-machine positioning, gang limits and night-working rules.
+4. Govern - the plan is a recommendation, never a grant. It travels the real sanction route (JE, departmental concurrence, Sr.DOM traffic clearance, DRM sanction) with role-based sign-in and a tamper-evident, hash-chained audit trail, and it generates the weekly DRM and monthly GM returns the circular already requires.
+
+RESULTS FROM THE WORKING PROTOTYPE
+Built on the real Danapur division of East Central Railway (Buxar-Patna-Jhajha, about 280 km, 8 converging branches), planned against a published 543-service timetable, with synthetic defect data. Against current first-come-first-served practice on the same 600 tasks over one week:
+- Risk retired per block-hour: 7.8 to 17.9 (+129%)
+- The same 190 tasks done in 142 blocks instead of 190: 48 fewer line closures, 175 fewer block-hours
+- Traffic detention cost down 38%; corridor adherence up from 55% to 82%
+- High-criticality unplanned failures down from 17 to 13
+- Models validated on held-out data: failure-risk AUC 0.898; P90 duration coverage 0.907
+Planners work in a web app with a time-distance train graph, a single ranked queue across all three departments, and a what-if simulator: drag any block, see the traffic and risk cost instantly, and re-solve the rest of the plan around their decision.
+
+WHY IT WILL WORK
+No new hardware and no replacement of any existing system. TRACKSEN reads what TMS, SMMS, TDMS and the Control Office already hold, fits inside the Rolling Block Programme, runs fully on-premise, and leaves sanction authority exactly where it is today. It turns a 2016 Railway Board instruction into a daily working tool - and gives the officer who signs the plan one integrated, explainable, ready-to-sanction recommendation.

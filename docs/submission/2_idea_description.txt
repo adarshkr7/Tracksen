@@ -1,0 +1,200 @@
+TRACKSEN
+AI-Optimised Integrated Block Planning to Maximise Line and Asset Availability
+Problem Statement 26027 - Ministry of Railways
+
+One integrated, traffic-aware, risk-ranked block plan for Engineering, Signal & Telecom and Traction Distribution - built, validated and running end to end on a real Indian Railways division.
+
+
+1. THE PROBLEM, IN THE RAILWAY'S OWN RECORDS
+
+Track, signalling and overhead equipment cannot be maintained while trains run over them, so maintenance happens inside a block: a sanctioned window in which a block section is taken away from traffic. Three departments need these windows:
+- Engineering (Permanent Way) plans from TMS - rail and weld renewal, tamping, USFD defects - and needs a traffic block.
+- Signal & Telecom plans from SMMS - point machines, track circuits, axle counters - and needs a disconnection.
+- Traction Distribution plans from TDMS - contact wire, masts, insulators, isolators - and needs a power block.
+
+Each department raises its demand independently, for the same scarce block sections, and none of them can see the other two queues. Blocks are then allotted largely in the order they were asked for.
+
+This is not a hypothetical gap. Railway Board's letter of 29.12.2016 and the Joint Circular of AM/Civil Engineering and AM/Traffic dated 28.12.2016 require dedicated corridor blocks of assured duration - one block of four hours, or two of two-and-a-half hours - and require them to be "integrated blocks where all departments take advantage of the block". The Comptroller and Auditor General then measured what actually happened:
+- In March 2019, only 2.2% of blocks taken across 11 zones were integrated. The other 97.8% were availed by departments in isolation.
+- Trains were found scheduled inside the corridor block itself, so the corridor could not be used.
+- On the Delhi-Howrah route alone, 1,905 cases of block bursting in 2018-19 delayed 4,659 trains, with the cause recorded as "lack of proper coordination between men, machine and materials".
+- Delay attributed to engineering asset failure rose from 4.89% (2015-16) to 14.81% (2018-19).
+
+Since 2023 the Board has mandated a 26-week Rolling Block Programme, which asks that the block requirements of different departments be "dovetailed in a joint manner" and that works be planned "in the shadow of one another". In practice that coordination is still done by hand, in spreadsheets, against a weekly deadline. No tool looks across all three departments, the timetable and the risk carried by each defect at the same time and proposes the best plan.
+
+The cost of that gap falls in three places:
+- Too many line closures: three separate blocks on the same stretch where one clubbed block would have done.
+- Blocks in the wrong place: outside the corridor, across premier and freight paths, adding detention and losing punctuality.
+- Risk in the wrong order: a critical defect waits behind routine work that simply asked first, and blocks demanded short of the real work burst and delay trains.
+
+
+2. OUR SOLUTION: TRACKSEN
+
+TRACKSEN is an AI decision-support layer that sits over TMS, SMMS and TDMS and produces one integrated, traffic-aware, risk-ranked block plan for a division - weekly at 15-minute resolution and monthly at corridor-slot resolution.
+
+Two design principles define it:
+- It replaces nothing. It reads what existing systems already hold, through read-only adapters, and never writes into a source system.
+- It never grants a block. It produces a recommended plan with reasons attached; the competent authority sanctions, exactly as today.
+
+The goal is the one the problem statement names - maximise asset availability - and TRACKSEN attacks it from both sides:
+- The line is available to traffic more of the time: fewer closures, fewer block-hours, fewer bursts, blocks placed in the quietest windows.
+- The assets are available to traffic more of the time: the defects most likely to fail are attended first, so fewer assets fail in service.
+
+
+3. HOW IT WORKS
+
+Ingest -> Unify -> Predict -> Optimise -> Review and sanction -> Report
+
+3.1 Data integration: one task model for three departments
+- A dedicated adapter per source system, each degrading gracefully: REST API -> read-only database view -> nightly CSV file. A design that presumes an API cannot be commissioned; parts of the estate will offer only a file.
+- The three systems disagree in naming, units, date formats and severity scales (for example SMMS reports chainage in metres and treats P1 as most urgent; TMS uses kilometres and S5 as worst). The adapters translate all of this into one Unified Task Model. The two errors that raise no exception - metres read as kilometres, and an un-inverted priority scale - are explicitly tested.
+- Every task is keyed by (block section, line, chainage). This is the load-bearing idea: once an S&T fault at km 412 and an OHE job at km 412.6 are written in the same coordinates, "are these near each other" becomes arithmetic, and clubbing becomes something a solver can find.
+- Traffic context is overlaid: the working timetable, the goods-train forecast from the Control Office, and the mandated corridor windows.
+- A record that cannot be mapped is rejected by name with a reason, never silently dropped. The database adapter opens read-only and refuses to run against anything but a view.
+
+3.2 AI/ML: what to do first, and how long it will really take
+- Failure risk: a LightGBM classifier estimates the probability that each asset fails within the planning horizon.
+- Time to failure: a Cox proportional-hazards survival model estimates when, handling censored history correctly.
+- Consequence: a traffic model weights each section by the train paths and train classes exposed to a failure there.
+- Criticality Index = P(failure within horizon) x Urgency(expected time to failure) x Consequence. Every score carries a SHAP explanation, so an officer can see why a task is ranked where it is.
+- Block duration: quantile gradient-boosting models predict the median (P50) and 90th percentile (P90) of how long each job will actually take. The P90 is conformally calibrated, so the reserved window really does contain the work nine times in ten. On our pending queue, 86% of blocks as demanded would have burst; reserved at the predicted P90, 8% would.
+- Cancellation risk: a logistic model flags fragile slots, used as a weak prior.
+- Goods path demand is forecast into an hourly traffic-cost surface for every section.
+All models are validated on held-out data with 5-fold cross-validation, not in-sample.
+
+3.3 Optimisation: one plan across departments, sections and days
+Block placement is solved as a constraint program in Google OR-Tools CP-SAT, with every block an interval variable.
+
+Objective:
+maximise   sum of Criticality x Completed
+         + beta x Clubbing bonus (each extra department sharing a block)
+         + Corridor bonus (blocks inside the mandated corridor)
+         - lambda x Traffic cost (weighted detention minutes of affected paths)
+         - mu x Overdue breach (task-days past the statutory date)
+
+Hard constraints:
+- Line exclusivity: no two blocks overlap on the same section and line.
+- At most one task per department per block (one gang per department), so a block holding two tasks necessarily holds two departments. This single rule is what makes clubbing real.
+- Track-machine positioning across the network, with a movement buffer between sites.
+- Staff limits per department per day, and night-working restrictions.
+- Setup and restoration time for disconnections and power blocks.
+- Corridor capacity under the circular's regimes - one 4-hour block, two 2.5-hour blocks, or the 3-hour minimum - selectable per division.
+- No block is ever placed across a protected premier train path.
+
+The weights are exposed as sliders, because they are policy choices officers should argue about, not constants hidden in code.
+
+Two horizons, two models:
+- Weekly: a 15-minute grid, placing each block at an exact time.
+- Monthly: nobody commits a tamping machine to 11:15 on the 24th four weeks out; they commit it to a corridor on the 24th. The monthly model allocates corridor slots per section, line and day. Work too long for any corridor is not silently dropped - it is listed as the division's extended/mega-block demand for the month.
+
+3.4 A planner's interface, not a black box
+A web application built for divisional planners:
+- Time-distance train graph: time across, chainage down, train paths as diagonals, blocks as rectangles, the corridor as a shaded band. Toggle between TRACKSEN and current practice under the same traffic.
+- Unified priority queue: all three departments in one ranking, each row with its SHAP explanation and its demanded-versus-predicted duration.
+- What-if simulator: drag any block in time; traffic cost, risk carried forward by deferral, and hard-constraint violations recompute instantly.
+- Re-solve around decisions: officers pin the blocks they have decided on, and the optimiser re-plans everything else around them, reporting the before-and-after cost of the change.
+- Click any block to see its member tasks and the reasons it was placed where it was.
+
+3.5 Governance: authority stays with the officer
+- The sanction route is enforced in code: JE/SSE raises -> Sr.DEN / Sr.DSTE / Sr.DEE each concur for their own department only -> Sr.DOM clears the traffic impact -> DRM sanctions.
+- Only the DRM can sanction. Skipping a step is refused with a list of what is outstanding. A sanctioned plan cannot be edited - a change travels the route again.
+- Every action, including refused attempts, is written to an append-only, SHA-256 hash-chained audit trail. Edit any past entry and verification names the first broken link.
+- Users sign in with role-based accounts (scrypt-hashed passwords, lockout, expiring and revocable sessions), so "the DRM sanctioned this" means a named person did.
+
+3.6 The reports the circular already requires
+Para 3.0 of the Joint Circular requires weekly returns to the DRM and monthly returns to the GM on block cancellation and deviation, productivity of blocks given, and overdue maintenance. TRACKSEN generates both returns directly from the plan, so adoption fits a reporting obligation divisions already carry.
+
+It also runs the CAG's own corridor check automatically: which corridor windows have trains charted through them, and which are cheapest to clear by rescheduling.
+
+
+4. RESULTS FROM THE WORKING PROTOTYPE
+
+TRACKSEN is not a concept - it is built and running end to end.
+
+Setup: Danapur division, East Central Railway - the Buxar-Patna-Jhajha main line (about 280 km) with 8 converging branches, planned against a published 543-service timetable (stops and times from a published schedule, running days from NTES). Defect and maintenance records are synthetic, generated to the structure of TMS, SMMS and TDMS. 600 pending tasks, 7-day horizon. Baseline: first-come-first-served - current practice - under identical physical constraints.
+
+Measure: current practice -> TRACKSEN
+- Risk retired per block-hour: 7.8 -> 17.9 (+129%)
+- Tasks scheduled: 190 -> 190 (same)
+- Criticality retired: 4,977 -> 8,329 (+67%)
+- Blocks (line closures) used: 190 -> 142 (-25%)
+- Block-hours consumed: 639 -> 464 (-27%)
+- Departments sharing each block: 1.00 -> 1.34
+- Traffic detention cost (weighted minutes): 129,288 -> 80,742 (-38%)
+- Corridor adherence: 55% -> 82%
+- High-criticality unplanned failures: 17 -> 13 (-24%)
+
+In plain words: the same number of jobs, two-thirds more risk retired, in 48 fewer line closures and 175 fewer block-hours, at cheaper hours for traffic.
+
+Monthly horizon (30 days): 310 tasks placed into 199 of 900 corridor slots, the backlog burned down from 575 to 290, and the remaining extended-block demand listed by department.
+
+A policy finding the tool produced: with the same 600 tasks, a 3-hour corridor leaves 311 tasks that cannot fit any corridor; the circular's 4-hour corridor leaves 139. More than half of a division's extended-block demand can be created by the corridor length chosen - a trade-off TRACKSEN can now price.
+
+Model validation (held out, 5-fold):
+- Failure-risk classifier AUC 0.898 (+/- 0.019), against 0.615 for a majority-class guess.
+- Cox time-to-failure concordance 0.785.
+- P90 duration coverage 0.907 against a 0.90 target; P50 error 14.1 minutes against 46.0 for a median baseline.
+
+Engineering quality: 296 automated tests covering authority rules, audit tamper detection, ingestion errors and every solver constraint. A mutation check re-introduces 21 real defects and confirms a test fails for each (21/21 caught).
+
+We also report where the plan is weaker: overdue task-days rise about 2%, because criticality outranks age. It is a slider, not a hidden constant - the trade-off is the planner's to make.
+
+
+5. WHAT IS NEW
+
+- It optimises risk retired per block-hour, not tasks completed. The gain comes from doing the right work in fewer closures, not from doing more work.
+- It schedules against predicted duration (a calibrated P90), not the round figure demanded - directly targeting block bursting.
+- Clubbing is a hard structural rule plus an objective reward, not a hope. One chainage key across three departments makes cross-department coordination computable.
+- It is explainable end to end: SHAP reasons on every score, and a "why here" on every block.
+- Humans stay in command: what-if dragging, pin-and-re-solve, and an enforced sanction route with a tamper-evident trail.
+- It is built on the railway's own rules: corridor regimes from the 2016 circular, the Rolling Block Programme, the sanction hierarchy, and the para 3.0 returns.
+
+
+6. TECHNOLOGY STACK
+
+- Optimisation: Google OR-Tools CP-SAT (interval variables, NoOverlap, multi-worker parallel search)
+- Machine learning: LightGBM (classification and quantile regression), Cox proportional hazards (lifelines), scikit-learn, SHAP, conformal calibration
+- Backend: Python, FastAPI, pandas, NumPy, SciPy
+- Frontend: Next.js, React, TypeScript, Tailwind CSS, and a custom SVG train graph (no off-the-shelf charting library draws a time-distance graph)
+- Security and governance: scrypt password hashing, server-side revocable sessions, role-based access, SHA-256 hash-chained audit logs
+- Deployment target: containerised and fully on-premise (RailTel / NIC data centre), PostgreSQL + PostGIS for the persistent asset estate, sign-in bound to the railway's directory
+
+
+7. FEASIBILITY AND PATH TO DEPLOYMENT
+
+- No new hardware and no new data collection: every input already exists in TMS, SMMS, TDMS, the Control Office and the working timetable.
+- Non-intrusive: read-only adapters; source systems are never written to. Where no API exists, a nightly file drop is enough.
+- Fits existing process: plugs into the Rolling Block Programme's weekly cycle and emits the returns the circular already mandates. The statutory sanction process is untouched.
+- Runs on commodity servers: a division's weekly plan solves in minutes, and a re-solve after an officer's change takes seconds.
+- Data stays inside Indian Railways: fully on-premise.
+- Path: pilot on one division -> run in shadow mode beside the current process and publish the KPI difference -> extend across the zone -> connect to the national rolling block system.
+
+
+8. RISKS AND MITIGATIONS
+
+- Legacy systems without APIs -> three-tier adapter: REST, then read-only database view, then file drop.
+- Incomplete or inconsistent defect records -> every unmappable record rejected by name with a reason, so gaps are visible rather than silent.
+- Departmental trust -> explainable scores, visible and adjustable weights, advisory-only output, and any block can be moved by an officer.
+- Live disruptions -> pin what has been decided and re-solve the rest in seconds.
+- Safety of disconnections and power blocks -> modelled as hard constraints with setup and restoration time; sanction always by the competent officer.
+
+
+9. IMPACT AND BENEFITS
+
+- Safety: the defects most likely to fail are attended first, with an auditable record of what was deferred and why.
+- Punctuality and capacity: fewer closures, placed in the cheapest traffic windows - fewer detained trains and fewer freight paths lost.
+- Asset availability: the line is handed back to traffic sooner, and fewer unplanned failures take assets out of service.
+- Block productivity: blocks sized to the real work, cutting block bursting at the source.
+- Institutional: a repeatable, auditable planning process that survives officer transfers, turning a 2016 Board instruction into daily practice.
+- Environmental: fewer unplanned halts and speed restrictions mean less idling and fewer braking cycles.
+
+
+10. SCOPE AND NEXT STEPS
+
+The prototype runs on synthetic defect data over a real network topology and a published timetable; it is not connected to any live railway system. Next, we will:
+- Persist the asset estate in PostgreSQL/PostGIS and connect one adapter to a real departmental data extract.
+- Close the feedback loop: ingest actual block times and outcomes from the Control Office and punctuality data to monitor and retrain the models.
+- Nest the weekly plan inside the monthly allocation, with a nightly rolling re-solve.
+- Extend block planning from the main line to the branch lines, and add track-machine data (TMMS) for machine deployment.
+
+TRACKSEN does not ask a division to change who decides. It puts one integrated, explainable, ready-to-sanction plan in front of the officer who signs it.
