@@ -697,6 +697,9 @@ def main(argv=None):
         slide_impact(s5, args.team_name)
         slide_references(s6, args.team_name)
         drop_slide(prs, 6)                              # the template's instructions slide
+        for slide in list(prs.slides)[1:]:              # footer: the word only, not its style
+            for r in shape(slide, "Footer").text_frame.paragraphs[0].runs:
+                r.text = r.text.replace("- Template", "")
         args.out.parent.mkdir(parents=True, exist_ok=True)
         prs.save(str(args.out))
     print("saved", args.out)
