@@ -160,8 +160,11 @@ def set_run_text(run_elm, text):
 
 
 def fill_team_oval(slide, team_name):
-    """Only the words change; the oval keeps its size, outline and font."""
+    """Only the words change; the oval keeps its size, outline and font. An ellipse's text
+    area is narrower than the oval, so a one-word name wraps mid-word unless wrapping is
+    off -- with it off the name stays centred and still sits inside the outline."""
     oval = shape(slide, "Oval")
+    oval.text_frame.word_wrap = False
     runs = oval.text_frame.paragraphs[0].runs
     runs[0].text = team_name
     for r in runs[1:]:
