@@ -262,7 +262,9 @@ def slide_idea(s, team):
     title_runs = shape(s, "Title").text_frame.paragraphs[0].runs
     next(r for r in title_runs if r.text == "IDEA TITLE").text = "TRACKSEN"
     fill_team_oval(s, team)
-    heading, p1, p2, p3 = pointers(s, 0.40, 1.16, 6.50, size=14.0, heading_size=14.0)
+    heading, p1, p2, p3 = pointers(s, 0.40, 1.16, 6.50, size=14.0, heading_size=18.0)
+    for r in heading.iter(A + "t"):     # the team asked for the bare heading
+        r.text = r.text.replace(" (Describe your Idea/Solution/Prototype)", "")
 
     answer(heading, [
         par([B(IDEA_TITLE)], size=12.0, marL=0.375, indent=0, bullet=None, before=5),
